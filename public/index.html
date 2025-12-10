@@ -411,7 +411,7 @@
                 localSettings.style.display = this.provider === 'local' ? 'block' : 'none';
             },
 
-            loadVoices() {
+            async loadVoices() {
                 const voiceSelect = document.getElementById('voice');
                 const voices = speechSynthesis.getVoices();
                 
@@ -420,14 +420,66 @@
                     return;
                 }
 
-                voiceSelect.innerHTML = '';
-                voices.forEach((voice, index) => {
-                    if (voice.lang.startsWith('en')) {
-                        const option = document.createElement('option');
-                        option.value = index;
-                        option.textContent = `${voice.name} (${voice.lang})`;
-                        voiceSelect.appendChild(option);
+                voiceSelect.innerHTML = '<option value="">Testing voices...</option>';
+                
+                // Test voices for boundary support (like v4.0)
+                const boundaryCapableVoices = [];
+                const englishVoices = voices.filter(v => v.lang.startsWith('en'));
+                
+                console.log('[VOICE TEST] Testing', englishVoices.length, 'English voices for boundary support');
+                
+                for (let i = 0; i < Math.min(englishVoices.length, 10); i++) {
+                    const voice = englishVoices[i];
+                    const isCapable = await this.testVoiceBoundary(voice);
+                    if (isCapable) {
+                        boundaryCapableVoices.push(voice);
+                        console.log('[VOICE TEST] ✓', voice.name, '- Boundary capable');
+                    } else {
+                        console.log('[VOICE TEST] ✗', voice.name, '- No boundary support');
                     }
+                }
+                
+                // If no voices support boundaries, use all English voices
+                const voicesToShow = boundaryCapableVoices.length > 0 ? boundaryCapableVoices : englishVoices;
+                
+                voiceSelect.innerHTML = '';
+                voicesToShow.forEach((voice) => {
+                    const index = voices.indexOf(voice);
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    voiceSelect.appendChild(option);
+                });
+                
+                console.log('[VOICE TEST] Found', voicesToShow.length, 'usable voices');
+            },
+            
+            testVoiceBoundary(voice) {
+                return new Promise((resolve) => {
+                    const testUtterance = new SpeechSynthesisUtterance(' ');
+                    testUtterance.voice = voice;
+                    testUtterance.volume = 0;
+                    
+                    let boundaryFired = false;
+                    
+                    testUtterance.onboundary = () => {
+                        boundaryFired = true;
+                    };
+                    
+                    testUtterance.onend = () => {
+                        resolve(boundaryFired);
+                    };
+                    
+                    testUtterance.onerror = () => {
+                        resolve(false);
+                    };
+                    
+                    setTimeout(() => {
+                        speechSynthesis.cancel();
+                        resolve(boundaryFired);
+                    }, 500);
+                    
+                    speechSynthesis.speak(testUtterance);
                 });
             },
 
@@ -643,8 +695,18 @@
                         span.classList.add('highlight');
                         this.readerActiveIndex = i;
                         
-                        // Auto-scroll
-                        span.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Better auto-scroll - center in reader display
+                        const readerDisplay = document.querySelector('.reader-display');
+                        const spanTop = span.offsetTop;
+                        const spanHeight = span.offsetHeight;
+                        const displayHeight = readerDisplay.clientHeight;
+                        
+                        // Scroll so the word is centered in the visible area
+                        const scrollTo = spanTop - (displayHeight / 2) + (spanHeight / 2);
+                        readerDisplay.scrollTo({
+                            top: Math.max(0, scrollTo),
+                            behavior: 'smooth'
+                        });
                         break;
                     }
                 }
