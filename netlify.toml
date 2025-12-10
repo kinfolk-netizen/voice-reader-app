@@ -1,0 +1,47 @@
+# Netlify Configuration for Voice Reader App - Phase 2
+# This configuration defines build settings and deployment options
+
+[build]
+  # Publish directory - where the static files are served from
+  publish = "public"
+
+  # Functions directory - where Netlify Functions are located
+  # (Currently for future Phase 2 implementation)
+  functions = "api"
+
+# Function settings
+[functions]
+  # Directory containing function files
+  directory = "api"
+
+  # Use esbuild for faster function bundling
+  node_bundler = "esbuild"
+
+# Headers for CORS and security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# CORS headers for API functions
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+
+# Cache static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Redirect rules (if needed in the future)
+# [[redirects]]
+#   from = "/api/*"
+#   to = "/.netlify/functions/:splat"
+#   status = 200

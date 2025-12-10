@@ -1,0 +1,31 @@
+{
+  "name": "voice-reader-app",
+  "version": "2.0.0",
+  "description": "Production-Ready TTS Platform - Phase 2 Architecture",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kinfolk-netizen/voice-reader-app.git"
+  },
+  "keywords": [
+    "tts",
+    "text-to-speech",
+    "voice",
+    "openai",
+    "azure",
+    "elevenlabs",
+    "netlify"
+  ],
+  "author": "KIN Network",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/kinfolk-netizen/voice-reader-app/issues"
+  },
+  "homepage": "https://github.com/kinfolk-netizen/voice-reader-app#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
