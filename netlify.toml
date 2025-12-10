@@ -1,0 +1,47 @@
+# Netlify Configuration for Voice Reader App - Phase 2
+# Timestamp: 2:48PM, 12.10.24
+
+[build]
+  # Publish directory - where static files are served from
+  publish = "public"
+  
+  # Functions directory - serverless API endpoints
+  functions = "api"
+  
+  # No build command needed (static site)
+  command = ""
+
+# Function settings
+[functions]
+  # Node.js runtime
+  node_bundler = "esbuild"
+  
+  # Include environment variables
+  included_files = ["api/**"]
+
+# Redirects for API routing
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# CORS headers for API endpoints
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type"
+
+# Environment
+[context.production.environment]
+  NODE_VERSION = "18"
+  NPM_VERSION = "9"
+
+# Dev server settings
+[dev]
+  command = ""
+  port = 8888
+  targetPort = 8888
+  publish = "public"
+  functions = "api"

@@ -1,0 +1,38 @@
+{
+  "name": "voice-reader-app",
+  "version": "2.0.0",
+  "description": "Voice Reader App - Phase 2 Production-Ready TTS Platform",
+  "main": "index.js",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'No build step required for static site'",
+    "deploy": "netlify deploy --prod",
+    "test": "echo 'Tests coming in Phase 3'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kinfolk-netizen/voice-reader-app.git"
+  },
+  "keywords": [
+    "tts",
+    "text-to-speech",
+    "voice-reader",
+    "openai",
+    "azure-speech",
+    "elevenlabs",
+    "netlify-functions",
+    "serverless"
+  ],
+  "author": "Jonathan Mark (KIN Network)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kinfolk-netizen/voice-reader-app/issues"
+  },
+  "homepage": "https://github.com/kinfolk-netizen/voice-reader-app#readme",
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
