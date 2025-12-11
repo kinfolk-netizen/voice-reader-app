@@ -1098,20 +1098,42 @@
 
             scrollSentenceIntoView(span) {
                 const readerDisplay = document.querySelector('.reader-display');
-                const spanTop = span.offsetTop;
-                const spanHeight = span.offsetHeight;
-                const displayHeight = readerDisplay.clientHeight;
-                const maxScroll = readerDisplay.scrollHeight - displayHeight;
 
-                const scrollTo = Math.min(
-                    Math.max(0, spanTop - (displayHeight / 2) + (spanHeight / 2)),
-                    maxScroll
+                // Get the position of the sentence relative to the scrollable container
+                const spanRect = span.getBoundingClientRect();
+                const displayRect = readerDisplay.getBoundingClientRect();
+
+                // Calculate if sentence is already visible
+                const isVisible = (
+                    spanRect.top >= displayRect.top &&
+                    spanRect.bottom <= displayRect.bottom
                 );
 
-                readerDisplay.scrollTo({
-                    top: scrollTo,
-                    behavior: 'smooth'
-                });
+                // Only scroll if sentence is not visible
+                if (!isVisible) {
+                    const spanTop = span.offsetTop;
+                    const spanHeight = span.offsetHeight;
+                    const displayHeight = readerDisplay.clientHeight;
+                    const currentScroll = readerDisplay.scrollTop;
+
+                    // Calculate target scroll position to center the sentence
+                    let scrollTo = spanTop - (displayHeight / 2) + (spanHeight / 2);
+
+                    // Prevent scrolling above the top
+                    scrollTo = Math.max(0, scrollTo);
+
+                    // Prevent scrolling past the bottom
+                    const maxScroll = readerDisplay.scrollHeight - displayHeight;
+                    scrollTo = Math.min(scrollTo, maxScroll);
+
+                    // Use instant scroll for first sentence to prevent jump
+                    const behavior = (spanTop < 100) ? 'instant' : 'smooth';
+
+                    readerDisplay.scrollTo({
+                        top: scrollTo,
+                        behavior: behavior
+                    });
+                }
             },
 
             clearHighlight() {
