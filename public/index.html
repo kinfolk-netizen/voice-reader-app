@@ -264,6 +264,26 @@
             font-size: 14px;
         }
 
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(148, 163, 184, 0.3);
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         .status-msg.success {
             background: rgba(34, 197, 94, 0.1);
             color: #4ade80;
@@ -475,6 +495,7 @@
                 document.getElementById('provider').addEventListener('change', (e) => {
                     this.provider = e.target.value;
                     this.updateProviderUI();
+                    this.updateActiveVoiceLabel();
                 });
                 document.getElementById('speed').addEventListener('input', (e) => {
                     document.getElementById('speed-value').textContent = e.target.value + 'x';
@@ -638,6 +659,117 @@
             updateProviderStatus(message) {
                 const statusEl = document.getElementById('provider-status');
                 if (statusEl) statusEl.textContent = message;
+            },
+
+            loadStaticVoices() {
+                this.voiceCache.openai = [
+                    { value: 'alloy', label: 'alloy (Neutral, balanced)' },
+                    { value: 'echo', label: 'echo (Male, clear)' },
+                    { value: 'fable', label: 'fable (British accent, expressive)' },
+                    { value: 'onyx', label: 'onyx (Deep male)' },
+                    { value: 'nova', label: 'nova (Female, warm)' },
+                    { value: 'shimmer', label: 'shimmer (Female, bright)' }
+                ];
+
+                this.voiceCache.elevenlabs = [
+                    { value: 'Rachel', label: 'Rachel (Female, calm narration)' },
+                    { value: 'Drew', label: 'Drew (Male, confident)' },
+                    { value: 'Clyde', label: 'Clyde (Male, strong)' },
+                    { value: 'Paul', label: 'Paul (Male, news anchor)' },
+                    { value: 'Domi', label: 'Domi (Female, energetic)' },
+                    { value: 'Dave', label: 'Dave (British male)' },
+                    { value: 'Fin', label: 'Fin (Irish male)' },
+                    { value: 'Sarah', label: 'Sarah (Female, professional)' },
+                    { value: 'Antoni', label: 'Antoni (Male, storytelling)' },
+                    { value: 'Thomas', label: 'Thomas (Male, formal)' }
+                ];
+
+                this.populateVoiceOptions('openai');
+                this.populateVoiceOptions('elevenlabs');
+            },
+
+            ensureLocalVoices() {
+                if (this.voiceCache.local.length === 0) {
+                    this.loadLocalVoices();
+                    this.markVoiceLoading('local');
+                } else {
+                    this.populateVoiceOptions('local');
+                    this.finishVoiceLoading('local');
+                }
+            },
+
+            populateVoiceOptions(provider) {
+                let selectId = 'local-voice';
+                if (provider === 'openai') selectId = 'openai-voice';
+                if (provider === 'elevenlabs') selectId = 'elevenlabs-voice';
+                const selectEl = document.getElementById(selectId);
+                if (!selectEl) return;
+
+                const voices = this.voiceCache[provider] || [];
+                selectEl.innerHTML = '';
+                voices.forEach((v) => {
+                    const opt = document.createElement('option');
+                    opt.value = v.value;
+                    opt.textContent = v.label;
+                    selectEl.appendChild(opt);
+                });
+
+                if (!this.voiceSelections[provider] && voices.length > 0) {
+                    this.voiceSelections[provider] = voices[0].value;
+                }
+
+                if (this.voiceSelections[provider]) {
+                    selectEl.value = this.voiceSelections[provider];
+                }
+
+                this.updateProviderStatus(`${voices.length} voices available for ${provider}`);
+            },
+
+            markVoiceLoading(provider) {
+                this.isVoiceReady = false;
+                document.getElementById('play-btn').disabled = true;
+                document.getElementById('voice-spinner').style.display = 'block';
+                document.getElementById('active-voice').classList.remove('hidden');
+                this.updateStatus(`Switching to ${provider} voice...`);
+                this.updateActiveVoiceLabel('Loading voice...');
+            },
+
+            finishVoiceLoading(provider) {
+                this.isVoiceReady = true;
+                document.getElementById('play-btn').disabled = false;
+                document.getElementById('voice-spinner').style.display = 'none';
+                document.getElementById('active-voice').classList.remove('hidden');
+                this.updateStatus(`Voice ready for ${provider}`);
+                this.updateActiveVoiceLabel();
+                this.updateProviderStatus(`Voice ready: ${this.getVoiceLabel(provider, this.voiceSelections[provider]) || 'default'}`);
+            },
+
+            updateActiveVoiceLabel(forcedText) {
+                const el = document.getElementById('active-voice-text');
+                if (!el) return;
+                if (forcedText) {
+                    el.textContent = forcedText;
+                    return;
+                }
+                const label = this.getVoiceLabel(this.provider, this.voiceSelections[this.provider]);
+                if (label) {
+                    el.textContent = `Voice ready: ${label}`;
+                } else {
+                    el.textContent = 'Voice ready';
+                }
+            },
+
+            getVoiceLabel(provider, value) {
+                const match = (this.voiceCache[provider] || []).find(v => v.value === value);
+                return match ? match.label : '';
+            },
+
+            async testCloudVoice(provider) {
+                this.markVoiceLoading(provider);
+                // Simulate quick validation
+                setTimeout(() => {
+                    this.finishVoiceLoading(provider);
+                }, 800);
             },
 
             loadText() {
@@ -809,6 +941,7 @@
                 const text = this.currentText;
                 const provider = this.provider;
 
+                this.markVoiceLoading(provider);
                 this.updateStatus(`Generating audio with ${provider}...`);
 
                 // Get selected voice and model
@@ -834,6 +967,7 @@
                     const data = await response.json();
 
                     if (data.success) {
+                        this.finishVoiceLoading(provider);
                         const audioBlob = this.base64ToBlob(data.audio, 'audio/mpeg');
                         const audioUrl = URL.createObjectURL(audioBlob);
                         const audio = new Audio(audioUrl);
@@ -895,9 +1029,11 @@
                         };
                     } else {
                         this.updateStatus(`Error: ${data.error}`);
+                        this.finishVoiceLoading(provider);
                     }
                 } catch (error) {
                     this.updateStatus(`Network error: ${error.message}`);
+                    this.finishVoiceLoading(provider);
                 }
             },
 
@@ -993,6 +1129,11 @@
                 document.getElementById('status').textContent = message;
             },
 
+            updateProviderStatus(message) {
+                const statusEl = document.getElementById('provider-status');
+                if (statusEl) statusEl.textContent = message;
+            },
+
             base64ToBlob(base64, mimeType) {
                 const byteCharacters = atob(base64);
                 const byteNumbers = new Array(byteCharacters.length);
@@ -1006,7 +1147,7 @@
 
         // Initialize when voices are loaded
         if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = () => app.loadVoices();
+            speechSynthesis.onvoiceschanged = () => app.loadLocalVoices();
         }
 
         // Start app
