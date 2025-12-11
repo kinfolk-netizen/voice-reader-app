@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Reader - Phase 2 with Full Reader</title>
+    <title>Voice Reader - Sentence-Level Highlighting</title>
     <style>
         * {
             margin: 0;
@@ -223,20 +223,24 @@
             margin-bottom: 1em;
         }
 
-        .reader-word {
+        .reader-sentence {
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: all 0.2s ease;
+            display: inline;
+            padding: 2px 0;
         }
 
-        .reader-word:hover {
-            color: #60a5fa;
-        }
-
-        .reader-word.highlight {
-            background: linear-gradient(120deg, rgba(96, 165, 250, 0.3) 0%, rgba(59, 130, 246, 0.25) 100%);
-            padding: 2px 4px;
+        .reader-sentence:hover {
+            background: rgba(96, 165, 250, 0.1);
             border-radius: 4px;
-            box-shadow: 0 0 12px rgba(96, 165, 250, 0.4);
+        }
+
+        .reader-sentence.highlight {
+            background: linear-gradient(120deg, rgba(96, 165, 250, 0.25) 0%, rgba(59, 130, 246, 0.2) 100%);
+            padding: 4px 6px;
+            border-radius: 6px;
+            box-shadow: 0 0 16px rgba(96, 165, 250, 0.3);
+            transition: all 0.3s ease;
         }
 
         .reader-display::-webkit-scrollbar {
@@ -304,10 +308,10 @@
         <header class="header">
             <div class="badge">
                 <span class="badge-dot"></span>
-                <span>Phase 2 with Full Reader</span>
+                <span>Sentence-Level Highlighting</span>
             </div>
             <h1>🎙️ Voice Reader</h1>
-            <p>Multi-provider TTS with word highlighting and secure backend</p>
+            <p>Multi-provider TTS with sentence highlighting and secure backend</p>
         </header>
 
         <div class="card">
@@ -315,9 +319,9 @@
             
             <label for="provider">TTS Provider</label>
             <select id="provider">
-                <option value="local">Local Browser (Free + Highlighting)</option>
-                <option value="openai">OpenAI TTS (Premium Quality)</option>
-                <option value="elevenlabs">ElevenLabs (Premium Quality)</option>
+                <option value="local">Local Browser (Free + Real-time Highlighting)</option>
+                <option value="openai">OpenAI TTS (Premium + Estimated Highlighting)</option>
+                <option value="elevenlabs">ElevenLabs (Premium + Estimated Highlighting)</option>
             </select>
 
             <div id="local-settings">
@@ -346,7 +350,7 @@
 
         <div class="card">
             <div class="card-title">Text Input</div>
-            <textarea id="text" placeholder="Paste your text here...">Welcome to Voice Reader with full reader interface! This combines Phase 2's secure backend with v4.0's word-by-word highlighting. Click any word to jump to that position.</textarea>
+            <textarea id="text" placeholder="Paste your text here...">Welcome to Voice Reader with sentence-level highlighting! This works with all TTS providers. Click any sentence to jump to that position. The current sentence is highlighted during playback.</textarea>
             <button id="use-text-btn">Load Text</button>
         </div>
 
@@ -378,10 +382,11 @@
             currentText: '',
             isPlaying: false,
             utterance: null,
-            readerWordSpans: [],
+            readerSentenceSpans: [],
             readerActiveIndex: -1,
             readStartOffset: 0,
             provider: 'local',
+            cloudAudioInterval: null,
 
             init() {
                 this.loadVoices();
@@ -500,70 +505,73 @@
             prepareReaderText() {
                 const readerContent = document.getElementById('reader-content');
                 readerContent.innerHTML = '';
-                this.readerWordSpans = [];
+                this.readerSentenceSpans = [];
                 this.readerActiveIndex = -1;
 
                 const text = this.currentText || '';
-                let pEl = document.createElement('p');
-                let currentWord = '';
-                let wordStartPos = null;
 
-                const flushWord = () => {
-                    if (!currentWord) return;
+                // Split text into sentences
+                // Match sentences ending with . ! ? followed by space or end of string
+                const sentenceRegex = /[^.!?]+[.!?]+(?:\s|$)/g;
+                const sentences = text.match(sentenceRegex) || [text];
+
+                console.log('[SENTENCE PARSING] Found', sentences.length, 'sentences');
+
+                let currentPosition = 0;
+                let pEl = document.createElement('p');
+                let sentencesInParagraph = 0;
+
+                sentences.forEach((sentence, index) => {
+                    // Find actual position in original text
+                    const sentenceStart = text.indexOf(sentence, currentPosition);
+
+                    // Check if this sentence starts a new paragraph (preceded by \n\n)
+                    if (sentenceStart > 0) {
+                        const textBefore = text.substring(currentPosition, sentenceStart);
+                        if (textBefore.includes('\n\n')) {
+                            // Flush current paragraph
+                            if (sentencesInParagraph > 0) {
+                                readerContent.appendChild(pEl);
+                                pEl = document.createElement('p');
+                                sentencesInParagraph = 0;
+                            }
+                        }
+                    }
+
+                    // Create sentence span
                     const span = document.createElement('span');
-                    span.textContent = currentWord;
-                    span.classList.add('reader-word');
-                    span.dataset.start = String(wordStartPos);
+                    span.textContent = sentence;
+                    span.classList.add('reader-sentence');
+                    span.dataset.start = String(sentenceStart >= 0 ? sentenceStart : currentPosition);
+
+                    // Click handler to jump to sentence
                     span.addEventListener('click', () => {
                         const start = parseInt(span.dataset.start, 10) || 0;
                         this.readStartOffset = start;
                         this.stop();
                         setTimeout(() => this.play(), 100);
                     });
+
                     pEl.appendChild(span);
-                    this.readerWordSpans.push(span);
-                    currentWord = '';
-                    wordStartPos = null;
-                };
 
-                const flushParagraph = () => {
-                    if (pEl.childNodes.length > 0) {
-                        readerContent.appendChild(pEl);
-                        pEl = document.createElement('p');
-                    }
-                };
-
-                for (let i = 0; i < text.length; i++) {
-                    const ch = text[i];
-
-                    if (ch === '\n') {
-                        flushWord();
-                        if (i + 1 < text.length && text[i + 1] === '\n') {
-                            i++;
-                            flushParagraph();
-                            continue;
-                        } else {
-                            const space = document.createTextNode(' ');
-                            pEl.appendChild(space);
-                            continue;
-                        }
+                    // Add space between sentences (except last one)
+                    if (index < sentences.length - 1) {
+                        pEl.appendChild(document.createTextNode(' '));
                     }
 
-                    if (/\s/.test(ch)) {
-                        flushWord();
-                        const space = document.createTextNode(ch);
-                        pEl.appendChild(space);
-                        continue;
-                    }
+                    this.readerSentenceSpans.push(span);
+                    sentencesInParagraph++;
 
-                    if (wordStartPos === null) {
-                        wordStartPos = i;
-                    }
-                    currentWord += ch;
+                    // Update position
+                    currentPosition = sentenceStart >= 0 ? sentenceStart + sentence.length : currentPosition + sentence.length;
+                });
+
+                // Flush final paragraph
+                if (sentencesInParagraph > 0) {
+                    readerContent.appendChild(pEl);
                 }
 
-                flushWord();
-                flushParagraph();
+                console.log('[SENTENCE PARSING] Created', this.readerSentenceSpans.length, 'sentence spans');
             },
 
             togglePlay() {
@@ -598,7 +606,7 @@
                 this.utterance.onboundary = (e) => {
                     if (e.name === 'word') {
                         const charIndex = this.readStartOffset + e.charIndex;
-                        this.highlightWordAt(charIndex);
+                        this.highlightSentenceAt(charIndex);
                     }
                 };
 
@@ -612,7 +620,7 @@
                 speechSynthesis.speak(this.utterance);
                 this.isPlaying = true;
                 this.updatePlayButton();
-                this.updateStatus('Playing...');
+                this.updateStatus('Playing... (Sentence-level highlighting)');
             },
 
             async playCloud() {
@@ -638,17 +646,61 @@
                         const audioBlob = this.base64ToBlob(data.audio, 'audio/mpeg');
                         const audioUrl = URL.createObjectURL(audioBlob);
                         const audio = new Audio(audioUrl);
-                        
+
+                        // Set up sentence highlighting based on estimated timing
+                        audio.addEventListener('loadedmetadata', () => {
+                            const duration = audio.duration;
+                            const totalSentences = this.readerSentenceSpans.length;
+
+                            if (totalSentences > 0 && duration > 0) {
+                                const timePerSentence = duration / totalSentences;
+                                console.log('[CLOUD TTS] Duration:', duration.toFixed(2), 's | Sentences:', totalSentences, '| Time per sentence:', timePerSentence.toFixed(2), 's');
+
+                                let lastHighlightedSentence = -1;
+
+                                // Clear any existing interval
+                                if (this.cloudAudioInterval) {
+                                    clearInterval(this.cloudAudioInterval);
+                                }
+
+                                // Update highlight every 100ms
+                                this.cloudAudioInterval = setInterval(() => {
+                                    if (audio.paused || audio.ended) {
+                                        clearInterval(this.cloudAudioInterval);
+                                        this.cloudAudioInterval = null;
+                                        return;
+                                    }
+
+                                    const currentSentence = Math.min(
+                                        Math.floor(audio.currentTime / timePerSentence),
+                                        totalSentences - 1
+                                    );
+
+                                    // Only update if sentence changed
+                                    if (currentSentence !== lastHighlightedSentence) {
+                                        this.highlightSentenceByIndex(currentSentence);
+                                        lastHighlightedSentence = currentSentence;
+                                    }
+                                }, 100);
+                            }
+                        });
+
                         audio.play();
                         this.isPlaying = true;
                         this.updatePlayButton();
-                        this.updateStatus(`Playing (${provider})...`);
+                        this.updateStatus(`Playing... (Estimated timing for ${provider})`);
 
                         audio.onended = () => {
                             this.isPlaying = false;
                             this.updatePlayButton();
+                            this.clearHighlight();
                             this.updateStatus('Finished');
                             URL.revokeObjectURL(audioUrl);
+
+                            if (this.cloudAudioInterval) {
+                                clearInterval(this.cloudAudioInterval);
+                                this.cloudAudioInterval = null;
+                            }
                         };
                     } else {
                         this.updateStatus(`Error: ${data.error}`);
@@ -670,6 +722,12 @@
                 this.isPlaying = false;
                 this.updatePlayButton();
                 this.clearHighlight();
+
+                // Clear cloud audio interval if exists
+                if (this.cloudAudioInterval) {
+                    clearInterval(this.cloudAudioInterval);
+                    this.cloudAudioInterval = null;
+                }
             },
 
             skip(percent) {
@@ -683,37 +741,51 @@
                 }
             },
 
-            highlightWordAt(charIndex) {
+            highlightSentenceAt(charIndex) {
                 this.clearHighlight();
 
-                for (let i = 0; i < this.readerWordSpans.length; i++) {
-                    const span = this.readerWordSpans[i];
+                for (let i = 0; i < this.readerSentenceSpans.length; i++) {
+                    const span = this.readerSentenceSpans[i];
                     const start = parseInt(span.dataset.start, 10);
                     const end = start + span.textContent.length;
 
                     if (charIndex >= start && charIndex < end) {
                         span.classList.add('highlight');
                         this.readerActiveIndex = i;
-                        
-                        // Better auto-scroll - center in reader display
-                        const readerDisplay = document.querySelector('.reader-display');
-                        const spanTop = span.offsetTop;
-                        const spanHeight = span.offsetHeight;
-                        const displayHeight = readerDisplay.clientHeight;
-                        
-                        // Scroll so the word is centered in the visible area
-                        const scrollTo = spanTop - (displayHeight / 2) + (spanHeight / 2);
-                        readerDisplay.scrollTo({
-                            top: Math.max(0, scrollTo),
-                            behavior: 'smooth'
-                        });
+                        this.scrollSentenceIntoView(span);
                         break;
                     }
                 }
             },
 
+            highlightSentenceByIndex(index) {
+                this.clearHighlight();
+
+                if (index >= 0 && index < this.readerSentenceSpans.length) {
+                    const span = this.readerSentenceSpans[index];
+                    span.classList.add('highlight');
+                    this.readerActiveIndex = index;
+                    this.scrollSentenceIntoView(span);
+                }
+            },
+
+            scrollSentenceIntoView(span) {
+                const readerDisplay = document.querySelector('.reader-display');
+                const spanTop = span.offsetTop;
+                const spanHeight = span.offsetHeight;
+                const displayHeight = readerDisplay.clientHeight;
+
+                // Center the sentence in the visible area
+                const scrollTo = spanTop - (displayHeight / 2) + (spanHeight / 2);
+
+                readerDisplay.scrollTo({
+                    top: Math.max(0, scrollTo),
+                    behavior: 'smooth'
+                });
+            },
+
             clearHighlight() {
-                this.readerWordSpans.forEach(span => span.classList.remove('highlight'));
+                this.readerSentenceSpans.forEach(span => span.classList.remove('highlight'));
                 this.readerActiveIndex = -1;
             },
 
