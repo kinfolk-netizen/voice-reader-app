@@ -286,6 +286,29 @@
             display: none;
         }
 
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(148, 163, 184, 0.3);
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         .slider-group {
             margin-bottom: 15px;
         }
@@ -324,9 +347,9 @@
                 <option value="elevenlabs">ElevenLabs (Premium + Estimated Highlighting)</option>
             </select>
 
-            <div id="local-settings">
-                <label for="voice">Voice</label>
-                <select id="voice">
+            <div id="local-settings" class="provider-settings">
+                <label for="local-voice">Voice</label>
+                <select id="local-voice">
                     <option value="">Loading voices...</option>
                 </select>
 
@@ -345,6 +368,38 @@
                     </div>
                     <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1">
                 </div>
+            </div>
+
+            <div id="openai-settings" class="provider-settings hidden">
+                <label for="openai-voice">OpenAI Voice</label>
+                <select id="openai-voice">
+                    <option value="alloy">alloy (Neutral, balanced)</option>
+                </select>
+
+                <label for="openai-model">Model</label>
+                <select id="openai-model">
+                    <option value="tts-1">tts-1 (Standard)</option>
+                    <option value="tts-1-hd">tts-1-hd (High Definition)</option>
+                </select>
+            </div>
+
+            <div id="elevenlabs-settings" class="provider-settings hidden">
+                <label for="elevenlabs-voice">ElevenLabs Voice</label>
+                <select id="elevenlabs-voice">
+                    <option value="Rachel">Rachel (Female, calm narration)</option>
+                </select>
+
+                <label for="elevenlabs-model">Model</label>
+                <select id="elevenlabs-model">
+                    <option value="eleven_multilingual_v2">eleven_multilingual_v2</option>
+                    <option value="eleven_monolingual_v1">eleven_monolingual_v1</option>
+                </select>
+            </div>
+
+            <div id="provider-status" class="status-msg info">Loading voices...</div>
+            <div id="active-voice" class="status-row hidden">
+                <div class="spinner" id="voice-spinner"></div>
+                <div id="active-voice-text">Preparing voice...</div>
             </div>
         </div>
 
@@ -387,10 +442,28 @@
             readStartOffset: 0,
             provider: 'local',
             cloudAudioInterval: null,
+            voiceCache: {
+                local: [],
+                openai: [],
+                elevenlabs: []
+            },
+            voiceSelections: {
+                local: '',
+                openai: 'alloy',
+                elevenlabs: 'Rachel'
+            },
+            providerModels: {
+                openai: 'tts-1',
+                elevenlabs: 'eleven_multilingual_v2'
+            },
+            isVoiceReady: false,
 
             init() {
-                this.loadVoices();
+                this.loadStaticVoices();
                 this.setupEventListeners();
+                this.updateProviderUI();
+                this.updatePlayButton();
+                this.loadLocalVoices();
                 console.log('[APP] Voice Reader initialized');
             },
 
@@ -409,44 +482,87 @@
                 document.getElementById('pitch').addEventListener('input', (e) => {
                     document.getElementById('pitch-value').textContent = e.target.value;
                 });
+
+                // Voice selection handlers
+                document.getElementById('local-voice').addEventListener('change', (e) => {
+                    this.voiceSelections.local = e.target.value;
+                    this.finishVoiceLoading('local');
+                });
+
+                document.getElementById('openai-voice').addEventListener('change', (e) => {
+                    this.voiceSelections.openai = e.target.value;
+                });
+
+                document.getElementById('elevenlabs-voice').addEventListener('change', (e) => {
+                    this.voiceSelections.elevenlabs = e.target.value;
+                });
+
+                document.getElementById('openai-model').addEventListener('change', (e) => {
+                    this.providerModels.openai = e.target.value;
+                });
+
+                document.getElementById('elevenlabs-model').addEventListener('change', (e) => {
+                    this.providerModels.elevenlabs = e.target.value;
+                });
             },
 
             updateProviderUI() {
-                const localSettings = document.getElementById('local-settings');
-                localSettings.style.display = this.provider === 'local' ? 'block' : 'none';
+                document.querySelectorAll('.provider-settings').forEach(el => el.classList.add('hidden'));
+
+                if (this.provider === 'local') {
+                    document.getElementById('local-settings').classList.remove('hidden');
+                } else if (this.provider === 'openai') {
+                    document.getElementById('openai-settings').classList.remove('hidden');
+                    this.populateVoiceOptions('openai');
+                    this.finishVoiceLoading('openai');
+                } else if (this.provider === 'elevenlabs') {
+                    document.getElementById('elevenlabs-settings').classList.remove('hidden');
+                    this.populateVoiceOptions('elevenlabs');
+                    this.finishVoiceLoading('elevenlabs');
+                }
+
+                this.updateStatus(`Provider: ${this.provider}`);
             },
 
-            async loadVoices() {
-                const voiceSelect = document.getElementById('voice');
+            loadStaticVoices() {
+                this.voiceCache.openai = [
+                    { value: 'alloy', label: 'alloy (Neutral, balanced)' },
+                    { value: 'echo', label: 'echo (Male, clear)' },
+                    { value: 'fable', label: 'fable (British accent, expressive)' },
+                    { value: 'onyx', label: 'onyx (Deep male)' },
+                    { value: 'nova', label: 'nova (Female, warm)' },
+                    { value: 'shimmer', label: 'shimmer (Female, bright)' }
+                ];
+
+                this.voiceCache.elevenlabs = [
+                    { value: 'Rachel', label: 'Rachel (Female, calm narration)' },
+                    { value: 'Drew', label: 'Drew (Male, confident)' },
+                    { value: 'Clyde', label: 'Clyde (Male, strong)' },
+                    { value: 'Paul', label: 'Paul (Male, news anchor)' },
+                    { value: 'Domi', label: 'Domi (Female, energetic)' },
+                    { value: 'Dave', label: 'Dave (British male)' },
+                    { value: 'Fin', label: 'Fin (Irish male)' },
+                    { value: 'Sarah', label: 'Sarah (Female, professional)' },
+                    { value: 'Antoni', label: 'Antoni (Male, storytelling)' },
+                    { value: 'Thomas', label: 'Thomas (Male, formal)' }
+                ];
+
+                this.populateVoiceOptions('openai');
+                this.populateVoiceOptions('elevenlabs');
+            },
+
+            async loadLocalVoices() {
+                const voiceSelect = document.getElementById('local-voice');
                 const voices = speechSynthesis.getVoices();
-                
+
                 if (voices.length === 0) {
-                    setTimeout(() => this.loadVoices(), 100);
+                    setTimeout(() => this.loadLocalVoices(), 150);
                     return;
                 }
 
-                voiceSelect.innerHTML = '<option value="">Testing voices...</option>';
-                
-                // Test voices for boundary support (like v4.0)
-                const boundaryCapableVoices = [];
-                const englishVoices = voices.filter(v => v.lang.startsWith('en'));
-                
-                console.log('[VOICE TEST] Testing', englishVoices.length, 'English voices for boundary support');
-                
-                for (let i = 0; i < Math.min(englishVoices.length, 10); i++) {
-                    const voice = englishVoices[i];
-                    const isCapable = await this.testVoiceBoundary(voice);
-                    if (isCapable) {
-                        boundaryCapableVoices.push(voice);
-                        console.log('[VOICE TEST] ✓', voice.name, '- Boundary capable');
-                    } else {
-                        console.log('[VOICE TEST] ✗', voice.name, '- No boundary support');
-                    }
-                }
-                
-                // If no voices support boundaries, use all English voices
-                const voicesToShow = boundaryCapableVoices.length > 0 ? boundaryCapableVoices : englishVoices;
-                
+                const englishVoices = voices.filter(v => v.lang && v.lang.startsWith('en'));
+                const voicesToShow = englishVoices.length > 0 ? englishVoices : voices;
+
                 voiceSelect.innerHTML = '';
                 voicesToShow.forEach((voice) => {
                     const index = voices.indexOf(voice);
@@ -455,37 +571,73 @@
                     option.textContent = `${voice.name} (${voice.lang})`;
                     voiceSelect.appendChild(option);
                 });
-                
-                console.log('[VOICE TEST] Found', voicesToShow.length, 'usable voices');
+
+                this.voiceCache.local = voicesToShow.map((voice) => ({
+                    value: voices.indexOf(voice).toString(),
+                    label: `${voice.name} (${voice.lang})`
+                }));
+
+                if (!this.voiceSelections.local && this.voiceCache.local.length > 0) {
+                    this.voiceSelections.local = this.voiceCache.local[0].value;
+                }
+
+                if (this.voiceSelections.local) {
+                    voiceSelect.value = this.voiceSelections.local;
+                }
+
+                this.finishVoiceLoading('local');
+                this.updateProviderStatus(`${voicesToShow.length} voices available`);
+                console.log('[VOICE LOADING] Loaded', voicesToShow.length, 'local voices');
             },
-            
-            testVoiceBoundary(voice) {
-                return new Promise((resolve) => {
-                    const testUtterance = new SpeechSynthesisUtterance(' ');
-                    testUtterance.voice = voice;
-                    testUtterance.volume = 0;
-                    
-                    let boundaryFired = false;
-                    
-                    testUtterance.onboundary = () => {
-                        boundaryFired = true;
-                    };
-                    
-                    testUtterance.onend = () => {
-                        resolve(boundaryFired);
-                    };
-                    
-                    testUtterance.onerror = () => {
-                        resolve(false);
-                    };
-                    
-                    setTimeout(() => {
-                        speechSynthesis.cancel();
-                        resolve(boundaryFired);
-                    }, 500);
-                    
-                    speechSynthesis.speak(testUtterance);
+
+            populateVoiceOptions(provider) {
+                let selectId = 'local-voice';
+                if (provider === 'openai') selectId = 'openai-voice';
+                if (provider === 'elevenlabs') selectId = 'elevenlabs-voice';
+                const selectEl = document.getElementById(selectId);
+                if (!selectEl) return;
+
+                const voices = this.voiceCache[provider] || [];
+                selectEl.innerHTML = '';
+                voices.forEach((v) => {
+                    const opt = document.createElement('option');
+                    opt.value = v.value;
+                    opt.textContent = v.label;
+                    selectEl.appendChild(opt);
                 });
+
+                if (!this.voiceSelections[provider] && voices.length > 0) {
+                    this.voiceSelections[provider] = voices[0].value;
+                }
+
+                if (this.voiceSelections[provider]) {
+                    selectEl.value = this.voiceSelections[provider];
+                }
+            },
+
+            markVoiceLoading(provider) {
+                this.isVoiceReady = false;
+                document.getElementById('play-btn').disabled = true;
+                const spinner = document.getElementById('voice-spinner');
+                const activeVoice = document.getElementById('active-voice');
+                if (spinner) spinner.style.display = 'block';
+                if (activeVoice) activeVoice.classList.remove('hidden');
+                this.updateStatus(`Switching to ${provider} voice...`);
+            },
+
+            finishVoiceLoading(provider) {
+                this.isVoiceReady = true;
+                document.getElementById('play-btn').disabled = false;
+                const spinner = document.getElementById('voice-spinner');
+                if (spinner) spinner.style.display = 'none';
+                this.updateStatus(`Voice ready for ${provider}`);
+                this.updateProviderStatus(`Voice ready`);
+                this.updatePlayButton();
+            },
+
+            updateProviderStatus(message) {
+                const statusEl = document.getElementById('provider-status');
+                if (statusEl) statusEl.textContent = message;
             },
 
             loadText() {
@@ -583,6 +735,10 @@
             },
 
             async play() {
+                if (!this.isVoiceReady) {
+                    this.updateStatus('Voice is loading...');
+                    return;
+                }
                 if (this.provider === 'local') {
                     this.playLocal();
                 } else if (this.provider === 'openai' || this.provider === 'elevenlabs') {
@@ -591,21 +747,37 @@
             },
 
             playLocal() {
+                if (!this.currentText) {
+                    this.updateStatus('Please load text first');
+                    return;
+                }
+
                 const voices = speechSynthesis.getVoices();
-                const voiceIndex = parseInt(document.getElementById('voice').value) || 0;
-                const voice = voices[voiceIndex];
+                const voiceIndex = parseInt(document.getElementById('local-voice').value, 10) || 0;
+                const voice = voices[voiceIndex] || voices[0];
 
                 const text = this.currentText.slice(this.readStartOffset);
-                if (!text) return;
+                if (!text.trim()) {
+                    this.updateStatus('No text to read');
+                    return;
+                }
 
+                this.stop();
+                speechSynthesis.cancel();
+
+                const startOffset = this.readStartOffset;
                 this.utterance = new SpeechSynthesisUtterance(text);
                 this.utterance.voice = voice;
                 this.utterance.rate = parseFloat(document.getElementById('speed').value);
                 this.utterance.pitch = parseFloat(document.getElementById('pitch').value);
 
+                this.utterance.onstart = () => {
+                    this.highlightSentenceAt(startOffset);
+                };
+
                 this.utterance.onboundary = (e) => {
                     if (e.name === 'word') {
-                        const charIndex = this.readStartOffset + e.charIndex;
+                        const charIndex = startOffset + e.charIndex;
                         this.highlightSentenceAt(charIndex);
                     }
                 };
@@ -617,10 +789,20 @@
                     this.updateStatus('Finished');
                 };
 
-                speechSynthesis.speak(this.utterance);
-                this.isPlaying = true;
-                this.updatePlayButton();
-                this.updateStatus('Playing... (Sentence-level highlighting)');
+                this.utterance.onerror = (e) => {
+                    console.error('Speech error:', e);
+                    this.isPlaying = false;
+                    this.updatePlayButton();
+                    this.updateStatus('Playback error');
+                };
+
+                setTimeout(() => {
+                    console.log('[PLAYBACK] Starting with voice:', voice?.name);
+                    speechSynthesis.speak(this.utterance);
+                    this.isPlaying = true;
+                    this.updatePlayButton();
+                    this.updateStatus('Playing... (Sentence-level highlighting)');
+                }, 50);
             },
 
             async playCloud() {
@@ -629,6 +811,12 @@
 
                 this.updateStatus(`Generating audio with ${provider}...`);
 
+                // Get selected voice and model
+                const voice = this.voiceSelections[provider];
+                const model = this.providerModels[provider];
+
+                console.log('[CLOUD TTS] Provider:', provider, 'Voice:', voice, 'Model:', model);
+
                 try {
                     const response = await fetch('/.netlify/functions/tts-proxy', {
                         method: 'POST',
@@ -636,7 +824,10 @@
                         body: JSON.stringify({
                             providerId: provider,
                             text: text,
-                            voice: 'alloy'
+                            voice: voice,
+                            options: {
+                                model: model
+                            }
                         })
                     });
 
@@ -774,12 +965,15 @@
                 const spanTop = span.offsetTop;
                 const spanHeight = span.offsetHeight;
                 const displayHeight = readerDisplay.clientHeight;
+                const maxScroll = readerDisplay.scrollHeight - displayHeight;
 
-                // Center the sentence in the visible area
-                const scrollTo = spanTop - (displayHeight / 2) + (spanHeight / 2);
+                const scrollTo = Math.min(
+                    Math.max(0, spanTop - (displayHeight / 2) + (spanHeight / 2)),
+                    maxScroll
+                );
 
                 readerDisplay.scrollTo({
-                    top: Math.max(0, scrollTo),
+                    top: scrollTo,
                     behavior: 'smooth'
                 });
             },
@@ -792,6 +986,7 @@
             updatePlayButton() {
                 const btn = document.getElementById('play-btn');
                 btn.textContent = this.isPlaying ? '⏸' : '▶';
+                btn.disabled = !this.isVoiceReady;
             },
 
             updateStatus(message) {
