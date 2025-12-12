@@ -538,39 +538,65 @@
                     this.finishVoiceLoading('openai');
                 } else if (this.provider === 'elevenlabs') {
                     document.getElementById('elevenlabs-settings').classList.remove('hidden');
-                    this.populateVoiceOptions('elevenlabs');
-                    this.finishVoiceLoading('elevenlabs');
+    
+    if (!this.voiceCache.elevenlabs || this.voiceCache.elevenlabs.length === 0) {
+        this.updateStatus('🔄 Loading ElevenLabs voices...');
+        const loaded = await this.loadDynamicVoices('elevenlabs');
+        
+        if (loaded) {
+            this.updateStatus(`✅ Loaded ${this.voiceCache.elevenlabs.length} ElevenLabs voices`);
+        } else {
+            this.updateStatus('⚠️ Could not load ElevenLabs voices');
+            return;
+        }
+    } else {
+        console.log(`✓ Using cached ${this.voiceCache.elevenlabs.length} voices`);
+    }
+    
+    this.populateVoiceOptions('elevenlabs');
+    this.finishVoiceLoading('elevenlabs');
                 }
 
                 this.updateStatus(`Provider: ${this.provider}`);
             },
 
-            loadStaticVoices() {
-                this.voiceCache.openai = [
-                    { value: 'alloy', label: 'alloy (Neutral, balanced)' },
-                    { value: 'echo', label: 'echo (Male, clear)' },
-                    { value: 'fable', label: 'fable (British accent, expressive)' },
-                    { value: 'onyx', label: 'onyx (Deep male)' },
-                    { value: 'nova', label: 'nova (Female, warm)' },
-                    { value: 'shimmer', label: 'shimmer (Female, bright)' }
-                ];
-
-                this.voiceCache.elevenlabs = [
-                    { value: 'Rachel', label: 'Rachel (Female, calm narration)' },
-                    { value: 'Drew', label: 'Drew (Male, confident)' },
-                    { value: 'Clyde', label: 'Clyde (Male, strong)' },
-                    { value: 'Paul', label: 'Paul (Male, news anchor)' },
-                    { value: 'Domi', label: 'Domi (Female, energetic)' },
-                    { value: 'Dave', label: 'Dave (British male)' },
-                    { value: 'Fin', label: 'Fin (Irish male)' },
-                    { value: 'Sarah', label: 'Sarah (Female, professional)' },
-                    { value: 'Antoni', label: 'Antoni (Male, storytelling)' },
-                    { value: 'Thomas', label: 'Thomas (Male, formal)' }
-                ];
-
-                this.populateVoiceOptions('openai');
-                this.populateVoiceOptions('elevenlabs');
-            },
+            // Load voices dynamically from backend API endpoint
+async loadDynamicVoices(providerId) {
+    try {
+        console.log(`🔄 Loading ${providerId} voices from API...`);
+        
+        const response = await fetch(`/.netlify/functions/get-voices?providerId=${providerId}`);
+        
+        if (!response.ok) {
+            console.error(`❌ Failed to load voices: HTTP ${response.status}`);
+            this.updateStatus(`Error loading ${providerId} voices`);
+            return false;
+        }
+        
+        const data = await response.json();
+        
+        if (data.voices && data.voices.length > 0) {
+            this.voiceCache[providerId] = data.voices.map(v => ({
+                value: v.id,
+                label: v.label,
+                description: v.description || '',
+                category: v.category || 'general'
+            }));
+            
+            console.log(`✅ Successfully loaded ${data.voices.length} ${providerId} voices`);
+            return true;
+        }
+        
+        console.warn(`⚠️ No voices returned for ${providerId}`);
+        this.updateStatus(`No voices available for ${providerId}`);
+        return false;
+        
+    } catch (error) {
+        console.error(`❌ Error loading ${providerId} voices:`, error);
+        this.updateStatus(`Error: ${error.message}`);
+        return false;
+    }
+},
 
             async loadLocalVoices() {
                 const voiceSelect = document.getElementById('local-voice');
@@ -661,32 +687,7 @@
                 if (statusEl) statusEl.textContent = message;
             },
 
-            loadStaticVoices() {
-                this.voiceCache.openai = [
-                    { value: 'alloy', label: 'alloy (Neutral, balanced)' },
-                    { value: 'echo', label: 'echo (Male, clear)' },
-                    { value: 'fable', label: 'fable (British accent, expressive)' },
-                    { value: 'onyx', label: 'onyx (Deep male)' },
-                    { value: 'nova', label: 'nova (Female, warm)' },
-                    { value: 'shimmer', label: 'shimmer (Female, bright)' }
-                ];
-
-                this.voiceCache.elevenlabs = [
-                    { value: 'Rachel', label: 'Rachel (Female, calm narration)' },
-                    { value: 'Drew', label: 'Drew (Male, confident)' },
-                    { value: 'Clyde', label: 'Clyde (Male, strong)' },
-                    { value: 'Paul', label: 'Paul (Male, news anchor)' },
-                    { value: 'Domi', label: 'Domi (Female, energetic)' },
-                    { value: 'Dave', label: 'Dave (British male)' },
-                    { value: 'Fin', label: 'Fin (Irish male)' },
-                    { value: 'Sarah', label: 'Sarah (Female, professional)' },
-                    { value: 'Antoni', label: 'Antoni (Male, storytelling)' },
-                    { value: 'Thomas', label: 'Thomas (Male, formal)' }
-                ];
-
-                this.populateVoiceOptions('openai');
-                this.populateVoiceOptions('elevenlabs');
-            },
+            
 
             ensureLocalVoices() {
                 if (this.voiceCache.local.length === 0) {
