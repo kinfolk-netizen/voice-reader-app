@@ -492,9 +492,9 @@
                 document.getElementById('play-btn').addEventListener('click', () => this.togglePlay());
                 document.getElementById('skip-back').addEventListener('click', () => this.skip(-10));
                 document.getElementById('skip-forward').addEventListener('click', () => this.skip(10));
-                document.getElementById('provider').addEventListener('change', (e) => {
+                document.getElementById('provider').addEventListener('change',async (e) => {
                     this.provider = e.target.value;
-                    this.updateProviderUI();
+              await this.updateProviderUI();
                     this.updateActiveVoiceLabel();
                 });
                 document.getElementById('speed').addEventListener('input', (e) => {
