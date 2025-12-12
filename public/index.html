@@ -527,7 +527,7 @@
                 });
             },
 
-            updateProviderUI() {
+            async updateProviderUI() {
                 document.querySelectorAll('.provider-settings').forEach(el => el.classList.add('hidden'));
 
                 if (this.provider === 'local') {
