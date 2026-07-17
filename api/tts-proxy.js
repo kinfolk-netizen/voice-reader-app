@@ -69,6 +69,10 @@ exports.handler = async (event, context) => {
         apiKey = process.env.ELEVENLABS_API_KEY;
         apiEndpoint = `https://api.elevenlabs.io/v1/text-to-speech/${voice || 'default'}`;
         break;
+      case 'speechify':
+        apiKey = process.env.SPEECHIFY_API_KEY;
+        apiEndpoint = 'https://api.speechify.ai/v1/audio/speech';
+        break;
       case 'local':
         // Local provider doesn't need API key
         return {
@@ -144,6 +148,55 @@ exports.handler = async (event, context) => {
           }
         })
       });
+    } else if (providerId === 'speechify') {
+      // Speechify hard limit: 20,000 chars per request (frontend chunks well below this)
+      if (text.length > 20000) {
+        return {
+          statusCode: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({
+            success: false,
+            error: 'Speechify requests are limited to 20,000 characters. Send chunked requests.'
+          })
+        };
+      }
+      response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          input: text,
+          voice_id: voice || 'oliver',
+          model: options.model || 'simba-3.2',
+          audio_format: options.format || 'mp3'
+        })
+      });
+    }
+
+    // Speechify: most English voices support simba-english, not simba-3.2.
+    // If the model was rejected for this voice, retry once with simba-english.
+    if (providerId === 'speechify' && response.status === 400) {
+      const errText = await response.clone().text();
+      if (errText.includes('not available for') || errText.includes('simba')) {
+        response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            input: text,
+            voice_id: voice || 'oliver',
+            model: 'simba-english',
+            audio_format: options.format || 'mp3'
+          })
+        });
+      }
     }
 
     // Check response
@@ -163,12 +216,40 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Get audio data
-    const audioBuffer = await response.arrayBuffer();
-    const audioBase64 = Buffer.from(audioBuffer).toString('base64');
+    // Get audio data.
+    // Speechify returns JSON ({ audio_data: <base64>, speech_marks: {...} });
+    // OpenAI / ElevenLabs return raw audio bytes.
+    let audioBase64;
+    let speechMarks = null;
+    const contentType = response.headers.get('content-type') || '';
+    if (providerId === 'speechify' || contentType.includes('application/json')) {
+      const json = await response.json();
+      audioBase64 = json.audio_data || json.audioData || json.audio;
+      speechMarks = json.speech_marks || json.speechMarks || null;
+      if (!audioBase64) {
+        return {
+          statusCode: 502,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({
+            success: false,
+            error: 'Provider returned JSON without audio data',
+            details: JSON.stringify(Object.keys(json))
+          })
+        };
+      }
+    } else {
+      const audioBuffer = await response.arrayBuffer();
+      audioBase64 = Buffer.from(audioBuffer).toString('base64');
+    }
 
-    // Calculate cost
-    const costPerChar = providerId === 'openai' ? 0.000015 : 0.00003;
+    // Calculate cost (speechify: ~$10 per 1M chars at Starter overage rates)
+    const costPerChar =
+      providerId === 'openai' ? 0.000015 :
+      providerId === 'speechify' ? 0.00001 :
+      0.00003;
     const estimatedCost = text.length * costPerChar;
 
     // Return success response
@@ -181,6 +262,7 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({
         success: true,
         audio: audioBase64,
+        speechMarks: speechMarks,
         format: options.format || 'mp3',
         provider: providerId,
         voice: voice,
