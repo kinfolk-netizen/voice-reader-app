@@ -1571,7 +1571,7 @@ async loadDynamicVoices(providerId) {
                 }, 50);
             },
 
-            buildCloudChunks(text, limit = 3800) {
+            buildCloudChunks(text, limit = 500) {
                 // Split on paragraph boundaries and pack up to `limit` chars per chunk.
                 // Long paragraphs fall back to sentence splits. Offsets are global.
                 const chunks = [];
