@@ -666,6 +666,16 @@
                 document.getElementById('play-btn').addEventListener('click', () => this.togglePlay());
                 document.getElementById('skip-back').addEventListener('click', () => this.skip(-10));
                 document.getElementById('skip-forward').addEventListener('click', () => this.skip(10));
+                if ('mediaSession' in navigator) {
+                    // Lock-screen / background media controls (best-effort; some unsupported).
+                    const setAction = (name, fn) => {
+                        try { navigator.mediaSession.setActionHandler(name, fn); } catch (e) {}
+                    };
+                    setAction('play', () => this.togglePlay());
+                    setAction('pause', () => this.pause());
+                    setAction('previoustrack', () => this.skip(-10));
+                    setAction('nexttrack', () => this.skip(10));
+                }
                 document.getElementById('provider').addEventListener('change',async (e) => {
                     this.provider = e.target.value;
               await this.updateProviderUI();
@@ -1717,8 +1727,14 @@ async loadDynamicVoices(providerId) {
                         audio.playbackRate = parseFloat(document.getElementById('speed').value) || 1;
 
                         const marks = this.flattenSpeechMarks(data.speechMarks);
+                        // The shared audio element persists across chunks, so remove the
+                        // previous chunk's highlighter before adding this one — otherwise a
+                        // 74-chunk chapter accumulates 74 listeners all firing at once.
+                        if (engine.tuHandler) audio.removeEventListener('timeupdate', engine.tuHandler);
+                        if (engine.lmHandler) audio.removeEventListener('loadedmetadata', engine.lmHandler);
+                        engine.tuHandler = null; engine.lmHandler = null;
                         if (marks.length) {
-                            audio.addEventListener('timeupdate', () => {
+                            engine.tuHandler = () => {
                                 if (engine.stopped) return;
                                 const tMs = audio.currentTime * 1000;
                                 let lo = 0, hi = marks.length - 1, best = 0;
@@ -1727,9 +1743,10 @@ async loadDynamicVoices(providerId) {
                                     if (marks[mid].startTime <= tMs) { best = mid; lo = mid + 1; } else { hi = mid - 1; }
                                 }
                                 this.highlightSentenceAt(chunk.start + marks[best].start);
-                            });
+                            };
+                            audio.addEventListener('timeupdate', engine.tuHandler);
                         } else {
-                            audio.addEventListener('loadedmetadata', () => {
+                            engine.lmHandler = () => {
                                 const duration = audio.duration;
                                 if (!duration) return;
                                 if (engine.interval) clearInterval(engine.interval);
@@ -1739,7 +1756,8 @@ async loadDynamicVoices(providerId) {
                                     const charIndex = chunk.start + Math.floor((chunk.end - chunk.start) * frac);
                                     this.highlightSentenceAt(charIndex);
                                 }, 200);
-                            });
+                            };
+                            audio.addEventListener('loadedmetadata', engine.lmHandler);
                         }
 
                         audio.onended = () => {
@@ -1753,6 +1771,16 @@ async loadDynamicVoices(providerId) {
                         };
 
                         await audio.play();
+                        if ('mediaSession' in navigator) {
+                            try {
+                                navigator.mediaSession.metadata = new MediaMetadata({
+                                    title: 'Witness Reader',
+                                    artist: this.voiceSelections[this.provider] || 'Narration',
+                                    album: 'The Resonance Field'
+                                });
+                                navigator.mediaSession.playbackState = 'playing';
+                            } catch (e) { /* MediaSession best-effort */ }
+                        }
                         this.requestWakeLock();
                         this.finishVoiceLoading(provider);
                         this.isPlaying = true;
@@ -1779,6 +1807,7 @@ async loadDynamicVoices(providerId) {
                     speechSynthesis.pause();
                 }
                 this.isPlaying = false;
+                if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
                 this.updatePlayButton();
                 this.updateStatus('Paused');
             },
