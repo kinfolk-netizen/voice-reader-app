@@ -589,7 +589,7 @@
                 </div>
                 <div id="note-editor" class="hidden">
                     <div id="note-passage" class="note-passage"></div>
-                    <textarea id="note-input" placeholder="Type your edit note, or record it below..."></textarea>
+                    <textarea id="note-input" placeholder="Type your edit note, or record it below - your speech is transcribed here as you talk..."></textarea>
                     <div class="memo-row">
                         <button id="memo-btn" type="button">&#127897; Record voice memo</button>
                         <span id="memo-status"></span>
@@ -1086,23 +1086,93 @@ async loadDynamicVoices(providerId) {
                     rec.ondataavailable = (e) => { if (e.data.size) this.memoChunksRec.push(e.data); };
                     rec.onstop = () => {
                         stream.getTracks().forEach(tr => tr.stop());
+                        this.stopMemoTranscription();
                         this.memoBlob = new Blob(this.memoChunksRec, { type: rec.mimeType || 'audio/webm' });
                         this.memoRecorder = null;
                         const btn = document.getElementById('memo-btn');
                         btn.textContent = '\uD83C\uDF99 Re-record';
                         btn.classList.remove('recording');
-                        document.getElementById('memo-status').textContent =
-                            'Voice memo recorded (' + Math.round(this.memoBlob.size / 1024) + ' KB) - will save with this note';
+                        const kb = Math.round(this.memoBlob.size / 1024);
+                        let msg = 'Voice memo recorded (' + kb + ' KB) - will save with this note';
+                        if (!this.memoTranscriptionSupported) {
+                            msg = 'Voice recorded (' + kb + ' KB, transcription not supported on this browser) - will save with this note';
+                        } else if ((this.memoTranscript || '').trim()) {
+                            msg = 'Voice memo recorded (' + kb + ' KB) + transcript captured - edit the text above before saving';
+                        }
+                        document.getElementById('memo-status').textContent = msg;
                     };
+                    // Start live transcription on the same speech (audio blob is kept regardless).
+                    this.startMemoTranscription();
                     rec.start();
                     const btn = document.getElementById('memo-btn');
                     btn.textContent = '\u23F9 Stop recording';
                     btn.classList.add('recording');
-                    document.getElementById('memo-status').textContent = 'Recording... tap Stop when done';
+                    document.getElementById('memo-status').textContent = this.memoTranscriptionSupported
+                        ? 'Recording... speak your note (transcribing live) - tap Stop when done'
+                        : 'Recording... tap Stop when done';
                 } catch (e) {
                     document.getElementById('memo-status').textContent =
                         'Microphone unavailable: ' + e.message;
                 }
+            },
+
+            // ---- Live speech-to-text for voice memos (browser-native, no API key) ----
+            startMemoTranscription() {
+                const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+                this.memoTranscriptionSupported = !!SR;
+                this.memoTranscript = '';
+                this._memoFinalTranscript = '';
+                if (!SR) { this.memoRecognition = null; return; }
+                // Anchor to whatever is already typed so live text appends, not overwrites.
+                const input = document.getElementById('note-input');
+                this._memoBaseText = (input.value || '').replace(/\s+$/, '');
+                let recog;
+                try { recog = new SR(); }
+                catch (e) { this.memoTranscriptionSupported = false; this.memoRecognition = null; return; }
+                recog.continuous = true;
+                recog.interimResults = true;
+                recog.lang = navigator.language || 'en-US';
+                recog.onresult = (event) => {
+                    let interim = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        const seg = event.results[i][0].transcript;
+                        if (event.results[i].isFinal) {
+                            this._memoFinalTranscript = (this._memoFinalTranscript + ' ' + seg.trim()).trim();
+                        } else {
+                            interim += seg;
+                        }
+                    }
+                    this.memoTranscript = this._memoFinalTranscript;
+                    const ta = document.getElementById('note-input');
+                    if (!ta) return;
+                    const parts = [this._memoBaseText, this._memoFinalTranscript, interim.trim()].filter(Boolean);
+                    ta.value = parts.join(' ');
+                };
+                recog.onerror = (e) => {
+                    // 'no-speech' / 'aborted' are normal; only give up on permission/service failures.
+                    if (e && (e.error === 'not-allowed' || e.error === 'service-not-allowed')) {
+                        this._memoRecognizing = false;
+                        this.memoTranscriptionSupported = false;
+                    }
+                };
+                recog.onend = () => {
+                    // Continuous mode can still auto-stop on silence; restart while recording continues.
+                    if (this._memoRecognizing) {
+                        try { recog.start(); } catch (e) {}
+                    }
+                };
+                this.memoRecognition = recog;
+                this._memoRecognizing = true;
+                try { recog.start(); }
+                catch (e) { this.memoTranscriptionSupported = false; this._memoRecognizing = false; }
+            },
+
+            stopMemoTranscription() {
+                this._memoRecognizing = false;
+                if (this.memoRecognition) {
+                    try { this.memoRecognition.stop(); } catch (e) {}
+                }
+                this.memoTranscript = (this._memoFinalTranscript || '').trim();
             },
 
             async playMemo(memoId, btnEl) {
@@ -1165,6 +1235,10 @@ async loadDynamicVoices(providerId) {
                 if (!p) { this.updateStatus('Load text first'); return; }
                 this._notePassage = p;
                 this.memoBlob = null;
+                this.memoTranscript = '';
+                this._memoFinalTranscript = '';
+                this._memoBaseText = '';
+                this._memoRecognizing = false;
                 const memoBtn = document.getElementById('memo-btn');
                 memoBtn.textContent = '\uD83C\uDF99 Record voice memo';
                 memoBtn.classList.remove('recording');
@@ -1187,12 +1261,16 @@ async loadDynamicVoices(providerId) {
                     passage: this._notePassage.text,
                     note: noteText
                 };
+                const transcript = (this.memoTranscript || '').trim();
+                if (transcript) note.transcript = transcript;
                 if (hasMemo) {
                     note.memoId = 'memo-' + Date.now() + '-' + Math.floor(Math.random() * 1e6);
                     try { await this.memoPut(note.memoId, this.memoBlob); }
                     catch (e) { note.memoId = null; this.updateStatus('Voice memo could not be saved: ' + e.message); }
                     this.memoBlob = null;
                 }
+                this.memoTranscript = '';
+                this._memoFinalTranscript = '';
                 this.notes.push(note);
                 this.persistNotes();
                 this.renderNotes();
@@ -1214,7 +1292,7 @@ async loadDynamicVoices(providerId) {
                     div.className = 'note-item';
                     div.innerHTML = '<div class="np"></div><div class="nt"></div><div class="nd"></div>';
                     div.querySelector('.np').textContent = '\u201C' + n.passage.slice(0, 120) + (n.passage.length > 120 ? '\u2026' : '') + '\u201D';
-                    div.querySelector('.nt').textContent = n.note || (n.memoId ? '(voice memo)' : '');
+                    div.querySelector('.nt').textContent = n.note || n.transcript || (n.memoId ? '(voice memo)' : '');
                     div.querySelector('.nd').textContent = n.pct + '% - ' + new Date(n.ts).toLocaleString();
                     if (n.memoId) {
                         const playBtn = document.createElement('button');
@@ -1268,8 +1346,13 @@ async loadDynamicVoices(providerId) {
                 this.notes.forEach((n, i) => {
                     md += '## ' + (i + 1) + '. At ' + n.pct + '%\n\n';
                     md += '> ' + n.passage + '\n\n';
-                    if (n.note) md += n.note + '\n\n';
-                    if (n.memoId) md += '_[voice memo recorded ' + new Date(n.ts).toLocaleString() + ' - play it in the app]_\n\n';
+                    // Prefer the (possibly edited) note text; fall back to the raw voice transcript.
+                    const body = (n.note && n.note.trim()) ? n.note : (n.transcript || '');
+                    if (body) md += body + '\n\n';
+                    if (n.memoId) {
+                        const kind = n.transcript ? 'voice memo (transcribed above)' : 'voice memo';
+                        md += '_[' + kind + ' recorded ' + new Date(n.ts).toLocaleString() + ' - play it in the app]_\n\n';
+                    }
                 });
                 const blob = new Blob([md], { type: 'text/markdown' });
                 const url = URL.createObjectURL(blob);

@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Local test tooling (Playwright is installed ad-hoc for devtest, not a deploy dep)
+package-lock.json
+
+# Netlify
+.netlify/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Locally-generated test fixture (not shipped)
+devtest/mock.mp3
