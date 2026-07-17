@@ -610,7 +610,7 @@
             readerSentenceSpans: [],
             readerActiveIndex: -1,
             readStartOffset: 0,
-            provider: 'local',
+            provider: 'speechify',  // open on the premium narrator, not the free voice
             cloudAudioInterval: null,
             voiceCache: {
                 local: [],
@@ -655,6 +655,8 @@
                 this.loadStaticVoices();
                 this.initMixPreference();
                 this.setupEventListeners();
+                const provSel = document.getElementById('provider');
+                if (provSel) provSel.value = this.provider; // reflect the default in the dropdown
                 this.updateProviderUI();
                 this.updatePlayButton();
                 this.loadLocalVoices();
