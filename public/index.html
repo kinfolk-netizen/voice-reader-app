@@ -1862,21 +1862,15 @@ async loadDynamicVoices(providerId) {
             },
 
             scrollSentenceIntoView(span) {
-                const readerDisplay = document.querySelector('.reader-display');
-                const spanTop = span.offsetTop;
-                const spanHeight = span.offsetHeight;
-                const displayHeight = readerDisplay.clientHeight;
-                const maxScroll = readerDisplay.scrollHeight - displayHeight;
-
-                const scrollTo = Math.min(
-                    Math.max(0, spanTop - (displayHeight / 2) + (spanHeight / 2)),
-                    maxScroll
-                );
-
-                readerDisplay.scrollTo({
-                    top: scrollTo,
-                    behavior: 'smooth'
-                });
+                const rd = document.querySelector('.reader-display');
+                if (!rd || !span) return;
+                // Use on-screen rects, not offsetTop (which is relative to the app card,
+                // not the reader) — offsetTop sent the scroll to the bottom and pushed the
+                // highlighted line off-screen.
+                const rdRect = rd.getBoundingClientRect();
+                const spanRect = span.getBoundingClientRect();
+                const delta = (spanRect.top - rdRect.top) - (rd.clientHeight / 2) + (spanRect.height / 2);
+                rd.scrollTo({ top: rd.scrollTop + delta, behavior: 'smooth' });
             },
 
             clearHighlight() {
