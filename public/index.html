@@ -631,6 +631,7 @@
             },
             cloudEngine: null,
             sharedAudio: null,
+            audioUnlocked: false,
             wakeLock: null,
             currentCharIndex: 0,
             notes: [],
@@ -1471,8 +1472,25 @@ async loadDynamicVoices(providerId) {
                 if (this.isPlaying) {
                     this.pause();
                 } else {
+                    // iOS: bless the audio element inside this user gesture, BEFORE
+                    // any await, or the post-fetch play() below is silently blocked.
+                    this.unlockAudioForIOS();
                     this.play();
                 }
+            },
+
+            unlockAudioForIOS() {
+                if (!this.sharedAudio) this.sharedAudio = new Audio();
+                if (this.audioUnlocked) return;
+                try {
+                    this.sharedAudio.src = 'data:audio/wav;base64,UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIA=';
+                    const p = this.sharedAudio.play();
+                    if (p && p.then) {
+                        p.then(() => { this.audioUnlocked = true; }).catch(() => {});
+                    } else {
+                        this.audioUnlocked = true;
+                    }
+                } catch (e) { /* best-effort unlock */ }
             },
 
             async play() {
