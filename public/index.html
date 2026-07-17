@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Reader - Sentence-Level Highlighting</title>
+    <title>Witness Reader — listen, note, edit</title>
     <style>
         * {
             margin: 0;
@@ -257,6 +257,116 @@
             border-radius: 999px;
         }
 
+        .writer-desk {
+            margin-top: 16px;
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+            padding-top: 14px;
+        }
+
+        .writer-toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .writer-toolbar button {
+            padding: 8px 14px;
+            font-size: 13px;
+            margin-right: 0;
+        }
+
+        .note-passage {
+            background: rgba(96, 165, 250, 0.1);
+            border-left: 3px solid #60a5fa;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+
+        #note-input {
+            width: 100%;
+            min-height: 70px;
+            padding: 10px;
+            background: rgba(31, 41, 55, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 8px;
+            color: #e5e7eb;
+            font-family: inherit;
+            font-size: 14px;
+            margin-bottom: 8px;
+            resize: vertical;
+        }
+
+        .note-item {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .note-item:hover { border-color: rgba(96, 165, 250, 0.5); }
+        .note-item .np { font-size: 0.82em; color: #94a3b8; font-style: italic; margin-bottom: 4px; }
+        .note-item .nt { font-size: 0.9em; color: #e5e7eb; }
+        .note-item .nd { font-size: 0.75em; color: #64748b; margin-top: 4px; }
+
+        .mix-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85em;
+            color: #9ca3af;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .mix-toggle input { width: auto; margin: 0; }
+
+        .memo-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        #memo-btn.recording {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            animation: pulse-dot 1.2s ease-in-out infinite;
+        }
+
+        #memo-status { font-size: 0.82em; color: #94a3b8; }
+
+        .memo-play {
+            margin-top: 6px;
+            padding: 6px 14px;
+            font-size: 13px;
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.4), rgba(59, 130, 246, 0.4));
+            border: 1px solid rgba(96, 165, 250, 0.5);
+        }
+
+        /* ---------- Mobile pass ---------- */
+        @media (max-width: 640px) {
+            body { padding: 10px 6px; }
+            .app-container { padding: 16px 12px; border-radius: 16px; }
+            .header h1 { font-size: 1.6em; }
+            select, textarea, input[type="text"], #note-input { font-size: 16px; } /* prevents iOS focus zoom */
+            .writer-toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+            .writer-toolbar button { width: 100%; padding: 12px 8px; font-size: 14px; }
+            .control-btn { width: 56px; height: 56px; }
+            .control-btn.primary { width: 72px; height: 72px; }
+            .reader-display { max-height: 46vh; padding: 12px; }
+            .reader-content { font-size: 1em; line-height: 1.7; }
+            button { padding: 12px 18px; }
+            .note-item { padding: 12px; }
+        }
+
         .status-msg {
             padding: 12px;
             border-radius: 8px;
@@ -353,8 +463,8 @@
                 <span class="badge-dot"></span>
                 <span>Sentence-Level Highlighting</span>
             </div>
-            <h1>🎙️ Voice Reader</h1>
-            <p>Multi-provider TTS with sentence highlighting and secure backend</p>
+            <h1>🎙️ Witness Reader</h1>
+            <p>Listen to your manuscript. Note what needs work. Never lose your place.</p>
         </header>
 
         <div class="card">
@@ -363,6 +473,7 @@
             <label for="provider">TTS Provider</label>
             <select id="provider">
                 <option value="local">Local Browser (Free + Real-time Highlighting)</option>
+                <option value="speechify">Speechify (Premium + Word-Sync Highlighting)</option>
                 <option value="openai">OpenAI TTS (Premium + Estimated Highlighting)</option>
                 <option value="elevenlabs">ElevenLabs (Premium + Estimated Highlighting)</option>
             </select>
@@ -416,6 +527,20 @@
                 </select>
             </div>
 
+            <div id="speechify-settings" class="provider-settings hidden">
+                <label for="speechify-voice">Speechify Voice</label>
+                <select id="speechify-voice">
+                    <option value="">Loading voices…</option>
+                </select>
+
+                <label for="speechify-model">Model</label>
+                <select id="speechify-model">
+                    <option value="simba-english">simba-english (most voices)</option>
+                    <option value="simba-3.2">simba-3.2 (newest, select voices)</option>
+                    <option value="simba-multilingual">simba-multilingual</option>
+                </select>
+            </div>
+
             <div id="provider-status" class="status-msg info">Loading voices...</div>
             <div id="active-voice" class="status-row hidden">
                 <div class="spinner" id="voice-spinner"></div>
@@ -431,7 +556,12 @@
 
         <div class="card" id="player-card" style="display: none;">
             <div class="card-title">Playback</div>
-            
+
+            <label class="mix-toggle">
+                <input type="checkbox" id="mix-music">
+                <span>&#127925; Mix with background music (keep YouTube/Spotify playing)</span>
+            </label>
+
             <div id="status">Ready to play</div>
 
             <div class="controls">
@@ -449,6 +579,26 @@
             </div>
 
             <div id="cost-display" class="hidden"></div>
+
+            <div class="writer-desk" id="writer-desk">
+                <div class="writer-toolbar">
+                    <button id="note-btn" title="Pause and note this passage (N)">&#128221; Note</button>
+                    <button id="copy-btn" title="Copy current passage (C)">&#10697; Copy passage</button>
+                    <button id="resume-pos-btn" class="hidden" title="Resume where you left off">&#9193; Resume position</button>
+                    <button id="export-notes-btn" title="Download notes as Markdown">&#8595; Export notes</button>
+                </div>
+                <div id="note-editor" class="hidden">
+                    <div id="note-passage" class="note-passage"></div>
+                    <textarea id="note-input" placeholder="Type your edit note, or record it below..."></textarea>
+                    <div class="memo-row">
+                        <button id="memo-btn" type="button">&#127897; Record voice memo</button>
+                        <span id="memo-status"></span>
+                    </div>
+                    <button id="note-save">Save note</button>
+                    <button id="note-cancel">Cancel</button>
+                </div>
+                <div id="notes-list"></div>
+            </div>
         </div>
     </div>
 
@@ -465,21 +615,44 @@
             voiceCache: {
                 local: [],
                 openai: [],
-                elevenlabs: []
+                elevenlabs: [],
+                speechify: []
             },
             voiceSelections: {
                 local: '',
                 openai: 'alloy',
-                elevenlabs: 'Rachel'
+                elevenlabs: 'Rachel',
+                speechify: 'john-rhys-davies'
             },
             providerModels: {
                 openai: 'tts-1',
-                elevenlabs: 'eleven_multilingual_v2'
+                elevenlabs: 'eleven_multilingual_v2',
+                speechify: 'simba-english'
             },
+            cloudEngine: null,
+            sharedAudio: null,
+            wakeLock: null,
+            currentCharIndex: 0,
+            notes: [],
+            _posSaveAt: 0,
             isVoiceReady: false,
+
+            loadStaticVoices() {
+                // Static voice lists for providers whose voices don't require an API call.
+                // (Fixes broken init: this function was referenced but missing.)
+                this.voiceCache.openai = [
+                    { value: 'alloy', label: 'Alloy (Neutral, balanced)' },
+                    { value: 'echo', label: 'Echo (Male, warm)' },
+                    { value: 'fable', label: 'Fable (Expressive)' },
+                    { value: 'onyx', label: 'Onyx (Male, deep)' },
+                    { value: 'nova', label: 'Nova (Female, bright)' },
+                    { value: 'shimmer', label: 'Shimmer (Female, soft)' }
+                ];
+            },
 
             init() {
                 this.loadStaticVoices();
+                this.initMixPreference();
                 this.setupEventListeners();
                 this.updateProviderUI();
                 this.updatePlayButton();
@@ -525,6 +698,37 @@
                 document.getElementById('elevenlabs-model').addEventListener('change', (e) => {
                     this.providerModels.elevenlabs = e.target.value;
                 });
+
+                document.getElementById('speechify-voice').addEventListener('change', (e) => {
+                    this.voiceSelections.speechify = e.target.value;
+                    // Auto-pick a model the chosen voice actually supports
+                    const v = (this.voiceCache.speechify || []).find(x => x.value === e.target.value);
+                    if (v && Array.isArray(v.models) && v.models.length && !v.models.includes(this.providerModels.speechify)) {
+                        this.providerModels.speechify = v.models.includes('simba-english') ? 'simba-english' : v.models[0];
+                        const sel = document.getElementById('speechify-model');
+                        if (sel) sel.value = this.providerModels.speechify;
+                    }
+                    this.updateActiveVoiceLabel();
+                });
+
+                document.getElementById('speechify-model').addEventListener('change', (e) => {
+                    this.providerModels.speechify = e.target.value;
+                });
+
+                // Writer Desk
+                document.getElementById('note-btn').addEventListener('click', () => this.openNoteEditor());
+                document.getElementById('copy-btn').addEventListener('click', () => this.copyCurrentPassage());
+                document.getElementById('export-notes-btn').addEventListener('click', () => this.exportNotes());
+                document.getElementById('mix-music').addEventListener('change', () => this.applyMixPreference());
+                document.getElementById('memo-btn').addEventListener('click', () => this.toggleMemoRecording());
+                document.getElementById('note-save').addEventListener('click', () => this.saveNote());
+                document.getElementById('note-cancel').addEventListener('click', () => this.closeNoteEditor());
+                document.addEventListener('keydown', (e) => {
+                    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+                    if (e.key === 'n' || e.key === 'N') { e.preventDefault(); this.openNoteEditor(); }
+                    if (e.key === 'c' || e.key === 'C') { e.preventDefault(); this.copyCurrentPassage(); }
+                    if (e.key === ' ') { e.preventDefault(); this.togglePlay(); }
+                });
             },
 
             async updateProviderUI() {
@@ -555,6 +759,25 @@
     
     this.populateVoiceOptions('elevenlabs');
     this.finishVoiceLoading('elevenlabs');
+                } else if (this.provider === 'speechify') {
+                    document.getElementById('speechify-settings').classList.remove('hidden');
+
+                    if (!this.voiceCache.speechify || this.voiceCache.speechify.length === 0) {
+                        this.updateStatus('🔄 Loading Speechify voices...');
+                        const loaded = await this.loadDynamicVoices('speechify');
+
+                        if (loaded) {
+                            this.updateStatus(`✅ Loaded ${this.voiceCache.speechify.length} Speechify voices`);
+                        } else {
+                            this.updateStatus('⚠️ Could not load Speechify voices — is SPEECHIFY_API_KEY set in Netlify?');
+                            return;
+                        }
+                    } else {
+                        console.log(`✓ Using cached ${this.voiceCache.speechify.length} voices`);
+                    }
+
+                    this.populateVoiceOptions('speechify');
+                    this.finishVoiceLoading('speechify');
                 }
 
                 this.updateStatus(`Provider: ${this.provider}`);
@@ -579,6 +802,7 @@ async loadDynamicVoices(providerId) {
             this.voiceCache[providerId] = data.voices.map(v => ({
                 value: v.id,
                 label: v.label,
+                models: v.models || [],
                 description: v.description || '',
                 category: v.category || 'general'
             }));
@@ -641,6 +865,7 @@ async loadDynamicVoices(providerId) {
                 let selectId = 'local-voice';
                 if (provider === 'openai') selectId = 'openai-voice';
                 if (provider === 'elevenlabs') selectId = 'elevenlabs-voice';
+                if (provider === 'speechify') selectId = 'speechify-voice';
                 const selectEl = document.getElementById(selectId);
                 if (!selectEl) return;
 
@@ -703,6 +928,7 @@ async loadDynamicVoices(providerId) {
                 let selectId = 'local-voice';
                 if (provider === 'openai') selectId = 'openai-voice';
                 if (provider === 'elevenlabs') selectId = 'elevenlabs-voice';
+                if (provider === 'speechify') selectId = 'speechify-voice';
                 const selectEl = document.getElementById(selectId);
                 if (!selectEl) return;
 
@@ -773,6 +999,303 @@ async loadDynamicVoices(providerId) {
                 }, 800);
             },
 
+            // ---------- Writer Desk ----------
+            applyMixPreference() {
+                const on = !!(document.getElementById('mix-music') || {}).checked;
+                try { localStorage.setItem('vr-mix-music', on ? '1' : '0'); } catch (e) {}
+                // iOS Safari 17+: 'ambient' mixes with background audio instead of pausing it.
+                // Elsewhere this is a harmless no-op (browsers mix by default).
+                try {
+                    if ('audioSession' in navigator) {
+                        navigator.audioSession.type = on ? 'ambient' : 'auto';
+                    }
+                } catch (e) { /* unsupported - default mixing behavior applies */ }
+                if (on) this.updateStatus('Music mixing on - start your playlist, then press play here');
+            },
+
+            initMixPreference() {
+                let saved = '0';
+                try { saved = localStorage.getItem('vr-mix-music') || '0'; } catch (e) {}
+                const box = document.getElementById('mix-music');
+                if (box) {
+                    box.checked = saved === '1';
+                    if (saved === '1') {
+                        try { if ('audioSession' in navigator) navigator.audioSession.type = 'ambient'; } catch (e) {}
+                    }
+                }
+            },
+
+            async requestWakeLock() {
+                try {
+                    if ('wakeLock' in navigator && !this.wakeLock) {
+                        this.wakeLock = await navigator.wakeLock.request('screen');
+                        this.wakeLock.addEventListener('release', () => { this.wakeLock = null; });
+                    }
+                } catch (e) { /* not critical */ }
+            },
+
+            releaseWakeLock() {
+                if (this.wakeLock) { try { this.wakeLock.release(); } catch (e) {} this.wakeLock = null; }
+            },
+
+            // ---- IndexedDB store for voice memos (localStorage is too small for audio) ----
+            memoDB() {
+                if (this._memoDBPromise) return this._memoDBPromise;
+                this._memoDBPromise = new Promise((resolve, reject) => {
+                    const req = indexedDB.open('vr-voice-memos', 1);
+                    req.onupgradeneeded = () => req.result.createObjectStore('memos');
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+                return this._memoDBPromise;
+            },
+
+            async memoPut(id, blob) {
+                const db = await this.memoDB();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('memos', 'readwrite');
+                    tx.objectStore('memos').put(blob, id);
+                    tx.oncomplete = resolve;
+                    tx.onerror = () => reject(tx.error);
+                });
+            },
+
+            async memoGet(id) {
+                const db = await this.memoDB();
+                return new Promise((resolve, reject) => {
+                    const req = db.transaction('memos').objectStore('memos').get(id);
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => reject(req.error);
+                });
+            },
+
+            // ---- Voice memo recording ----
+            async toggleMemoRecording() {
+                if (this.memoRecorder && this.memoRecorder.state === 'recording') {
+                    this.memoRecorder.stop();
+                    return;
+                }
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const mime = MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4'
+                        : MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+                        : '';
+                    const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+                    this.memoRecorder = rec;
+                    this.memoChunksRec = [];
+                    rec.ondataavailable = (e) => { if (e.data.size) this.memoChunksRec.push(e.data); };
+                    rec.onstop = () => {
+                        stream.getTracks().forEach(tr => tr.stop());
+                        this.memoBlob = new Blob(this.memoChunksRec, { type: rec.mimeType || 'audio/webm' });
+                        this.memoRecorder = null;
+                        const btn = document.getElementById('memo-btn');
+                        btn.textContent = '\uD83C\uDF99 Re-record';
+                        btn.classList.remove('recording');
+                        document.getElementById('memo-status').textContent =
+                            'Voice memo recorded (' + Math.round(this.memoBlob.size / 1024) + ' KB) - will save with this note';
+                    };
+                    rec.start();
+                    const btn = document.getElementById('memo-btn');
+                    btn.textContent = '\u23F9 Stop recording';
+                    btn.classList.add('recording');
+                    document.getElementById('memo-status').textContent = 'Recording... tap Stop when done';
+                } catch (e) {
+                    document.getElementById('memo-status').textContent =
+                        'Microphone unavailable: ' + e.message;
+                }
+            },
+
+            async playMemo(memoId, btnEl) {
+                const blob = await this.memoGet(memoId);
+                if (!blob) { this.updateStatus('Voice memo not found on this device'); return; }
+                if (this.isPlaying) this.pause();
+                const url = URL.createObjectURL(blob);
+                const a = new Audio(url);
+                if (btnEl) btnEl.textContent = '\u25A0';
+                a.onended = () => { URL.revokeObjectURL(url); if (btnEl) btnEl.textContent = '\u25B6'; };
+                a.play();
+            },
+
+            textKey() {
+                let h = 5381;
+                const s = this.currentText || '';
+                for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+                return 'vr-' + (h >>> 0).toString(36) + '-' + s.length;
+            },
+
+            savePosition(charIndex) {
+                const now = Date.now();
+                if (now - this._posSaveAt < 2000) return;
+                this._posSaveAt = now;
+                try { localStorage.setItem(this.textKey() + '-pos', String(charIndex)); } catch (e) {}
+            },
+
+            loadSavedPosition() {
+                try { return parseInt(localStorage.getItem(this.textKey() + '-pos') || '0', 10); } catch (e) { return 0; }
+            },
+
+            currentPassage() {
+                const idx = this.findSentenceIndexAt(this.currentCharIndex);
+                const span = this.readerSentenceSpans[idx];
+                return span ? { text: span.textContent.trim(), offset: parseInt(span.dataset.start, 10) || 0 } : null;
+            },
+
+            findSentenceIndexAt(charIndex) {
+                let best = 0;
+                this.readerSentenceSpans.forEach((span, i) => {
+                    const s = parseInt(span.dataset.start, 10) || 0;
+                    if (s <= charIndex) best = i;
+                });
+                return best;
+            },
+
+            loadNotes() {
+                try { this.notes = JSON.parse(localStorage.getItem(this.textKey() + '-notes') || '[]'); }
+                catch (e) { this.notes = []; }
+                this.renderNotes();
+            },
+
+            persistNotes() {
+                try { localStorage.setItem(this.textKey() + '-notes', JSON.stringify(this.notes)); } catch (e) {}
+            },
+
+            openNoteEditor() {
+                if (this.isPlaying) this.pause();
+                const p = this.currentPassage();
+                if (!p) { this.updateStatus('Load text first'); return; }
+                this._notePassage = p;
+                this.memoBlob = null;
+                const memoBtn = document.getElementById('memo-btn');
+                memoBtn.textContent = '\uD83C\uDF99 Record voice memo';
+                memoBtn.classList.remove('recording');
+                document.getElementById('memo-status').textContent = '';
+                document.getElementById('note-passage').textContent = '\u201C' + p.text + '\u201D';
+                document.getElementById('note-editor').classList.remove('hidden');
+                document.getElementById('note-input').focus();
+            },
+
+            async saveNote() {
+                const input = document.getElementById('note-input');
+                const noteText = input.value.trim();
+                const hasMemo = !!this.memoBlob;
+                if ((!noteText && !hasMemo) || !this._notePassage) { this.closeNoteEditor(); return; }
+                const pct = this.currentText.length ? Math.round((this._notePassage.offset / this.currentText.length) * 100) : 0;
+                const note = {
+                    ts: new Date().toISOString(),
+                    offset: this._notePassage.offset,
+                    pct: pct,
+                    passage: this._notePassage.text,
+                    note: noteText
+                };
+                if (hasMemo) {
+                    note.memoId = 'memo-' + Date.now() + '-' + Math.floor(Math.random() * 1e6);
+                    try { await this.memoPut(note.memoId, this.memoBlob); }
+                    catch (e) { note.memoId = null; this.updateStatus('Voice memo could not be saved: ' + e.message); }
+                    this.memoBlob = null;
+                }
+                this.notes.push(note);
+                this.persistNotes();
+                this.renderNotes();
+                input.value = '';
+                this.closeNoteEditor();
+                this.updateStatus('Note saved - press play to resume where you left off');
+            },
+
+            closeNoteEditor() {
+                document.getElementById('note-editor').classList.add('hidden');
+            },
+
+            renderNotes() {
+                const list = document.getElementById('notes-list');
+                if (!list) return;
+                list.innerHTML = '';
+                this.notes.slice().reverse().forEach((n) => {
+                    const div = document.createElement('div');
+                    div.className = 'note-item';
+                    div.innerHTML = '<div class="np"></div><div class="nt"></div><div class="nd"></div>';
+                    div.querySelector('.np').textContent = '\u201C' + n.passage.slice(0, 120) + (n.passage.length > 120 ? '\u2026' : '') + '\u201D';
+                    div.querySelector('.nt').textContent = n.note || (n.memoId ? '(voice memo)' : '');
+                    div.querySelector('.nd').textContent = n.pct + '% - ' + new Date(n.ts).toLocaleString();
+                    if (n.memoId) {
+                        const playBtn = document.createElement('button');
+                        playBtn.className = 'memo-play';
+                        playBtn.textContent = '\u25B6';
+                        playBtn.title = 'Play voice memo';
+                        playBtn.addEventListener('click', (e) => { e.stopPropagation(); this.playMemo(n.memoId, playBtn); });
+                        div.appendChild(playBtn);
+                    }
+                    div.addEventListener('click', () => this.jumpToOffset(n.offset));
+                    list.appendChild(div);
+                });
+            },
+
+            jumpToOffset(offset) {
+                this.readStartOffset = offset;
+                const idx = this.findSentenceIndexAt(offset);
+                this.highlightSentenceByIndex(idx);
+                const span = this.readerSentenceSpans[idx];
+                if (span) span.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                this.updateStatus('Jumped to ' + (this.currentText.length ? Math.round((offset / this.currentText.length) * 100) : 0) + '% - press play to listen from here');
+                if (this.isPlaying) { this.stop(); setTimeout(() => this.play(), 150); }
+            },
+
+            copyCurrentPassage() {
+                const p = this.currentPassage();
+                if (!p) { this.updateStatus('Nothing to copy yet'); return; }
+                const doCopy = navigator.clipboard && navigator.clipboard.writeText
+                    ? navigator.clipboard.writeText(p.text)
+                    : Promise.reject(new Error('clipboard unavailable'));
+                doCopy.then(
+                    () => this.updateStatus('Passage copied to clipboard'),
+                    () => {
+                        const ta = document.createElement('textarea');
+                        ta.value = p.text;
+                        document.body.appendChild(ta);
+                        ta.select();
+                        try { document.execCommand('copy'); this.updateStatus('Passage copied to clipboard'); }
+                        catch (e) { this.updateStatus('Copy failed - select the text manually'); }
+                        document.body.removeChild(ta);
+                    }
+                );
+            },
+
+            exportNotes() {
+                if (!this.notes.length) { this.updateStatus('No notes to export yet'); return; }
+                const d = new Date();
+                const stamp = d.toISOString().slice(0, 10);
+                let md = '# Listening Notes - ' + stamp + '\n\n';
+                md += '_' + this.notes.length + ' notes exported from Voice Reader_\n\n---\n\n';
+                this.notes.forEach((n, i) => {
+                    md += '## ' + (i + 1) + '. At ' + n.pct + '%\n\n';
+                    md += '> ' + n.passage + '\n\n';
+                    if (n.note) md += n.note + '\n\n';
+                    if (n.memoId) md += '_[voice memo recorded ' + new Date(n.ts).toLocaleString() + ' - play it in the app]_\n\n';
+                });
+                const blob = new Blob([md], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = stamp + '_Listening_Notes.md';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                this.updateStatus('Notes exported as Markdown');
+            },
+
+            offerResume() {
+                const saved = this.loadSavedPosition();
+                const btn = document.getElementById('resume-pos-btn');
+                if (saved > 50 && saved < this.currentText.length - 50) {
+                    const pct = Math.round((saved / this.currentText.length) * 100);
+                    btn.textContent = 'Resume at ' + pct + '%';
+                    btn.classList.remove('hidden');
+                    btn.onclick = () => { this.jumpToOffset(saved); btn.classList.add('hidden'); };
+                } else {
+                    btn.classList.add('hidden');
+                }
+            },
+
             loadText() {
                 const text = document.getElementById('text').value.trim();
                 if (!text) {
@@ -784,6 +1307,8 @@ async loadDynamicVoices(providerId) {
                 this.readStartOffset = 0;
                 this.prepareReaderText();
                 document.getElementById('player-card').style.display = 'block';
+                this.loadNotes();
+                this.offerResume();
                 this.updateStatus('Text loaded - Ready to play');
             },
 
@@ -874,7 +1399,7 @@ async loadDynamicVoices(providerId) {
                 }
                 if (this.provider === 'local') {
                     this.playLocal();
-                } else if (this.provider === 'openai' || this.provider === 'elevenlabs') {
+                } else if (this.provider === 'openai' || this.provider === 'elevenlabs' || this.provider === 'speechify') {
                     await this.playCloud();
                 }
             },
@@ -938,108 +1463,210 @@ async loadDynamicVoices(providerId) {
                 }, 50);
             },
 
-            async playCloud() {
-                const text = this.currentText;
-                const provider = this.provider;
+            buildCloudChunks(text, limit = 3800) {
+                // Split on paragraph boundaries and pack up to `limit` chars per chunk.
+                // Long paragraphs fall back to sentence splits. Offsets are global.
+                const chunks = [];
+                const parts = text.split(/\n\s*\n/);
+                let searchFrom = 0;
+                const paraInfos = [];
+                for (const p of parts) {
+                    if (!p.trim().length) continue;
+                    const idx = text.indexOf(p, searchFrom);
+                    searchFrom = idx + p.length;
+                    paraInfos.push({ text: p, start: idx });
+                }
+                let cur = null;
+                const pushCur = () => { if (cur) { chunks.push(cur); cur = null; } };
+                for (const p of paraInfos) {
+                    let pieces = [{ text: p.text, start: p.start }];
+                    if (p.text.length > limit) {
+                        pieces = [];
+                        const sre = /[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g;
+                        let m;
+                        while ((m = sre.exec(p.text)) !== null) {
+                            pieces.push({ text: m[0], start: p.start + m.index });
+                        }
+                    }
+                    for (const piece of pieces) {
+                        const pieceEnd = piece.start + piece.text.length;
+                        if (cur && (pieceEnd - cur.start) > limit) pushCur();
+                        if (!cur) cur = { start: piece.start, end: pieceEnd };
+                        cur.end = pieceEnd;
+                    }
+                }
+                pushCur();
+                return chunks.map(c => ({ start: c.start, end: c.end, text: text.slice(c.start, c.end) }));
+            },
 
+            flattenSpeechMarks(sm) {
+                // Speechify speech marks arrive as { chunks: [...] } (word marks with
+                // start_time in ms and start char offsets) or as a flat list.
+                if (!sm) return [];
+                const out = [];
+                const walk = (node) => {
+                    if (!node) return;
+                    if (Array.isArray(node)) { node.forEach(walk); return; }
+                    const st = (node.start_time !== undefined) ? node.start_time : node.startTime;
+                    if (typeof node.start === 'number' && typeof st === 'number') {
+                        out.push({ start: node.start, startTime: st });
+                    }
+                    if (node.chunks) walk(node.chunks);
+                };
+                walk(sm);
+                return out.sort((a, b) => a.startTime - b.startTime);
+            },
+
+            async fetchCloudChunk(provider, chunk) {
+                const response = await fetch('/.netlify/functions/tts-proxy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        providerId: provider,
+                        text: chunk.text,
+                        voice: this.voiceSelections[provider],
+                        options: { model: this.providerModels[provider] }
+                    })
+                });
+                const data = await response.json();
+                if (!data.success) throw new Error(data.error || 'TTS request failed');
+                return data;
+            },
+
+            stopCloud() {
+                if (this.cloudEngine) {
+                    this.cloudEngine.stopped = true;
+                    if (this.cloudEngine.interval) clearInterval(this.cloudEngine.interval);
+                    if (this.cloudEngine.audio) { try { this.cloudEngine.audio.pause(); } catch (e) {} }
+                    this.cloudEngine = null;
+                }
+                if (this.cloudAudioInterval) { clearInterval(this.cloudAudioInterval); this.cloudAudioInterval = null; }
+            },
+
+            async playCloud() {
+                // Resume if the user paused mid-listen
+                if (this.cloudEngine && this.cloudEngine.audio && this.cloudEngine.pausedByUser) {
+                    this.cloudEngine.pausedByUser = false;
+                    this.cloudEngine.audio.play();
+                    this.isPlaying = true;
+                    this.updatePlayButton();
+                    this.updateStatus('Playing...');
+                    return;
+                }
+
+                const provider = this.provider;
+                const fullText = this.currentText || '';
+                if (!fullText.trim()) { this.updateStatus('Please load text first'); return; }
+                const startOffset = Math.min(this.readStartOffset || 0, Math.max(fullText.length - 1, 0));
+
+                this.stopCloud();
                 this.markVoiceLoading(provider);
                 this.updateStatus(`Generating audio with ${provider}...`);
 
-                // Get selected voice and model
-                const voice = this.voiceSelections[provider];
-                const model = this.providerModels[provider];
+                let chunks = this.buildCloudChunks(fullText).filter(c => c.end > startOffset);
+                if (chunks.length && chunks[0].start < startOffset) {
+                    chunks[0] = { start: startOffset, end: chunks[0].end, text: fullText.slice(startOffset, chunks[0].end) };
+                }
+                console.log('[CLOUD TTS] Queued', chunks.length, 'chunks | provider:', provider);
 
-                console.log('[CLOUD TTS] Provider:', provider, 'Voice:', voice, 'Model:', model);
+                const engine = { provider, chunks, idx: 0, audio: null, cache: {}, interval: null, pausedByUser: false, stopped: false };
+                this.cloudEngine = engine;
 
-                try {
-                    const response = await fetch('/.netlify/functions/tts-proxy', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            providerId: provider,
-                            text: text,
-                            voice: voice,
-                            options: {
-                                model: model
-                            }
-                        })
-                    });
+                const prefetch = (i) => {
+                    if (i >= chunks.length || engine.cache[i]) return;
+                    engine.cache[i] = this.fetchCloudChunk(provider, chunks[i]);
+                    engine.cache[i].catch(() => { delete engine.cache[i]; });
+                };
 
-                    const data = await response.json();
+                const playChunk = async (i) => {
+                    if (engine.stopped) return;
+                    if (i >= chunks.length) {
+                        this.isPlaying = false;
+                        this.updatePlayButton();
+                        this.clearHighlight();
+                        this.updateStatus('Finished');
+                        this.cloudEngine = null;
+                        return;
+                    }
+                    engine.idx = i;
+                    try {
+                        prefetch(i);
+                        const data = await engine.cache[i];
+                        if (engine.stopped) return;
+                        prefetch(i + 1); // fetch the next chunk while this one plays
 
-                    if (data.success) {
-                        this.finishVoiceLoading(provider);
+                        const chunk = chunks[i];
                         const audioBlob = this.base64ToBlob(data.audio, 'audio/mpeg');
                         const audioUrl = URL.createObjectURL(audioBlob);
-                        const audio = new Audio(audioUrl);
+                        // Reuse ONE audio element across chunks (iOS Safari only lets
+                        // gesture-unlocked elements keep playing when src changes).
+                        if (!this.sharedAudio) this.sharedAudio = new Audio();
+                        const audio = this.sharedAudio;
+                        audio.onended = null;
+                        audio.onerror = null;
+                        audio.src = audioUrl;
+                        engine.audio = audio;
+                        audio.playbackRate = parseFloat(document.getElementById('speed').value) || 1;
 
-                        // Set up sentence highlighting based on estimated timing
-                        audio.addEventListener('loadedmetadata', () => {
-                            const duration = audio.duration;
-                            const totalSentences = this.readerSentenceSpans.length;
-
-                            if (totalSentences > 0 && duration > 0) {
-                                const timePerSentence = duration / totalSentences;
-                                console.log('[CLOUD TTS] Duration:', duration.toFixed(2), 's | Sentences:', totalSentences, '| Time per sentence:', timePerSentence.toFixed(2), 's');
-
-                                let lastHighlightedSentence = -1;
-
-                                // Clear any existing interval
-                                if (this.cloudAudioInterval) {
-                                    clearInterval(this.cloudAudioInterval);
+                        const marks = this.flattenSpeechMarks(data.speechMarks);
+                        if (marks.length) {
+                            audio.addEventListener('timeupdate', () => {
+                                if (engine.stopped) return;
+                                const tMs = audio.currentTime * 1000;
+                                let lo = 0, hi = marks.length - 1, best = 0;
+                                while (lo <= hi) {
+                                    const mid = (lo + hi) >> 1;
+                                    if (marks[mid].startTime <= tMs) { best = mid; lo = mid + 1; } else { hi = mid - 1; }
                                 }
-
-                                // Update highlight every 100ms
-                                this.cloudAudioInterval = setInterval(() => {
-                                    if (audio.paused || audio.ended) {
-                                        clearInterval(this.cloudAudioInterval);
-                                        this.cloudAudioInterval = null;
-                                        return;
-                                    }
-
-                                    const currentSentence = Math.min(
-                                        Math.floor(audio.currentTime / timePerSentence),
-                                        totalSentences - 1
-                                    );
-
-                                    // Only update if sentence changed
-                                    if (currentSentence !== lastHighlightedSentence) {
-                                        this.highlightSentenceByIndex(currentSentence);
-                                        lastHighlightedSentence = currentSentence;
-                                    }
-                                }, 100);
-                            }
-                        });
-
-                        audio.play();
-                        this.isPlaying = true;
-                        this.updatePlayButton();
-                        this.updateStatus(`Playing... (Estimated timing for ${provider})`);
+                                this.highlightSentenceAt(chunk.start + marks[best].start);
+                            });
+                        } else {
+                            audio.addEventListener('loadedmetadata', () => {
+                                const duration = audio.duration;
+                                if (!duration) return;
+                                if (engine.interval) clearInterval(engine.interval);
+                                engine.interval = setInterval(() => {
+                                    if (engine.stopped || audio.paused || audio.ended) return;
+                                    const frac = Math.min(audio.currentTime / duration, 0.999);
+                                    const charIndex = chunk.start + Math.floor((chunk.end - chunk.start) * frac);
+                                    this.highlightSentenceAt(charIndex);
+                                }, 200);
+                            });
+                        }
 
                         audio.onended = () => {
-                            this.isPlaying = false;
-                            this.updatePlayButton();
-                            this.clearHighlight();
-                            this.updateStatus('Finished');
                             URL.revokeObjectURL(audioUrl);
-
-                            if (this.cloudAudioInterval) {
-                                clearInterval(this.cloudAudioInterval);
-                                this.cloudAudioInterval = null;
-                            }
+                            if (engine.interval) { clearInterval(engine.interval); engine.interval = null; }
+                            if (!engine.stopped && !engine.pausedByUser) playChunk(i + 1);
                         };
-                    } else {
-                        this.updateStatus(`Error: ${data.error}`);
+                        audio.onerror = () => this.updateStatus('Audio playback error');
+
+                        await audio.play();
+                        this.requestWakeLock();
                         this.finishVoiceLoading(provider);
+                        this.isPlaying = true;
+                        this.updatePlayButton();
+                        const mode = marks.length ? 'word-sync' : 'estimated';
+                        this.updateStatus(`Playing ${i + 1}/${chunks.length} (${mode} highlighting)`);
+                    } catch (error) {
+                        console.error('[CLOUD TTS] Chunk error:', error);
+                        this.updateStatus(`Error: ${error.message}`);
+                        this.finishVoiceLoading(provider);
+                        this.isPlaying = false;
+                        this.updatePlayButton();
                     }
-                } catch (error) {
-                    this.updateStatus(`Network error: ${error.message}`);
-                    this.finishVoiceLoading(provider);
-                }
+                };
+
+                playChunk(0);
             },
 
             pause() {
-                speechSynthesis.pause();
+                if (this.cloudEngine && this.cloudEngine.audio) {
+                    this.cloudEngine.pausedByUser = true;
+                    this.cloudEngine.audio.pause();
+                } else {
+                    speechSynthesis.pause();
+                }
                 this.isPlaying = false;
                 this.updatePlayButton();
                 this.updateStatus('Paused');
@@ -1047,15 +1674,10 @@ async loadDynamicVoices(providerId) {
 
             stop() {
                 speechSynthesis.cancel();
+                this.stopCloud();
                 this.isPlaying = false;
                 this.updatePlayButton();
                 this.clearHighlight();
-
-                // Clear cloud audio interval if exists
-                if (this.cloudAudioInterval) {
-                    clearInterval(this.cloudAudioInterval);
-                    this.cloudAudioInterval = null;
-                }
             },
 
             skip(percent) {
@@ -1070,6 +1692,8 @@ async loadDynamicVoices(providerId) {
             },
 
             highlightSentenceAt(charIndex) {
+                this.currentCharIndex = charIndex;
+                this.savePosition(charIndex);
                 this.clearHighlight();
 
                 for (let i = 0; i < this.readerSentenceSpans.length; i++) {

@@ -48,7 +48,8 @@ exports.handler = async (event, context) => {
       local: { costPerChar: 0, name: 'Local Browser TTS', tier: 'free' },
       openai: { costPerChar: 0.000015, name: 'OpenAI TTS', tier: 'premium' },
       azure: { costPerChar: 0.000016, name: 'Azure Speech', tier: 'premium' },
-      elevenlabs: { costPerChar: 0.00003, name: 'ElevenLabs', tier: 'premium' }
+      elevenlabs: { costPerChar: 0.00003, name: 'ElevenLabs', tier: 'premium' },
+      speechify: { costPerChar: 0.00001, name: 'Speechify', tier: 'premium' }
     };
 
     const characters = text.length;

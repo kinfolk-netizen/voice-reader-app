@@ -74,6 +74,13 @@ exports.handler = async (event, context) => {
         supportsBoundaries: false,
         tier: 'premium',
         voices: [] // Would fetch dynamically with API key
+      },
+      speechify: {
+        providerId: 'speechify',
+        providerName: 'Speechify',
+        supportsBoundaries: true, // real word timings via speech marks
+        tier: 'premium',
+        voices: [] // Fetched dynamically with API key
       }
     };
 
@@ -112,6 +119,46 @@ exports.handler = async (event, context) => {
         } catch (error) {
           console.log('Could not fetch ElevenLabs voices:', error.message);
           // Use default empty array
+        }
+      }
+
+      // For Speechify, fetch real voices dynamically (never hardcode voice names)
+      if (providerId === 'speechify' && process.env.SPEECHIFY_API_KEY) {
+        try {
+          const response = await fetch('https://api.speechify.ai/v1/voices', {
+            headers: {
+              'Authorization': `Bearer ${process.env.SPEECHIFY_API_KEY}`
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const list = Array.isArray(data) ? data : (data.voices || []);
+            const mapped = list.map(v => ({
+              id: v.id || v.voice_id,
+              label: (v.display_name || v.name || v.id || v.voice_id) +
+                     (v.locale ? ' (' + v.locale + (v.gender ? ', ' + v.gender : '') + ')' : ''),
+              gender: v.gender || '',
+              models: Array.isArray(v.models) ? v.models.map(m => m.name) : [],
+              locale: v.locale || (Array.isArray(v.models) && v.models[0] && Array.isArray(v.models[0].languages) && v.models[0].languages[0] ? v.models[0].languages[0].locale : '') || ''
+            })).filter(v => v.id && (v.locale || '').toLowerCase().startsWith('en'));
+            // English first; en-GB male (saga narrator preference) sorted to top
+            const score = v => {
+              // Jonathan's narrator ruling 07.17.26: John Rhys-Davies primary, Benjamin backup
+              if (v.id === 'john-rhys-davies') return -2;
+              if (v.id === 'benjamin') return -1;
+              const loc = (v.locale || '').toLowerCase();
+              const g = (v.gender || '').toLowerCase();
+              if (loc.startsWith('en-gb') && g === 'male') return 0;
+              if (loc.startsWith('en-gb')) return 1;
+              if (loc.startsWith('en') && g === 'male') return 2;
+              if (loc.startsWith('en')) return 3;
+              return 4;
+            };
+            provider.voices = mapped.sort((a, b) => score(a) - score(b));
+          }
+        } catch (error) {
+          console.log('Could not fetch Speechify voices:', error.message);
         }
       }
 
