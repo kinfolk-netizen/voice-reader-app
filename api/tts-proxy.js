@@ -149,8 +149,8 @@ exports.handler = async (event, context) => {
         })
       });
     } else if (providerId === 'speechify') {
-      // Speechify hard limit: 20,000 chars per request (frontend chunks well below this)
-      if (text.length > 20000) {
+      // Speechify hard limit: 2000 chars per request (frontend chunks well below this)
+      if (text.length > 2000) {
         return {
           statusCode: 400,
           headers: {
@@ -159,7 +159,7 @@ exports.handler = async (event, context) => {
           },
           body: JSON.stringify({
             success: false,
-            error: 'Speechify requests are limited to 20,000 characters. Send chunked requests.'
+            error: 'Speechify requests are limited to 2000 characters. Send smaller chunks.'
           })
         };
       }
