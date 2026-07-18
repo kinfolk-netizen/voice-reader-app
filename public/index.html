@@ -478,7 +478,7 @@
         }
 
         .cast-name {
-            flex: 0 0 38%;
+            flex: 0 0 28%;
             font-weight: 600;
             font-size: 0.9em;
             overflow: hidden;
@@ -491,6 +491,22 @@
             font-weight: 400;
             font-size: 0.78em;
             color: var(--ink-3);
+        }
+
+        .cast-avatar {
+            flex: 0 0 34px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.85em;
+            font-family: var(--serif);
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         .cast-row select { flex: 1 1 auto; min-width: 0; margin-bottom: 0; }
@@ -832,7 +848,7 @@
             .control-btn.primary { width: 76px; height: 76px; }
             .reader-display { max-height: 48vh; padding: 20px 16px; }
             .reader-content { font-size: 1.06em; line-height: 1.8; }
-            .cast-name { flex-basis: 42%; }
+            .cast-name { flex-basis: 30%; }
         }
     </style>
 </head>
@@ -1244,6 +1260,10 @@ async loadDynamicVoices(providerId) {
             this.voiceCache[providerId] = data.voices.map(v => ({
                 value: v.id,
                 label: v.label,
+                name: v.name || v.label,
+                gender: v.gender || '',
+                age: v.age || '',
+                locale: v.locale || '',
                 models: v.models || [],
                 description: v.description || '',
                 category: v.category || 'general'
@@ -1312,13 +1332,7 @@ async loadDynamicVoices(providerId) {
                 if (!selectEl) return;
 
                 const voices = this.voiceCache[provider] || [];
-                selectEl.innerHTML = '';
-                voices.forEach((v) => {
-                    const opt = document.createElement('option');
-                    opt.value = v.value;
-                    opt.textContent = v.label;
-                    selectEl.appendChild(opt);
-                });
+                this.fillVoiceSelect(selectEl, voices);
 
                 if (!this.voiceSelections[provider] && voices.length > 0) {
                     this.voiceSelections[provider] = voices[0].value;
@@ -1375,13 +1389,7 @@ async loadDynamicVoices(providerId) {
                 if (!selectEl) return;
 
                 const voices = this.voiceCache[provider] || [];
-                selectEl.innerHTML = '';
-                voices.forEach((v) => {
-                    const opt = document.createElement('option');
-                    opt.value = v.value;
-                    opt.textContent = v.label;
-                    selectEl.appendChild(opt);
-                });
+                this.fillVoiceSelect(selectEl, voices);
 
                 if (!this.voiceSelections[provider] && voices.length > 0) {
                     this.voiceSelections[provider] = voices[0].value;
@@ -2198,6 +2206,50 @@ async loadDynamicVoices(providerId) {
                 return (name || '').trim().toUpperCase();
             },
 
+            // Build a <select> with voices grouped by age + gender and
+            // alphabetized inside each group, so casting is browsable.
+            fillVoiceSelect(sel, voices) {
+                sel.innerHTML = '';
+                const groupOf = (v) => {
+                    const g = (v.gender || '').toLowerCase() === 'female' ? 'Female' :
+                              (v.gender || '').toLowerCase() === 'male' ? 'Male' : 'Other';
+                    const a = v.age === 'teen' || v.age === 'young' ? 'Teen & Young' :
+                              v.age === 'senior' ? 'Senior' : 'Adult';
+                    return a + ' — ' + g;
+                };
+                const ORDER = ['Teen & Young — Female', 'Teen & Young — Male',
+                               'Adult — Female', 'Adult — Male',
+                               'Senior — Female', 'Senior — Male',
+                               'Adult — Other', 'Teen & Young — Other', 'Senior — Other'];
+                const groups = {};
+                for (const v of voices) {
+                    // no age/gender metadata (e.g. non-Speechify providers): flat list
+                    if (!v.age && !v.gender) { groups._flat = groups._flat || []; groups._flat.push(v); continue; }
+                    const k = groupOf(v);
+                    (groups[k] = groups[k] || []).push(v);
+                }
+                if (groups._flat) {
+                    for (const v of groups._flat) {
+                        const opt = document.createElement('option');
+                        opt.value = v.value; opt.textContent = v.label;
+                        sel.appendChild(opt);
+                    }
+                }
+                for (const gname of ORDER) {
+                    const list = groups[gname];
+                    if (!list || !list.length) continue;
+                    list.sort((a, b) => (a.name || a.label).localeCompare(b.name || b.label));
+                    const og = document.createElement('optgroup');
+                    og.label = gname;
+                    for (const v of list) {
+                        const opt = document.createElement('option');
+                        opt.value = v.value; opt.textContent = v.label;
+                        og.appendChild(opt);
+                    }
+                    sel.appendChild(og);
+                }
+            },
+
             voiceForSpeaker(speaker) {
                 const key = (!speaker || speaker === this.NARRATOR)
                     ? this.castKey(this.NARRATOR)
@@ -2245,18 +2297,25 @@ async loadDynamicVoices(providerId) {
                 for (const sp of speakers) {
                     const row = document.createElement('div');
                     row.className = 'cast-row';
+                    // v1 avatar: deterministic color + initial per speaker
+                    // (portrait artwork per cast member is the planned v2)
+                    const av = document.createElement('div');
+                    av.className = 'cast-avatar';
+                    let h = 0;
+                    const key = this.castKey(sp);
+                    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+                    av.style.background = sp === this.NARRATOR
+                        ? 'var(--accent)'
+                        : 'hsl(' + (h % 360) + ', 42%, 48%)';
+                    av.textContent = sp === this.NARRATOR ? '¶' : sp.replace(/[^A-Z]/g, '').slice(0, 2) || sp.slice(0, 2);
+                    row.appendChild(av);
                     const name = document.createElement('div');
                     name.className = 'cast-name';
                     name.innerHTML = sp === this.NARRATOR
                         ? sp + '<span class="cast-role">untagged paragraphs</span>'
                         : sp;
                     const sel = document.createElement('select');
-                    for (const v of voices) {
-                        const opt = document.createElement('option');
-                        opt.value = v.value;
-                        opt.textContent = v.label;
-                        sel.appendChild(opt);
-                    }
+                    this.fillVoiceSelect(sel, voices);
                     sel.value = this.voiceForSpeaker(sp);
                     sel.addEventListener('change', () => {
                         this.castMap[this.castKey(sp)] = sel.value;

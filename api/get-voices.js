@@ -134,14 +134,28 @@ exports.handler = async (event, context) => {
           if (response.ok) {
             const data = await response.json();
             const list = Array.isArray(data) ? data : (data.voices || []);
-            const mapped = list.map(v => ({
-              id: v.id || v.voice_id,
-              label: (v.display_name || v.name || v.id || v.voice_id) +
-                     (v.locale ? ' (' + v.locale + (v.gender ? ', ' + v.gender : '') + ')' : ''),
-              gender: v.gender || '',
-              models: Array.isArray(v.models) ? v.models.map(m => m.name) : [],
-              locale: v.locale || (Array.isArray(v.models) && v.models[0] && Array.isArray(v.models[0].languages) && v.models[0].languages[0] ? v.models[0].languages[0].locale : '') || ''
-            })).filter(v => v.id && (v.locale || '').toLowerCase().startsWith('en'));
+            const ACCENTS = { 'en-GB': 'British', 'en-US': 'American', 'en-AU': 'Australian', 'en-IN': 'Indian', 'en-NG': 'Nigerian' };
+            const mapped = list.map(v => {
+              const tags = Array.isArray(v.tags) ? v.tags : [];
+              const tag = p => (tags.find(t => t.startsWith(p)) || '').slice(p.length);
+              const locale = v.locale || (Array.isArray(v.models) && v.models[0] && Array.isArray(v.models[0].languages) && v.models[0].languages[0] ? v.models[0].languages[0].locale : '') || '';
+              const ageTag = tag('age:');
+              const age = ageTag === 'teen' ? 'teen' : ageTag === 'young-adult' ? 'young' : ageTag === 'senior' ? 'senior' : 'adult';
+              const flavor = [tag('timbre:'), tag('style:')].filter(Boolean).slice(0, 2).join(', ');
+              const name = v.display_name || v.name || v.id || v.voice_id;
+              const bits = [age + ' ' + (v.gender || 'voice'), ACCENTS[locale] || locale];
+              if (flavor) bits.push(flavor);
+              return {
+                id: v.id || v.voice_id,
+                label: name + ' — ' + bits.join(' · '),
+                name: name,
+                gender: v.gender || '',
+                age: age,
+                flavor: flavor,
+                models: Array.isArray(v.models) ? v.models.map(m => m.name) : [],
+                locale: locale
+              };
+            }).filter(v => v.id && (v.locale || '').toLowerCase().startsWith('en'));
             // English first; en-GB male (saga narrator preference) sorted to top
             const score = v => {
               // Jonathan's narrator ruling 07.17.26: John Rhys-Davies primary, Benjamin backup
