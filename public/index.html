@@ -1633,13 +1633,16 @@ async loadDynamicVoices(providerId) {
 
             // ---------- Dramatized Reader ----------
             // Script format: a paragraph beginning "NAME: " is spoken by NAME
-            // (1-3 capitalized words; apostrophes ok). Untagged paragraphs are
-            // the Narrator. The tag itself is displayed but never sent to TTS,
-            // so speech-mark offsets stay aligned with the source text.
+            // (1-3 ALL-CAPS words; apostrophes ok). Untagged paragraphs are
+            // the Narrator. Requiring ALL-CAPS keeps ordinary prose openers like
+            // "Beware:" from being read as a speaker tag (which would spawn a
+            // phantom cast member and silently drop the word from narration).
+            // The tag itself is displayed but never sent to TTS, so speech-mark
+            // offsets stay aligned with the source text.
             NARRATOR: 'Narrator',
 
             parseScriptSegments(text) {
-                const tagRe = /^([A-Z][A-Za-z'’.\-]*(?:[ ][A-Z][A-Za-z'’.\-]*){0,2}):\s+/;
+                const tagRe = /^([A-Z][A-Z'’.\-]*(?:[ ][A-Z][A-Z'’.\-]*){0,2}):\s+/;
                 const segs = [];
                 const paraRe = /[^\n][\s\S]*?(?=\n\s*\n|$)/g;
                 let m;

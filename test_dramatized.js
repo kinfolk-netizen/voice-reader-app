@@ -8,7 +8,7 @@ const app = {
   voiceSelections: { speechify: 'john-rhys-davies' },
 
   parseScriptSegments(text) {
-    const tagRe = /^([A-Z][A-Za-z'’.\-]*(?:[ ][A-Z][A-Za-z'’.\-]*){0,2}):\s+/;
+    const tagRe = /^([A-Z][A-Z'’.\-]*(?:[ ][A-Z][A-Z'’.\-]*){0,2}):\s+/;
     const segs = [];
     const paraRe = /[^\n][\s\S]*?(?=\n\s*\n|$)/g;
     let m;
@@ -179,11 +179,20 @@ if (!(trickySegs.length === 1 && trickySegs[0].speaker === 'Narrator')) {
   console.error('FAIL tricky wrap:', trickySegs); pass = false;
 }
 
-// ---- Test 5: paragraph that BEGINS with "Beware:" — known limitation, tag rules require it to look like a name; 'Beware' matches single capitalized word. Document behavior. ----
+// ---- Test 5: prose opener "Beware:" must NOT read as a speaker tag. Tags are
+// ALL-CAPS only, so this stays one Narrator segment — no phantom speaker, and the
+// word is not silently dropped from narration. ----
 const edge = `Beware: the tower answers those who knock.`;
 const edgeSegs = app.parseScriptSegments(edge);
-console.log('Edge "Beware:" paragraph parsed as speaker =', edgeSegs[0].speaker,
-  '(known: single capitalized word + colon at paragraph start reads as a tag; manuscripts are compiled by Claude so tags are controlled)');
+if (edgeSegs.length !== 1 || edgeSegs[0].speaker !== app.NARRATOR) {
+  console.error('FAIL "Beware:" should parse as a single Narrator segment, got:',
+    edgeSegs.map(s => s.speaker)); pass = false;
+}
+const edgeSpoken = edge.slice(edgeSegs[0].start, edgeSegs[0].end);
+if (!/^Beware: the tower/.test(edgeSpoken)) {
+  console.error('FAIL "Beware:" was stripped as a tag instead of narrated:',
+    JSON.stringify(edgeSpoken.slice(0, 30))); pass = false;
+}
 
 console.log(pass ? '\nALL CORE TESTS PASS' : '\nTESTS FAILED');
 process.exit(pass ? 0 : 1);
