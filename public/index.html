@@ -502,6 +502,179 @@
             line-height: 1.5;
         }
 
+        /* ---------- Collapsible cards ---------- */
+        .card.collapsible > .card-title {
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card.collapsible > .card-title::after {
+            content: "";
+            width: 10px;
+            height: 10px;
+            flex-shrink: 0;
+            background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23A8A399' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain;
+            transition: transform 0.2s ease;
+        }
+
+        .card.collapsible.collapsed > .card-title::after { transform: rotate(-90deg); }
+        .card.collapsible.collapsed > .card-title { margin-bottom: 0; }
+        .card.collapsible.collapsed > :not(.card-title) { display: none; }
+
+        /* ---------- Now Playing (full-screen player) ---------- */
+        .np-open-btn {
+            display: block;
+            width: 100%;
+            background: transparent;
+            border: 1px solid var(--hairline);
+            color: var(--ink-2);
+            font-weight: 500;
+            margin: 0 0 14px;
+        }
+
+        .np-open-btn:hover { background: var(--surface-2); color: var(--ink); opacity: 1; }
+
+        #now-playing {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: var(--paper);
+            display: none;
+            flex-direction: column;
+            padding: max(18px, env(safe-area-inset-top)) 22px max(26px, env(safe-area-inset-bottom));
+        }
+
+        #now-playing.open { display: flex; animation: np-rise 0.28s ease; }
+
+        @keyframes np-rise {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .np-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .np-top .np-title {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--ink-3);
+        }
+
+        .np-icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: transparent;
+            border: none;
+            color: var(--ink-2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .np-icon-btn:hover { background: var(--surface-2); opacity: 1; }
+
+        .np-stage {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 18px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        #np-speaker {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            min-height: 1.2em;
+        }
+
+        #np-sentence {
+            font-family: var(--serif);
+            font-size: clamp(1.3em, 4.5vw, 1.9em);
+            line-height: 1.55;
+            color: var(--ink);
+            max-width: 620px;
+            overflow-y: auto;
+            max-height: 55vh;
+        }
+
+        .np-bottom { flex-shrink: 0; }
+
+        #np-status {
+            text-align: center;
+            font-size: 0.8em;
+            color: var(--ink-3);
+            margin-bottom: 12px;
+            min-height: 1.2em;
+        }
+
+        .np-progress {
+            width: 100%;
+            height: 4px;
+            background: var(--hairline-soft);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 22px;
+        }
+
+        #np-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--accent);
+            border-radius: 999px;
+            transition: width 0.2s linear;
+        }
+
+        .np-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+            margin-bottom: 18px;
+        }
+
+        .np-controls .control-btn { width: 56px; height: 56px; }
+        .np-controls .control-btn.primary { width: 84px; height: 84px; }
+
+        .np-extras {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .np-chip {
+            background: transparent;
+            border: 1px solid var(--hairline);
+            color: var(--ink-2);
+            border-radius: 999px;
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .np-chip:hover { background: var(--surface-2); color: var(--ink); opacity: 1; }
+
         /* ---------- Mobile ---------- */
         @media (max-width: 640px) {
             body { padding: 28px 14px 60px; }
@@ -527,7 +700,7 @@
             <p>Your manuscript, read aloud. Your place, never lost.</p>
         </header>
 
-        <div class="card">
+        <div class="card collapsible" id="voice-card">
             <div class="card-title">Voice</div>
             
             <label for="provider">TTS Provider</label>
@@ -608,13 +781,13 @@
             </div>
         </div>
 
-        <div class="card">
+        <div class="card collapsible" id="manuscript-card">
             <div class="card-title">Manuscript</div>
             <textarea id="text" placeholder="Paste your chapter here&hellip;">Welcome to Witness Reader. Paste a chapter, press play, and follow along as every sentence lights up in turn. Tap any sentence to begin reading from that moment.</textarea>
             <button id="use-text-btn">Load Text</button>
         </div>
 
-        <div class="card" id="cast-card" style="display: none;">
+        <div class="card collapsible" id="cast-card" style="display: none;">
             <div class="card-title">Cast</div>
             <div id="cast-rows"></div>
             <div class="cast-hint">
@@ -626,6 +799,8 @@
 
         <div class="card" id="player-card" style="display: none;">
             <div class="card-title">Reader</div>
+
+            <button id="open-np-btn" class="np-open-btn" title="Open the full-screen player">Open full-screen player</button>
 
             <label class="mix-toggle">
                 <input type="checkbox" id="mix-music">
@@ -668,6 +843,30 @@
                     <button id="note-cancel">Cancel</button>
                 </div>
                 <div id="notes-list"></div>
+            </div>
+        </div>
+
+        <div id="now-playing">
+            <div class="np-top">
+                <button class="np-icon-btn" id="np-close" title="Back to desk"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+                <div class="np-title">Now Playing</div>
+                <button class="np-icon-btn" id="np-note" title="Pause and take a note"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+            </div>
+            <div class="np-stage">
+                <div id="np-speaker"></div>
+                <div id="np-sentence">Press play to begin.</div>
+            </div>
+            <div class="np-bottom">
+                <div id="np-status"></div>
+                <div class="np-progress"><div id="np-progress-fill"></div></div>
+                <div class="np-controls">
+                    <button class="control-btn" id="np-back" title="Skip Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11 12l8.5-6v12L11 12zm-6.5 0L13 6v12l-8.5-6z"/></svg></button>
+                    <button class="control-btn primary" id="np-play" title="Play"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg></button>
+                    <button class="control-btn" id="np-fwd" title="Skip Forward"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13 12L4.5 6v12L13 12zm6.5 0L11 6v12l8.5-6z"/></svg></button>
+                </div>
+                <div class="np-extras">
+                    <button class="np-chip" id="np-speed" title="Playback speed">1x</button>
+                </div>
             </div>
         </div>
     </div>
@@ -728,6 +927,8 @@
             init() {
                 this.loadStaticVoices();
                 this.loadCastMap();
+                this.initCollapsibles();
+                this.initNowPlaying();
                 this.initMixPreference();
                 this.setupEventListeners();
                 const provSel = document.getElementById('provider');
@@ -1479,6 +1680,7 @@ async loadDynamicVoices(providerId) {
                 this.detectScript();
                 this.renderCastPanel(); // async; shows the Cast card if speaker tags exist
                 this.prepareReaderText();
+                this.collapseSetupCards(); // fold Voice + Manuscript so the Reader leads
                 document.getElementById('player-card').style.display = 'block';
                 this.loadNotes();
                 this.offerResume();
@@ -1658,6 +1860,110 @@ async loadDynamicVoices(providerId) {
                     this.updatePlayButton();
                     this.updateStatus('Playing... (Sentence-level highlighting)');
                 }, 50);
+            },
+
+            // ---------- Collapsible cards ----------
+            initCollapsibles() {
+                let saved = {};
+                try { saved = JSON.parse(localStorage.getItem('wr-collapsed') || '{}'); } catch (e) {}
+                document.querySelectorAll('.card.collapsible').forEach(card => {
+                    if (saved[card.id]) card.classList.add('collapsed');
+                    card.querySelector('.card-title').addEventListener('click', () => {
+                        card.classList.toggle('collapsed');
+                        saved[card.id] = card.classList.contains('collapsed');
+                        try { localStorage.setItem('wr-collapsed', JSON.stringify(saved)); } catch (e) {}
+                    });
+                });
+            },
+
+            collapseSetupCards() {
+                // After text loads, fold the setup away so the Reader leads.
+                let saved = {};
+                try { saved = JSON.parse(localStorage.getItem('wr-collapsed') || '{}'); } catch (e) {}
+                ['voice-card', 'manuscript-card'].forEach(id => {
+                    const card = document.getElementById(id);
+                    if (card) { card.classList.add('collapsed'); saved[id] = true; }
+                });
+                try { localStorage.setItem('wr-collapsed', JSON.stringify(saved)); } catch (e) {}
+            },
+
+            // ---------- Now Playing (full-screen player) ----------
+            npSpeeds: [0.8, 1, 1.2, 1.5],
+
+            initNowPlaying() {
+                const np = document.getElementById('now-playing');
+                if (!np) return;
+                document.getElementById('open-np-btn').addEventListener('click', () => this.openNowPlaying());
+                document.getElementById('np-close').addEventListener('click', () => this.closeNowPlaying());
+                document.getElementById('np-play').addEventListener('click', () => {
+                    if (this.isPlaying) { this.pause(); } else { this.play(); }
+                });
+                document.getElementById('np-back').addEventListener('click', () => this.skip(-10));
+                document.getElementById('np-fwd').addEventListener('click', () => this.skip(10));
+                document.getElementById('np-note').addEventListener('click', () => {
+                    this.closeNowPlaying();
+                    const noteBtn = document.getElementById('note-btn');
+                    if (noteBtn) noteBtn.click();
+                });
+                document.getElementById('np-speed').addEventListener('click', () => {
+                    const speedEl = document.getElementById('speed');
+                    const cur = parseFloat(speedEl.value) || 1;
+                    // step to the next preset (closest current -> next, wrapping)
+                    let idx = this.npSpeeds.findIndex(s => Math.abs(s - cur) < 0.01);
+                    idx = (idx + 1) % this.npSpeeds.length;
+                    const next = this.npSpeeds[idx];
+                    speedEl.value = String(next);
+                    document.getElementById('speed-value').textContent = next + 'x';
+                    document.getElementById('np-speed').textContent = next + 'x';
+                    // apply live to whatever is playing
+                    if (this.cloudEngine && this.cloudEngine.audio) this.cloudEngine.audio.playbackRate = next;
+                    else if (this.sharedAudio) this.sharedAudio.playbackRate = next;
+                });
+            },
+
+            openNowPlaying() {
+                const np = document.getElementById('now-playing');
+                if (!np) return;
+                np.classList.add('open');
+                this.refreshNowPlaying();
+            },
+
+            closeNowPlaying() {
+                const np = document.getElementById('now-playing');
+                if (np) np.classList.remove('open');
+            },
+
+            npIsOpen() {
+                const np = document.getElementById('now-playing');
+                return !!(np && np.classList.contains('open'));
+            },
+
+            refreshNowPlaying() {
+                if (!this.npIsOpen()) return;
+                // speaker line: cast speaker while dramatized, voice label otherwise
+                const sp = document.getElementById('np-speaker');
+                if (sp) {
+                    sp.textContent = (this.currentSpeaker && this.currentSpeaker !== this.NARRATOR)
+                        ? this.currentSpeaker
+                        : (this.getVoiceLabel ? (this.getVoiceLabel(this.provider, this.voiceSelections[this.provider]) || '') : '');
+                }
+                // current sentence
+                const sentEl = document.getElementById('np-sentence');
+                if (sentEl && this.readerActiveIndex >= 0 && this.readerSentenceSpans[this.readerActiveIndex]) {
+                    sentEl.textContent = this.readerSentenceSpans[this.readerActiveIndex].textContent.trim();
+                }
+                // play glyph
+                const btn = document.getElementById('np-play');
+                if (btn) {
+                    btn.innerHTML = this.isPlaying
+                        ? '<svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>'
+                        : '<svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg>';
+                    btn.disabled = !this.isVoiceReady;
+                }
+                // speed chip reflects the slider
+                const chip = document.getElementById('np-speed');
+                const speedEl = document.getElementById('speed');
+                if (chip && speedEl) chip.textContent = (parseFloat(speedEl.value) || 1) + 'x';
             },
 
             // ---------- Dramatized Reader ----------
@@ -2022,6 +2328,7 @@ async loadDynamicVoices(providerId) {
                         this.updatePlayButton();
                         const mode = marks.length ? 'word-sync' : 'estimated';
                         const who = (chunk.speaker && chunk.speaker !== this.NARRATOR) ? ' — ' + chunk.speaker : '';
+                        this.currentSpeaker = chunk.speaker || null;
                         this.updateStatus(`Playing ${i + 1}/${chunks.length}${who} (${mode} highlighting)`);
                     } catch (error) {
                         console.error('[CLOUD TTS] Chunk error:', error);
@@ -2084,6 +2391,15 @@ async loadDynamicVoices(providerId) {
                         break;
                     }
                 }
+
+                // progress (both bars) + live Now Playing sentence
+                const total = (this.currentText || '').length || 1;
+                const pct = Math.min(100, (charIndex / total) * 100).toFixed(2) + '%';
+                const pf = document.getElementById('progress-fill');
+                if (pf) pf.style.width = pct;
+                const npf = document.getElementById('np-progress-fill');
+                if (npf) npf.style.width = pct;
+                this.refreshNowPlaying();
             },
 
             highlightSentenceByIndex(index) {
@@ -2120,10 +2436,13 @@ async loadDynamicVoices(providerId) {
                     ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>'
                     : '<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg>';
                 btn.disabled = !this.isVoiceReady;
+                this.refreshNowPlaying();
             },
 
             updateStatus(message) {
                 document.getElementById('status').textContent = message;
+                const nps = document.getElementById('np-status');
+                if (nps) nps.textContent = message;
             },
 
             updateProviderStatus(message) {
