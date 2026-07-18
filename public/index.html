@@ -2307,8 +2307,8 @@ async loadDynamicVoices(providerId) {
                 for (const sp of speakers) {
                     const row = document.createElement('div');
                     row.className = 'cast-row';
-                    // Avatar: portrait from avatars/<slug>.svg|png when one exists
-                    // (canon-faithful art), else deterministic color + initials.
+                    // Avatar: painted portrait avatars/<slug>.png first (Canva
+                    // character art), then avatars/<slug>.svg, else colored initials.
                     const av = document.createElement('div');
                     av.className = 'cast-avatar';
                     let h = 0;
@@ -2321,8 +2321,12 @@ async loadDynamicVoices(providerId) {
                     const slug = key.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
                     const img = document.createElement('img');
                     img.alt = sp;
-                    img.onerror = () => img.remove(); // no portrait -> initials remain
-                    img.src = 'avatars/' + slug + '.svg';
+                    img.onerror = () => {
+                        // no PNG portrait -> try the SVG; no SVG -> initials remain
+                        img.onerror = () => img.remove();
+                        img.src = 'avatars/' + slug + '.svg';
+                    };
+                    img.src = 'avatars/' + slug + '.png';
                     av.appendChild(img);
                     row.appendChild(av);
                     const name = document.createElement('div');
