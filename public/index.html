@@ -502,6 +502,116 @@
             line-height: 1.5;
         }
 
+        /* ---------- Themes: one per element ---------- */
+        /* Each theme re-tunes the same design system. Dark variants follow
+           the device automatically via prefers-color-scheme. */
+
+        [data-theme="ember"] {
+            --paper: #FBF4EE;
+            --surface: #FFFFFF;
+            --surface-2: #F6EBE2;
+            --accent: #C4472F;
+            --accent-deep: #A83A25;
+            --accent-wash: rgba(196, 71, 47, 0.12);
+            --accent-wash-strong: rgba(196, 71, 47, 0.20);
+            --shadow-play: 0 6px 20px rgba(196, 71, 47, 0.35);
+        }
+
+        [data-theme="tide"] {
+            --paper: #F2F7F8;
+            --surface: #FFFFFF;
+            --surface-2: #E9F1F2;
+            --accent: #2E7A8C;
+            --accent-deep: #256677;
+            --accent-wash: rgba(46, 122, 140, 0.12);
+            --accent-wash-strong: rgba(46, 122, 140, 0.20);
+            --shadow-play: 0 6px 20px rgba(46, 122, 140, 0.35);
+        }
+
+        [data-theme="grove"] {
+            --paper: #F4F6EE;
+            --surface: #FFFFFF;
+            --surface-2: #EBEFE1;
+            --accent: #5A7A46;
+            --accent-deep: #4A663A;
+            --accent-wash: rgba(90, 122, 70, 0.13);
+            --accent-wash-strong: rgba(90, 122, 70, 0.22);
+            --shadow-play: 0 6px 20px rgba(90, 122, 70, 0.35);
+        }
+
+        [data-theme="sky"] {
+            --paper: #F5F7FB;
+            --surface: #FFFFFF;
+            --surface-2: #ECF0F7;
+            --accent: #5C74B8;
+            --accent-deep: #4C62A2;
+            --accent-wash: rgba(92, 116, 184, 0.12);
+            --accent-wash-strong: rgba(92, 116, 184, 0.20);
+            --shadow-play: 0 6px 20px rgba(92, 116, 184, 0.35);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            [data-theme="ember"] {
+                --paper: #1D1310;
+                --surface: #271B17;
+                --surface-2: #221713;
+                --accent: #E0684F;
+                --accent-deep: #E87F69;
+                --accent-wash: rgba(224, 104, 79, 0.18);
+                --accent-wash-strong: rgba(224, 104, 79, 0.28);
+            }
+            [data-theme="tide"] {
+                --paper: #101A1E;
+                --surface: #182428;
+                --surface-2: #141F23;
+                --accent: #5FA8B8;
+                --accent-deep: #79B9C7;
+                --accent-wash: rgba(95, 168, 184, 0.18);
+                --accent-wash-strong: rgba(95, 168, 184, 0.28);
+            }
+            [data-theme="grove"] {
+                --paper: #141810;
+                --surface: #1D2218;
+                --surface-2: #181D13;
+                --accent: #8CAE7A;
+                --accent-deep: #9FBE8E;
+                --accent-wash: rgba(140, 174, 122, 0.18);
+                --accent-wash-strong: rgba(140, 174, 122, 0.28);
+            }
+            [data-theme="sky"] {
+                --paper: #14161E;
+                --surface: #1C1F29;
+                --surface-2: #171A23;
+                --accent: #93A3DC;
+                --accent-deep: #A5B3E4;
+                --accent-wash: rgba(147, 163, 220, 0.18);
+                --accent-wash-strong: rgba(147, 163, 220, 0.28);
+            }
+        }
+
+        .theme-row {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            margin-top: 16px;
+        }
+
+        .theme-dot {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            padding: 0;
+            margin: 0;
+            cursor: pointer;
+            background-clip: padding-box;
+            box-shadow: inset 0 0 0 2px var(--paper);
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+
+        .theme-dot:hover { transform: scale(1.12); opacity: 1; }
+        .theme-dot.active { border-color: var(--ink-2); }
+
         /* ---------- Collapsible cards ---------- */
         .card.collapsible > .card-title {
             cursor: pointer;
@@ -698,6 +808,13 @@
             <div class="badge">Listen &middot; Note &middot; Edit</div>
             <h1>Witness Reader</h1>
             <p>Your manuscript, read aloud. Your place, never lost.</p>
+            <div class="theme-row" id="theme-row" aria-label="Theme">
+                <button class="theme-dot" data-theme="" title="Paper" style="background:#D97757"></button>
+                <button class="theme-dot" data-theme="ember" title="Ember" style="background:#C4472F"></button>
+                <button class="theme-dot" data-theme="tide" title="Tide" style="background:#2E7A8C"></button>
+                <button class="theme-dot" data-theme="grove" title="Grove" style="background:#5A7A46"></button>
+                <button class="theme-dot" data-theme="sky" title="Sky" style="background:#5C74B8"></button>
+            </div>
         </header>
 
         <div class="card collapsible" id="voice-card">
@@ -927,6 +1044,7 @@
             init() {
                 this.loadStaticVoices();
                 this.loadCastMap();
+                this.initThemes();
                 this.initCollapsibles();
                 this.initNowPlaying();
                 this.initMixPreference();
@@ -1860,6 +1978,27 @@ async loadDynamicVoices(providerId) {
                     this.updatePlayButton();
                     this.updateStatus('Playing... (Sentence-level highlighting)');
                 }, 50);
+            },
+
+            // ---------- Themes ----------
+            initThemes() {
+                let saved = '';
+                try { saved = localStorage.getItem('wr-theme') || ''; } catch (e) {}
+                this.applyTheme(saved);
+                document.querySelectorAll('.theme-dot').forEach(dot => {
+                    dot.addEventListener('click', () => {
+                        this.applyTheme(dot.dataset.theme || '');
+                        try { localStorage.setItem('wr-theme', dot.dataset.theme || ''); } catch (e) {}
+                    });
+                });
+            },
+
+            applyTheme(name) {
+                if (name) document.documentElement.setAttribute('data-theme', name);
+                else document.documentElement.removeAttribute('data-theme');
+                document.querySelectorAll('.theme-dot').forEach(dot => {
+                    dot.classList.toggle('active', (dot.dataset.theme || '') === (name || ''));
+                });
             },
 
             // ---------- Collapsible cards ----------
