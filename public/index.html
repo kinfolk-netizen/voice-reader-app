@@ -454,6 +454,37 @@
             width: 100%;
             margin: 0;
         }
+
+        /* ---- Dramatized Reader: cast panel ---- */
+        .cast-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .cast-name {
+            flex: 0 0 38%;
+            font-weight: 600;
+            font-size: 0.92em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .cast-name .cast-role {
+            display: block;
+            font-weight: 400;
+            font-size: 0.78em;
+            opacity: 0.65;
+        }
+        .cast-row select {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .cast-hint {
+            font-size: 0.82em;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -554,6 +585,16 @@
             <button id="use-text-btn">Load Text</button>
         </div>
 
+        <div class="card" id="cast-card" style="display: none;">
+            <div class="card-title">&#127917; Cast</div>
+            <div id="cast-rows"></div>
+            <div class="cast-hint">
+                Speaker tags found in this text. Lines like <b>JUNIA: &ldquo;&hellip;&rdquo;</b> are spoken
+                in that character's voice; untagged paragraphs are read by the Narrator.
+                Voice choices are remembered per speaker.
+            </div>
+        </div>
+
         <div class="card" id="player-card" style="display: none;">
             <div class="card-title">Playback</div>
 
@@ -630,6 +671,10 @@
                 speechify: 'simba-english'
             },
             cloudEngine: null,
+            // Dramatized Reader: speaker -> Speechify voice id (persisted)
+            castMap: {},
+            scriptSegments: null,   // [{speaker, start, end}] for the loaded text
+            hasScriptTags: false,
             sharedAudio: null,
             audioUnlocked: false,
             wakeLock: null,
@@ -653,6 +698,7 @@
 
             init() {
                 this.loadStaticVoices();
+                this.loadCastMap();
                 this.initMixPreference();
                 this.setupEventListeners();
                 const provSel = document.getElementById('provider');
@@ -1401,6 +1447,8 @@ async loadDynamicVoices(providerId) {
 
                 this.currentText = text;
                 this.readStartOffset = 0;
+                this.detectScript();
+                this.renderCastPanel(); // async; shows the Cast card if speaker tags exist
                 this.prepareReaderText();
                 document.getElementById('player-card').style.display = 'block';
                 this.loadNotes();
@@ -1583,6 +1631,153 @@ async loadDynamicVoices(providerId) {
                 }, 50);
             },
 
+            // ---------- Dramatized Reader ----------
+            // Script format: a paragraph beginning "NAME: " is spoken by NAME
+            // (1-3 capitalized words; apostrophes ok). Untagged paragraphs are
+            // the Narrator. The tag itself is displayed but never sent to TTS,
+            // so speech-mark offsets stay aligned with the source text.
+            NARRATOR: 'Narrator',
+
+            parseScriptSegments(text) {
+                const tagRe = /^([A-Z][A-Za-z'’.\-]*(?:[ ][A-Z][A-Za-z'’.\-]*){0,2}):\s+/;
+                const segs = [];
+                const paraRe = /[^\n][\s\S]*?(?=\n\s*\n|$)/g;
+                let m;
+                while ((m = paraRe.exec(text)) !== null) {
+                    const paraStart = m.index;
+                    const para = m[0];
+                    const tag = para.match(tagRe);
+                    let speaker = this.NARRATOR;
+                    let contentStart = paraStart;
+                    if (tag) {
+                        speaker = tag[1].trim();
+                        if (speaker.toUpperCase() === 'NARRATOR') speaker = this.NARRATOR;
+                        contentStart = paraStart + tag[0].length;
+                    }
+                    const end = paraStart + para.length;
+                    if (end <= contentStart) continue;
+                    const last = segs[segs.length - 1];
+                    if (last && last.speaker === speaker && !tag) {
+                        last.end = end; // merge consecutive narrator paragraphs
+                    } else {
+                        segs.push({ speaker, start: contentStart, end });
+                    }
+                }
+                return segs;
+            },
+
+            detectScript() {
+                this.scriptSegments = this.parseScriptSegments(this.currentText || '');
+                this.hasScriptTags = this.scriptSegments.some(s => s.speaker !== this.NARRATOR);
+                return this.hasScriptTags;
+            },
+
+            loadCastMap() {
+                try { this.castMap = JSON.parse(localStorage.getItem('witness-cast-map') || '{}'); }
+                catch (e) { this.castMap = {}; }
+            },
+
+            saveCastMap() {
+                try { localStorage.setItem('witness-cast-map', JSON.stringify(this.castMap)); } catch (e) {}
+            },
+
+            castKey(name) {
+                // Cast keys are case-insensitive: "Ka’el" and "KA’EL" are one speaker.
+                return (name || '').trim().toUpperCase();
+            },
+
+            voiceForSpeaker(speaker) {
+                const key = (!speaker || speaker === this.NARRATOR)
+                    ? this.castKey(this.NARRATOR)
+                    : this.castKey(speaker);
+                return this.castMap[key] || this.voiceSelections.speechify;
+            },
+
+            async renderCastPanel() {
+                const card = document.getElementById('cast-card');
+                const rows = document.getElementById('cast-rows');
+                if (!card || !rows) return;
+                if (!this.hasScriptTags) { card.style.display = 'none'; return; }
+
+                // Cast voices come from the live Speechify list
+                if (!this.voiceCache.speechify || this.voiceCache.speechify.length === 0) {
+                    await this.loadDynamicVoices('speechify');
+                }
+                const voices = this.voiceCache.speechify || [];
+
+                const speakers = [this.NARRATOR];
+                const seenKeys = new Set([this.castKey(this.NARRATOR)]);
+                for (const s of this.scriptSegments) {
+                    const k = this.castKey(s.speaker);
+                    if (s.speaker !== this.NARRATOR && !seenKeys.has(k)) {
+                        seenKeys.add(k);
+                        speakers.push(s.speaker); // display uses first-seen form
+                    }
+                }
+
+                // Default assignments: narrator follows the main Speechify voice
+                // unless explicitly overridden here; new speakers get the next
+                // voices in the (already narrator-first sorted) list.
+                const used = new Set();
+                used.add(this.voiceForSpeaker(this.NARRATOR));
+                for (const sp of speakers) {
+                    if (sp === this.NARRATOR) continue;
+                    const k = this.castKey(sp);
+                    if (this.castMap[k]) { used.add(this.castMap[k]); continue; }
+                    const pick = voices.find(v => !used.has(v.value));
+                    if (pick) { this.castMap[k] = pick.value; used.add(pick.value); }
+                }
+                this.saveCastMap();
+
+                rows.innerHTML = '';
+                for (const sp of speakers) {
+                    const row = document.createElement('div');
+                    row.className = 'cast-row';
+                    const name = document.createElement('div');
+                    name.className = 'cast-name';
+                    name.innerHTML = sp === this.NARRATOR
+                        ? sp + '<span class="cast-role">untagged paragraphs</span>'
+                        : sp;
+                    const sel = document.createElement('select');
+                    for (const v of voices) {
+                        const opt = document.createElement('option');
+                        opt.value = v.value;
+                        opt.textContent = v.label;
+                        sel.appendChild(opt);
+                    }
+                    sel.value = this.voiceForSpeaker(sp);
+                    sel.addEventListener('change', () => {
+                        this.castMap[this.castKey(sp)] = sel.value;
+                        this.saveCastMap();
+                    });
+                    row.appendChild(name);
+                    row.appendChild(sel);
+                    rows.appendChild(row);
+                }
+                card.style.display = 'block';
+            },
+
+            buildDramatizedChunks(fullText, limit = 500) {
+                const segs = this.scriptSegments && this.scriptSegments.length
+                    ? this.scriptSegments
+                    : this.parseScriptSegments(fullText);
+                const chunks = [];
+                for (const seg of segs) {
+                    const segText = fullText.slice(seg.start, seg.end);
+                    for (const c of this.buildCloudChunks(segText, limit)) {
+                        chunks.push({
+                            start: c.start + seg.start,
+                            end: c.end + seg.start,
+                            text: c.text,
+                            speaker: seg.speaker,
+                            voice: this.voiceForSpeaker(seg.speaker)
+                        });
+                    }
+                }
+                return chunks;
+            },
+            // ---------- end Dramatized Reader ----------
+
             buildCloudChunks(text, limit = 500) {
                 // Split on paragraph boundaries and pack up to `limit` chars per chunk.
                 // Long paragraphs fall back to sentence splits. Offsets are global.
@@ -1644,7 +1839,7 @@ async loadDynamicVoices(providerId) {
                     body: JSON.stringify({
                         providerId: provider,
                         text: chunk.text,
-                        voice: this.voiceSelections[provider],
+                        voice: chunk.voice || this.voiceSelections[provider],
                         options: { model: this.providerModels[provider] }
                     })
                 });
@@ -1683,11 +1878,15 @@ async loadDynamicVoices(providerId) {
                 this.markVoiceLoading(provider);
                 this.updateStatus(`Generating audio with ${provider}...`);
 
-                let chunks = this.buildCloudChunks(fullText).filter(c => c.end > startOffset);
+                const dramatized = this.hasScriptTags && provider === 'speechify';
+                let chunks = (dramatized
+                    ? this.buildDramatizedChunks(fullText)
+                    : this.buildCloudChunks(fullText)
+                ).filter(c => c.end > startOffset);
                 if (chunks.length && chunks[0].start < startOffset) {
-                    chunks[0] = { start: startOffset, end: chunks[0].end, text: fullText.slice(startOffset, chunks[0].end) };
+                    chunks[0] = { ...chunks[0], start: startOffset, text: fullText.slice(startOffset, chunks[0].end) };
                 }
-                console.log('[CLOUD TTS] Queued', chunks.length, 'chunks | provider:', provider);
+                console.log('[CLOUD TTS] Queued', chunks.length, 'chunks | provider:', provider, dramatized ? '| DRAMATIZED (' + new Set(chunks.map(c => c.speaker)).size + ' voices)' : '');
 
                 const engine = { provider, chunks, idx: 0, audio: null, cache: {}, interval: null, pausedByUser: false, stopped: false };
                 this.cloudEngine = engine;
@@ -1777,7 +1976,9 @@ async loadDynamicVoices(providerId) {
                             try {
                                 navigator.mediaSession.metadata = new MediaMetadata({
                                     title: 'Witness Reader',
-                                    artist: this.voiceSelections[this.provider] || 'Narration',
+                                    artist: (chunk.speaker && chunk.speaker !== this.NARRATOR)
+                                        ? chunk.speaker + ' (' + (chunk.voice || '') + ')'
+                                        : (this.voiceSelections[this.provider] || 'Narration'),
                                     album: 'The Resonance Field'
                                 });
                                 navigator.mediaSession.playbackState = 'playing';
@@ -1788,7 +1989,8 @@ async loadDynamicVoices(providerId) {
                         this.isPlaying = true;
                         this.updatePlayButton();
                         const mode = marks.length ? 'word-sync' : 'estimated';
-                        this.updateStatus(`Playing ${i + 1}/${chunks.length} (${mode} highlighting)`);
+                        const who = (chunk.speaker && chunk.speaker !== this.NARRATOR) ? ' — ' + chunk.speaker : '';
+                        this.updateStatus(`Playing ${i + 1}/${chunks.length}${who} (${mode} highlighting)`);
                     } catch (error) {
                         console.error('[CLOUD TTS] Chunk error:', error);
                         this.updateStatus('Playback blocked: ' + (error.name || 'Error') + ' — ' + (error.message || '') + ' (screenshot this)');
