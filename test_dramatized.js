@@ -1,0 +1,189 @@
+// Offline test harness for the Dramatized Reader parser + chunker.
+// Mirrors the functions in public/index.html (kept in sync by copy —
+// verify with grep before trusting a green run).
+
+const app = {
+  NARRATOR: 'Narrator',
+  castMap: { "KA’EL": 'benjamin', 'JUNIA': 'amelia' },
+  voiceSelections: { speechify: 'john-rhys-davies' },
+
+  parseScriptSegments(text) {
+    const tagRe = /^([A-Z][A-Za-z'’.\-]*(?:[ ][A-Z][A-Za-z'’.\-]*){0,2}):\s+/;
+    const segs = [];
+    const paraRe = /[^\n][\s\S]*?(?=\n\s*\n|$)/g;
+    let m;
+    while ((m = paraRe.exec(text)) !== null) {
+      const paraStart = m.index;
+      const para = m[0];
+      const tag = para.match(tagRe);
+      let speaker = this.NARRATOR;
+      let contentStart = paraStart;
+      if (tag) {
+        speaker = tag[1].trim();
+        if (speaker.toUpperCase() === 'NARRATOR') speaker = this.NARRATOR;
+        contentStart = paraStart + tag[0].length;
+      }
+      const end = paraStart + para.length;
+      if (end <= contentStart) continue;
+      const last = segs[segs.length - 1];
+      if (last && last.speaker === speaker && !tag) {
+        last.end = end;
+      } else {
+        segs.push({ speaker, start: contentStart, end });
+      }
+    }
+    return segs;
+  },
+
+  castKey(name) { return (name || '').trim().toUpperCase(); },
+
+  voiceForSpeaker(speaker) {
+    const key = (!speaker || speaker === this.NARRATOR)
+      ? this.castKey(this.NARRATOR)
+      : this.castKey(speaker);
+    return this.castMap[key] || this.voiceSelections.speechify;
+  },
+
+  buildCloudChunks(text, limit = 500) {
+    const chunks = [];
+    const parts = text.split(/\n\s*\n/);
+    let searchFrom = 0;
+    const paraInfos = [];
+    for (const p of parts) {
+      if (!p.trim().length) continue;
+      const idx = text.indexOf(p, searchFrom);
+      searchFrom = idx + p.length;
+      paraInfos.push({ text: p, start: idx });
+    }
+    let cur = null;
+    const pushCur = () => { if (cur) { chunks.push(cur); cur = null; } };
+    for (const p of paraInfos) {
+      let pieces = [{ text: p.text, start: p.start }];
+      if (p.text.length > limit) {
+        pieces = [];
+        const sre = /[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g;
+        let m2;
+        while ((m2 = sre.exec(p.text)) !== null) {
+          pieces.push({ text: m2[0], start: p.start + m2.index });
+        }
+      }
+      for (const piece of pieces) {
+        const pieceEnd = piece.start + piece.text.length;
+        if (cur && (pieceEnd - cur.start) > limit) pushCur();
+        if (!cur) cur = { start: piece.start, end: pieceEnd };
+        cur.end = pieceEnd;
+      }
+    }
+    pushCur();
+    return chunks.map(c => ({ start: c.start, end: c.end, text: text.slice(c.start, c.end) }));
+  },
+
+  buildDramatizedChunks(fullText, limit = 500) {
+    const segs = this.parseScriptSegments(fullText);
+    const chunks = [];
+    for (const seg of segs) {
+      const segText = fullText.slice(seg.start, seg.end);
+      for (const c of this.buildCloudChunks(segText, limit)) {
+        chunks.push({
+          start: c.start + seg.start,
+          end: c.end + seg.start,
+          text: c.text,
+          speaker: seg.speaker,
+          voice: this.voiceForSpeaker(seg.speaker)
+        });
+      }
+    }
+    return chunks;
+  }
+};
+
+// ---- Test 1: mixed narration + tagged dialogue, curly apostrophes, hard wraps ----
+const sample = `The tower had been silent for three hundred years. Its stones
+remembered songs no living voice could shape, and the wind that circled
+its crown carried nothing but dust.
+
+Junia pressed her palm against the cold door and waited.
+
+JUNIA: “It’s warmer than it should be. Stone shouldn’t hold warmth like
+this — not in the shadow of the hills.”
+
+KA’EL: “Then it isn’t the stone that’s warm.”
+
+She drew her hand back as if the door had breathed.
+
+NARRATOR: The silence between them was its own kind of answer.
+
+JUNIA: “Say that again.”`;
+
+const segs = app.parseScriptSegments(sample);
+console.log('--- Segments ---');
+for (const s of segs) {
+  console.log(`[${s.speaker}] ${JSON.stringify(sample.slice(s.start, s.end).slice(0, 60))}...`);
+}
+
+let pass = true;
+const expectSpeakers = ['Narrator', 'JUNIA', 'KA’EL', 'Narrator', 'Narrator', 'JUNIA'];
+const gotSpeakers = segs.map(s => s.speaker);
+if (JSON.stringify(gotSpeakers) !== JSON.stringify(expectSpeakers)) {
+  console.error('FAIL speakers:', gotSpeakers); pass = false;
+}
+
+// Narrator merge: paragraphs 1+2 (both untagged) should be ONE segment
+if (gotSpeakers.filter(s => s === 'Narrator').length !== 3) {
+  console.error('FAIL narrator merge'); pass = false;
+}
+
+// Tags must be excluded from spoken content
+for (const s of segs) {
+  const spoken = sample.slice(s.start, s.end);
+  if (/^[A-Z’'A-Za-z.\- ]+:\s/.test(spoken) && !spoken.startsWith('It') === false) {
+    // spot check: no segment starts with its own tag
+  }
+  if (spoken.startsWith('JUNIA:') || spoken.startsWith('KA’EL:') || spoken.startsWith('NARRATOR:')) {
+    console.error('FAIL tag leaked into spoken text:', JSON.stringify(spoken.slice(0, 30))); pass = false;
+  }
+}
+
+// ---- Test 2: chunks carry correct voices and offsets round-trip ----
+const chunks = app.buildDramatizedChunks(sample);
+console.log('--- Chunks ---');
+for (const c of chunks) {
+  console.log(`[${c.speaker} -> ${c.voice}] (${c.start}-${c.end}) ${JSON.stringify(c.text.slice(0, 45))}`);
+  if (c.text !== sample.slice(c.start, c.end)) {
+    console.error('FAIL offset round-trip on chunk at', c.start); pass = false;
+  }
+  if (c.text.length > 500) { console.error('FAIL chunk >500 chars'); pass = false; }
+}
+const junia = chunks.filter(c => c.speaker === 'JUNIA');
+if (!junia.every(c => c.voice === 'amelia')) {
+  console.error('FAIL JUNIA voice mapping (case-insensitive castKey):', junia.map(c => c.voice)); pass = false;
+}
+if (!chunks.filter(c => c.speaker === 'KA’EL').every(c => c.voice === 'benjamin')) {
+  console.error('FAIL KA’EL voice mapping'); pass = false;
+}
+const kael = chunks.filter(c => c.speaker === 'KA’EL');
+console.log('KA’EL voice:', kael[0] && kael[0].voice);
+
+// ---- Test 3: plain prose (no tags) => everything narrator, single-voice path ----
+const plain = 'A quiet morning. Nothing stirred.\n\nThe hills held their breath.';
+const plainSegs = app.parseScriptSegments(plain);
+if (!(plainSegs.length === 1 && plainSegs[0].speaker === 'Narrator')) {
+  console.error('FAIL plain prose:', plainSegs); pass = false;
+}
+
+// ---- Test 4: false-positive guard — mid-sentence hard-wrapped line starting with a capitalized word+colon is INSIDE a paragraph, so paragraph-start rule protects it ----
+const tricky = `He remembered the old warning well.
+Beware: the tower answers those who knock.`;
+const trickySegs = app.parseScriptSegments(tricky);
+if (!(trickySegs.length === 1 && trickySegs[0].speaker === 'Narrator')) {
+  console.error('FAIL tricky wrap:', trickySegs); pass = false;
+}
+
+// ---- Test 5: paragraph that BEGINS with "Beware:" — known limitation, tag rules require it to look like a name; 'Beware' matches single capitalized word. Document behavior. ----
+const edge = `Beware: the tower answers those who knock.`;
+const edgeSegs = app.parseScriptSegments(edge);
+console.log('Edge "Beware:" paragraph parsed as speaker =', edgeSegs[0].speaker,
+  '(known: single capitalized word + colon at paragraph start reads as a tag; manuscripts are compiled by Claude so tags are controlled)');
+
+console.log(pass ? '\nALL CORE TESTS PASS' : '\nTESTS FAILED');
+process.exit(pass ? 0 : 1);
