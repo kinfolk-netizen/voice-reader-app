@@ -2,7 +2,8 @@
   "version": "1.1-provisional",
   "regions": {
     "eirenos": { "label": "Eirenos native", "accent": "en-GB" },
-    "foreign": { "label": "Foreigner (twins' homeland)", "accent": "en-US" }
+    "foreign": { "label": "Foreigner (twins' homeland)", "accent": "en-US" },
+    "panel": { "label": "The Keeper's Table", "accent": "" }
   },
   "ageScale": ["child", "teen", "young", "adult", "senior"],
   "characters": [
@@ -12,11 +13,17 @@
     { "name": "Lira", "aliases": [], "region": "foreign", "gender": "female", "age": "child", "accent": "en-US", "voice": { "provider": "azure", "voiceId": "en-US-AnaNeural" } },
     { "name": "Mother", "aliases": [], "region": "foreign", "gender": "female", "age": "adult", "accent": "en-US", "voice": null },
     { "name": "Viell", "aliases": [], "region": "eirenos", "gender": "male", "age": "senior", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "ron" } },
-    { "name": "Father Silas", "aliases": ["KEEPER ELDER", "Keeper Elder", "Silas"], "region": "eirenos", "gender": "male", "age": "senior", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "douglas" } },
+    { "name": "Father Silas", "aliases": ["KEEPER ELDER", "Keeper Elder"], "region": "eirenos", "gender": "male", "age": "senior", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "douglas" } },
     { "name": "Tessara", "aliases": ["FOREMAN", "Foreman"], "region": "eirenos", "gender": "female", "age": "adult", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "carol" } },
     { "name": "Watcher", "aliases": [], "region": "eirenos", "gender": "male", "age": "senior", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "phil" } },
     { "name": "Davrin", "aliases": [], "region": "eirenos", "gender": "male", "age": "adult", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "michael" } },
     { "name": "Mara", "aliases": [], "region": "eirenos", "gender": "female", "age": "senior", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "marnie" } },
-    { "name": "Corvath", "aliases": [], "region": "eirenos", "gender": "male", "age": "adult", "accent": "en-GB", "voice": null }
+    { "name": "Corvath", "aliases": [], "region": "eirenos", "gender": "male", "age": "adult", "accent": "en-GB", "voice": null },
+    { "name": "Maren", "aliases": [], "region": "panel", "gender": "female", "age": "teen", "accent": "", "voice": { "provider": "speechify", "voiceId": "linda" } },
+    { "name": "Silas", "aliases": [], "region": "panel", "gender": "male", "age": "adult", "accent": "", "voice": { "provider": "speechify", "voiceId": "michael" } },
+    { "name": "Cole", "aliases": [], "region": "panel", "gender": "male", "age": "adult", "accent": "", "voice": { "provider": "elevenlabs", "voiceId": "N2lVS1w4EtoT3dr4eOWO" } },
+    { "name": "Amos", "aliases": [], "region": "panel", "gender": "male", "age": "senior", "accent": "", "voice": { "provider": "speechify", "voiceId": "douglas" } },
+    { "name": "The Keeper", "aliases": ["THE KEEPER", "Keeper"], "region": "panel", "gender": "female", "age": "adult", "accent": "", "voice": { "provider": "speechify", "voiceId": "helen" } },
+    { "name": "The Author's Seat", "aliases": ["THE AUTHOR'S SEAT", "Author's Seat", "Author"], "region": "panel", "gender": "male", "age": "adult", "accent": "", "voice": { "provider": "elevenlabs", "voiceId": "5M1W9IgOqnGaZnqjhACC" } }
   ]
 }
