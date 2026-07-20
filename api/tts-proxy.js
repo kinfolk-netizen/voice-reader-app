@@ -63,7 +63,9 @@ exports.handler = async (event, context) => {
         break;
       case 'azure':
         apiKey = process.env.AZURE_SPEECH_KEY;
-        // Azure endpoint would be configured here
+        apiEndpoint = process.env.AZURE_SPEECH_REGION
+          ? `https://${process.env.AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`
+          : null;
         break;
       case 'elevenlabs':
         apiKey = process.env.ELEVENLABS_API_KEY;
@@ -141,12 +143,32 @@ exports.handler = async (event, context) => {
         },
         body: JSON.stringify({
           text: text,
-          model_id: options.model || 'eleven_monolingual_v1',
+          model_id: options.model || 'eleven_multilingual_v2',
           voice_settings: options.voiceSettings || {
             stability: 0.5,
             similarity_boost: 0.5
           }
         })
+      });
+    } else if (providerId === 'azure') {
+      if (!apiEndpoint) {
+        return {
+          statusCode: 401,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ success: false, error: 'AZURE_SPEECH_REGION not configured' })
+        };
+      }
+      const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+      const ssml = `<speak version='1.0' xml:lang='en-US'><voice name='${voice}'>${esc(text)}</voice></speak>`;
+      response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Ocp-Apim-Subscription-Key': apiKey,
+          'Content-Type': 'application/ssml+xml',
+          'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
+          'User-Agent': 'WitnessReader'
+        },
+        body: ssml
       });
     } else if (providerId === 'speechify') {
       // Speechify hard limit: 2000 chars per request (frontend chunks well below this)
@@ -249,6 +271,7 @@ exports.handler = async (event, context) => {
     const costPerChar =
       providerId === 'openai' ? 0.000015 :
       providerId === 'speechify' ? 0.00001 :
+      providerId === 'azure' ? 0.000016 :
       0.00003;
     const estimatedCost = text.length * costPerChar;
 

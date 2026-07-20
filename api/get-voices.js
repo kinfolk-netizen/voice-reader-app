@@ -109,16 +109,78 @@ exports.handler = async (event, context) => {
           
           if (response.ok) {
             const data = await response.json();
-            provider.voices = data.voices.map(v => ({
-              id: v.voice_id,
-              label: v.name,
-              category: v.category,
-              description: v.description
-            }));
+            const EL_ACCENTS = { american: 'American', british: 'British', australian: 'Australian', irish: 'Irish', 'south african': 'South African', indian: 'Indian', transatlantic: 'Transatlantic' };
+            const EL_LOCALES = { american: 'en-US', british: 'en-GB', australian: 'en-AU', irish: 'en-IE', 'south african': 'en-ZA', indian: 'en-IN' };
+            const elAge = a => {
+              const s = (a || '').toLowerCase();
+              if (s.includes('old') || s.includes('senior')) return 'senior';
+              if (s.includes('middle')) return 'adult';
+              if (s.includes('young') || s.includes('teen')) return 'young';
+              return 'adult';
+            };
+            provider.voices = (data.voices || []).map(v => {
+              const labels = v.labels || {};
+              const name = v.name || v.voice_id;
+              const gender = (labels.gender || '').toLowerCase();
+              const age = elAge(labels.age);
+              const accentKey = (labels.accent || '').toLowerCase();
+              const locale = EL_LOCALES[accentKey] || '';
+              const flavor = labels.description || labels.use_case || v.category || '';
+              const bits = [age + ' ' + (gender || 'voice')];
+              if (EL_ACCENTS[accentKey]) bits.push(EL_ACCENTS[accentKey]);
+              if (flavor) bits.push(flavor);
+              return {
+                id: v.voice_id,
+                label: name + ' — ' + bits.join(' · '),
+                name: name,
+                gender: gender,
+                age: age,
+                locale: locale,
+                flavor: flavor,
+                category: v.category || '',
+                description: v.description || ''
+              };
+            });
           }
         } catch (error) {
           console.log('Could not fetch ElevenLabs voices:', error.message);
           // Use default empty array
+        }
+      }
+
+      // For Azure, fetch the live neural voice list (region-scoped)
+      if (providerId === 'azure' && process.env.AZURE_SPEECH_KEY && process.env.AZURE_SPEECH_REGION) {
+        try {
+          const region = process.env.AZURE_SPEECH_REGION;
+          const response = await fetch(`https://${region}.tts.speech.microsoft.com/cognitiveservices/voices/list`, {
+            headers: { 'Ocp-Apim-Subscription-Key': process.env.AZURE_SPEECH_KEY }
+          });
+          if (response.ok) {
+            const list = await response.json();
+            const AZ_ACCENTS = { 'en-US': 'American', 'en-GB': 'British', 'en-AU': 'Australian', 'en-IE': 'Irish', 'en-ZA': 'South African', 'en-IN': 'Indian', 'en-CA': 'Canadian', 'en-NG': 'Nigerian' };
+            const AZ_CHILD = new Set(['en-US-AnaNeural']);
+            const mapped = (Array.isArray(list) ? list : [])
+              .filter(v => (v.Locale || '').toLowerCase().startsWith('en'))
+              .map(v => {
+                const locale = v.Locale;
+                const gender = (v.Gender || '').toLowerCase();
+                const age = AZ_CHILD.has(v.ShortName) ? 'teen' : 'adult';
+                const name = v.DisplayName || v.LocalName || v.ShortName;
+                const accent = AZ_ACCENTS[locale] || locale;
+                return {
+                  id: v.ShortName,
+                  label: name + ' — ' + [age + ' ' + (gender || 'voice'), accent].join(' · '),
+                  name: name,
+                  gender: gender,
+                  age: age,
+                  locale: locale,
+                  models: []
+                };
+              });
+            if (mapped.length) provider.voices = mapped;
+          }
+        } catch (error) {
+          console.log('Could not fetch Azure voices:', error.message);
         }
       }
 
