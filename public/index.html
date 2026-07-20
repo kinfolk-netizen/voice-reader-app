@@ -370,6 +370,13 @@
         .note-item .np { font-family: var(--serif); font-size: 0.85em; color: var(--ink-2); font-style: italic; margin-bottom: 4px; }
         .note-item .nt { font-size: 0.9em; color: var(--ink); }
         .note-item .nd { font-size: 0.75em; color: var(--ink-3); margin-top: 4px; }
+        /* Note editor as a modal so it can float above Now Playing */
+        #note-editor { position: fixed; inset: 0; z-index: 80; background: rgba(20,18,16,0.55); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        #note-editor.hidden { display: none; }
+        #note-editor .note-card { background: var(--paper); border: 1px solid var(--hairline); border-radius: 16px; padding: 20px; width: 100%; max-width: 540px; max-height: 88vh; overflow-y: auto; box-shadow: 0 18px 50px rgba(0,0,0,0.4); }
+        .note-card-title { font-weight: 600; font-size: 0.95em; margin-bottom: 10px; color: var(--ink); }
+        .note-actions { display: flex; gap: 10px; margin-top: 14px; }
+        .note-actions button { flex: 1; }
 
         .mix-toggle {
             display: flex;
@@ -1019,9 +1026,9 @@
             <div id="status">Ready to play</div>
 
             <div class="controls">
-                <button class="control-btn" id="skip-back" title="Skip Back"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11 12l8.5-6v12L11 12zm-6.5 0L13 6v12l-8.5-6z"/></svg></button>
+                <button class="control-btn" id="skip-back" title="Previous sentence"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11 12l8.5-6v12L11 12zm-6.5 0L13 6v12l-8.5-6z"/></svg></button>
                 <button class="control-btn primary" id="play-btn" title="Play"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg></button>
-                <button class="control-btn" id="skip-forward" title="Skip Forward"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13 12L4.5 6v12L13 12zm6.5 0L11 6v12l8.5-6z"/></svg></button>
+                <button class="control-btn" id="skip-forward" title="Next sentence"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13 12L4.5 6v12L13 12zm6.5 0L11 6v12l8.5-6z"/></svg></button>
             </div>
 
             <div class="progress-bar" id="progress-bar">
@@ -1042,14 +1049,19 @@
                     <button id="export-notes-btn" title="Download notes as Markdown">Export notes</button>
                 </div>
                 <div id="note-editor" class="hidden">
-                    <div id="note-passage" class="note-passage"></div>
-                    <textarea id="note-input" placeholder="Type your edit note, or record it below - your speech is transcribed here as you talk..."></textarea>
-                    <div class="memo-row">
-                        <button id="memo-btn" type="button">&#127897; Record voice memo</button>
-                        <span id="memo-status"></span>
+                    <div class="note-card">
+                        <div class="note-card-title">Note this passage</div>
+                        <div id="note-passage" class="note-passage"></div>
+                        <textarea id="note-input" placeholder="Type your edit note, or record it below - your speech is transcribed here as you talk..."></textarea>
+                        <div class="memo-row">
+                            <button id="memo-btn" type="button">&#127897; Record voice memo</button>
+                            <span id="memo-status"></span>
+                        </div>
+                        <div class="note-actions">
+                            <button id="note-save">Save note</button>
+                            <button id="note-cancel">Cancel</button>
+                        </div>
                     </div>
-                    <button id="note-save">Save note</button>
-                    <button id="note-cancel">Cancel</button>
                 </div>
                 <div id="notes-list"></div>
             </div>
@@ -1069,9 +1081,9 @@
                 <div id="np-status"></div>
                 <div class="np-progress"><div id="np-progress-fill"></div></div>
                 <div class="np-controls">
-                    <button class="control-btn" id="np-back" title="Skip Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11 12l8.5-6v12L11 12zm-6.5 0L13 6v12l-8.5-6z"/></svg></button>
+                    <button class="control-btn" id="np-back" title="Previous sentence"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11 12l8.5-6v12L11 12zm-6.5 0L13 6v12l-8.5-6z"/></svg></button>
                     <button class="control-btn primary" id="np-play" title="Play"><svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg></button>
-                    <button class="control-btn" id="np-fwd" title="Skip Forward"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13 12L4.5 6v12L13 12zm6.5 0L11 6v12l8.5-6z"/></svg></button>
+                    <button class="control-btn" id="np-fwd" title="Next sentence"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13 12L4.5 6v12L13 12zm6.5 0L11 6v12l8.5-6z"/></svg></button>
                 </div>
                 <div class="np-extras">
                     <button class="np-chip" id="np-speed" title="Playback speed">1x</button>
@@ -1152,8 +1164,8 @@
             setupEventListeners() {
                 document.getElementById('use-text-btn').addEventListener('click', () => this.loadText());
                 document.getElementById('play-btn').addEventListener('click', () => this.togglePlay());
-                document.getElementById('skip-back').addEventListener('click', () => this.skip(-10));
-                document.getElementById('skip-forward').addEventListener('click', () => this.skip(10));
+                document.getElementById('skip-back').addEventListener('click', () => this.skipSentence(-1));
+                document.getElementById('skip-forward').addEventListener('click', () => this.skipSentence(1));
                 if ('mediaSession' in navigator) {
                     // Lock-screen / background media controls (best-effort; some unsupported).
                     const setAction = (name, fn) => {
@@ -1161,8 +1173,8 @@
                     };
                     setAction('play', () => this.togglePlay());
                     setAction('pause', () => this.pause());
-                    setAction('previoustrack', () => this.skip(-10));
-                    setAction('nexttrack', () => this.skip(10));
+                    setAction('previoustrack', () => this.skipSentence(-1));
+                    setAction('nexttrack', () => this.skipSentence(1));
                 }
                 document.getElementById('provider').addEventListener('change',async (e) => {
                     this.provider = e.target.value;
@@ -1222,6 +1234,7 @@
                 document.getElementById('memo-btn').addEventListener('click', () => this.toggleMemoRecording());
                 document.getElementById('note-save').addEventListener('click', () => this.saveNote());
                 document.getElementById('note-cancel').addEventListener('click', () => this.closeNoteEditor());
+                document.getElementById('note-editor').addEventListener('click', (e) => { if (e.target.id === 'note-editor') this.closeNoteEditor(); });
                 document.addEventListener('keydown', (e) => {
                     if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
                     if (e.key === 'n' || e.key === 'N') { e.preventDefault(); this.openNoteEditor(); }
@@ -2121,13 +2134,9 @@ async loadDynamicVoices(providerId) {
                 document.getElementById('np-play').addEventListener('click', () => {
                     if (this.isPlaying) { this.pause(); } else { this.play(); }
                 });
-                document.getElementById('np-back').addEventListener('click', () => this.skip(-10));
-                document.getElementById('np-fwd').addEventListener('click', () => this.skip(10));
-                document.getElementById('np-note').addEventListener('click', () => {
-                    this.closeNowPlaying();
-                    const noteBtn = document.getElementById('note-btn');
-                    if (noteBtn) noteBtn.click();
-                });
+                document.getElementById('np-back').addEventListener('click', () => this.skipSentence(-1));
+                document.getElementById('np-fwd').addEventListener('click', () => this.skipSentence(1));
+                document.getElementById('np-note').addEventListener('click', () => this.openNoteEditor());
                 document.getElementById('np-speed').addEventListener('click', () => {
                     const speedEl = document.getElementById('speed');
                     const cur = parseFloat(speedEl.value) || 1;
@@ -2981,11 +2990,25 @@ async loadDynamicVoices(providerId) {
                 const text = this.currentText;
                 const skipAmount = Math.floor(text.length * (percent / 100));
                 this.readStartOffset = Math.max(0, Math.min(text.length, this.readStartOffset + skipAmount));
-                
+
                 if (this.isPlaying) {
                     this.stop();
                     setTimeout(() => this.play(), 100);
                 }
+            },
+
+            // Move one sentence at a time: dir = -1 (previous) or +1 (next).
+            // Lets the listener nudge back to the exact line they want to note.
+            skipSentence(dir) {
+                const spans = this.readerSentenceSpans;
+                if (!spans || !spans.length) { this.skip(dir > 0 ? 5 : -5); return; }
+                const pos = this.currentCharIndex || this.readStartOffset || 0;
+                const curIdx = this.findSentenceIndexAt(pos);
+                const targetIdx = Math.max(0, Math.min(spans.length - 1, curIdx + dir));
+                const offset = parseInt(spans[targetIdx].dataset.start, 10) || 0;
+                this.currentCharIndex = offset;
+                this.jumpToOffset(offset);   // handles highlight, scroll, and restart-if-playing
+                this.refreshNowPlaying();    // update the Now Playing sentence text when paused
             },
 
             highlightSentenceAt(charIndex) {
