@@ -749,6 +749,12 @@
         .cr-chip.active .cr-star { color: var(--accent); }
         .cr-showall { flex: 0 0 auto; align-self: center; background: none; border: none; color: var(--accent-deep); font-size: 0.78em; cursor: pointer; padding: 2px 8px; white-space: nowrap; }
         .cast-room-btn { width: 100%; margin-bottom: 12px; padding: 12px; border: none; border-radius: 12px; background: var(--accent); color: #fff; font-weight: 700; font-size: 0.95em; cursor: pointer; box-shadow: var(--shadow-play); }
+        .cr-filters { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; padding: 10px 12px; background: var(--surface-2); border-radius: 12px; }
+        .cr-fgroup { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .cr-flabel { font-size: 0.68em; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); font-weight: 700; flex: 0 0 52px; }
+        .cr-fchip { border: 1px solid var(--hairline); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 5px 11px; font-size: 0.8em; cursor: pointer; }
+        .cr-fchip.active { border-color: var(--accent); background: var(--accent-wash); color: var(--accent-deep); font-weight: 600; }
+        .cr-fcount { font-size: 0.72em; color: var(--ink-3); margin-top: 2px; }
 
         .np-top {
             display: flex;
@@ -2511,25 +2517,69 @@ async loadDynamicVoices(providerId) {
                 const who = [ch.age, ch.gender].filter(Boolean).join(' ');
                 return [who, reg].filter(Boolean).join(' · ');
             },
-            candidateVoices(speaker, showAll) {
+            candidateVoices(speaker) {
                 const pool = this.allVoices || [];
-                if (showAll) return pool.slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                const f = this.crFilters || {};
+                const active = !!(f.gender || f.accent || f.age);
                 const ch = this.registryLookup(speaker) || { gender: '', age: 'adult', accent: '' };
                 const scale = this.registryAgeScale || ['child', 'teen', 'young', 'adult', 'senior'];
                 const idxOf = a => { const i = scale.indexOf(a || 'adult'); return i < 0 ? scale.indexOf('adult') : i; };
-                const wantG = (ch.gender || '').toLowerCase();
                 const wantAge = idxOf(ch.age);
                 const wantLoc = ch.accent || '';
-                const scored = pool.map(v => {
+                const fit = v => {
                     let s = 100 - Math.abs(idxOf(v.age) - wantAge) * 10;
                     if (wantLoc && v.locale === wantLoc) s += 15;
                     else if (wantLoc && v.locale && v.locale.slice(0, 3) === wantLoc.slice(0, 3)) s += 5;
-                    const genderMatch = !wantG || (v.gender || '').toLowerCase() === wantG;
-                    return { v, s, genderMatch };
-                }).filter(x => x.genderMatch);
-                scored.sort((a, b) => b.s - a.s);
-                const top = scored.slice(0, 12).map(x => x.v);
-                return top.length ? top : pool.slice(0, 12);
+                    return s;
+                };
+                let list;
+                if (active) {
+                    // explicit filter bar: every voice matching the chosen gender/accent/age
+                    list = pool.filter(v =>
+                        (!f.gender || (v.gender || '').toLowerCase() === f.gender) &&
+                        (!f.accent || v.locale === f.accent) &&
+                        (!f.age || (v.age || 'adult') === f.age)
+                    );
+                } else {
+                    // no filters: best matches for this character (gender-appropriate)
+                    const wantG = (ch.gender || '').toLowerCase();
+                    list = pool.filter(v => !wantG || (v.gender || '').toLowerCase() === wantG);
+                }
+                list = list.slice().sort((a, b) => fit(b) - fit(a));
+                if (!list.length) list = pool.slice();
+                return list.slice(0, active ? 60 : 12);
+            },
+            buildCastingFilters(room) {
+                const f = this.crFilters;
+                const pool = this.allVoices || [];
+                const ACC = { 'en-US': 'American', 'en-GB': 'British', 'en-AU': 'Australian', 'en-IE': 'Irish', 'en-ZA': 'S. African', 'en-IN': 'Indian', 'en-CA': 'Canadian', 'en-NG': 'Nigerian' };
+                const scale = this.registryAgeScale || ['child', 'teen', 'young', 'adult', 'senior'];
+                const locales = [...new Set(pool.map(v => v.locale).filter(Boolean))].sort();
+                const ages = scale.filter(a => pool.some(v => (v.age || 'adult') === a));
+                const bar = document.createElement('div'); bar.className = 'cr-filters';
+                const mkGroup = (dim, label, opts) => {
+                    const g = document.createElement('div'); g.className = 'cr-fgroup';
+                    const lab = document.createElement('span'); lab.className = 'cr-flabel'; lab.textContent = label; g.appendChild(lab);
+                    const mkChip = (val, text) => {
+                        const c = document.createElement('button'); c.className = 'cr-fchip';
+                        if ((f[dim] || '') === val) c.classList.add('active');
+                        c.textContent = text;
+                        c.addEventListener('click', () => { f[dim] = (f[dim] === val ? '' : val); this.renderCastingRoom(room); });
+                        return c;
+                    };
+                    g.appendChild(mkChip('', 'Any'));
+                    for (const o of opts) g.appendChild(mkChip(o.val, o.text));
+                    return g;
+                };
+                bar.appendChild(mkGroup('gender', 'Gender', [{ val: 'female', text: 'Female' }, { val: 'male', text: 'Male' }]));
+                bar.appendChild(mkGroup('accent', 'Accent', locales.map(l => ({ val: l, text: ACC[l] || l }))));
+                bar.appendChild(mkGroup('age', 'Age', ages.map(a => ({ val: a, text: a.charAt(0).toUpperCase() + a.slice(1) }))));
+                if (f.gender || f.accent || f.age) {
+                    const note = document.createElement('div'); note.className = 'cr-fcount';
+                    note.textContent = 'Filtering all characters — tap Any to clear.';
+                    bar.appendChild(note);
+                }
+                return bar;
             },
             async openCastingRoom() {
                 if (!this.allVoices || !this.allVoices.length) await this.loadAllVoices();
@@ -2556,6 +2606,9 @@ async loadDynamicVoices(providerId) {
                 const sub = document.createElement('div'); sub.className = 'cr-sub';
                 sub.textContent = 'Tap a voice to hear this character say their line. Star to cast.';
                 room.appendChild(sub);
+
+                this.crFilters = this.crFilters || { gender: '', accent: '', age: '' };
+                room.appendChild(this.buildCastingFilters(room));
 
                 const groups = {};
                 for (const sp of speakers) {
@@ -2592,7 +2645,6 @@ async loadDynamicVoices(providerId) {
                 const voicesWrap = document.createElement('div'); voicesWrap.className = 'cr-voices';
                 card.appendChild(voicesWrap);
 
-                const state = { showAll: false };
                 const updateCurrent = () => {
                     const e = this.voiceEntryForSpeaker(sp);
                     const match = (this.allVoices || []).find(v => v.provider === e.provider && v.voiceId === e.voiceId);
@@ -2600,7 +2652,7 @@ async loadDynamicVoices(providerId) {
                 };
                 const renderChips = () => {
                     voicesWrap.innerHTML = '';
-                    const list = this.candidateVoices(sp, state.showAll);
+                    const list = this.candidateVoices(sp);
                     const e = this.voiceEntryForSpeaker(sp);
                     for (const v of list) {
                         const chip = document.createElement('div'); chip.className = 'cr-chip';
@@ -2616,10 +2668,6 @@ async loadDynamicVoices(providerId) {
                         chip.addEventListener('click', () => this.previewVoice(sp, v.provider, v.voiceId));
                         voicesWrap.appendChild(chip);
                     }
-                    const toggle = document.createElement('button'); toggle.className = 'cr-showall';
-                    toggle.textContent = state.showAll ? 'suggested only' : 'show all';
-                    toggle.addEventListener('click', () => { state.showAll = !state.showAll; renderChips(); });
-                    voicesWrap.appendChild(toggle);
                 };
                 updateCurrent(); renderChips();
                 return card;
