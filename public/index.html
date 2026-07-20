@@ -2162,7 +2162,7 @@ async loadDynamicVoices(providerId) {
                 if (sp) {
                     sp.textContent = (this.currentSpeaker && this.currentSpeaker !== this.NARRATOR)
                         ? this.currentSpeaker
-                        : (this.getVoiceLabel ? (this.getVoiceLabel(this.provider, this.voiceSelections[this.provider]) || '') : '');
+                        : 'Narrator';
                 }
                 // current sentence
                 const sentEl = document.getElementById('np-sentence');
@@ -2783,7 +2783,7 @@ async loadDynamicVoices(providerId) {
                 }
                 console.log('[CLOUD TTS] Queued', chunks.length, 'chunks | provider:', provider, dramatized ? '| DRAMATIZED (' + new Set(chunks.map(c => c.speaker)).size + ' voices)' : '');
 
-                const engine = { provider, chunks, idx: 0, audio: null, cache: {}, interval: null, pausedByUser: false, stopped: false };
+                const engine = { provider, chunks, idx: 0, audio: null, cache: {}, interval: null, pausedByUser: false, stopped: false, bufferAhead: 3 };
                 this.cloudEngine = engine;
 
                 const prefetch = (i) => {
@@ -2807,7 +2807,10 @@ async loadDynamicVoices(providerId) {
                         prefetch(i);
                         const data = await engine.cache[i];
                         if (engine.stopped) return;
-                        prefetch(i + 1); // fetch the next chunk while this one plays
+                        // Buffer several chunks ahead so short lines and voice/provider
+                        // switches don't drain the cushion — fetches run concurrently
+                        // (fetchCloudChunk is stateless) while this chunk plays.
+                        for (let k = 1; k <= engine.bufferAhead; k++) prefetch(i + k);
 
                         const chunk = chunks[i];
                         const audioBlob = this.base64ToBlob(data.audio, 'audio/mpeg');
@@ -2872,8 +2875,8 @@ async loadDynamicVoices(providerId) {
                                 navigator.mediaSession.metadata = new MediaMetadata({
                                     title: 'Witness Reader',
                                     artist: (chunk.speaker && chunk.speaker !== this.NARRATOR)
-                                        ? chunk.speaker + ' (' + (chunk.voice || '') + ')'
-                                        : (this.voiceSelections[this.provider] || 'Narration'),
+                                        ? chunk.speaker
+                                        : 'Narrator',
                                     album: 'The Resonance Field'
                                 });
                                 navigator.mediaSession.playbackState = 'playing';
