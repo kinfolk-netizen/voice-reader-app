@@ -725,6 +725,31 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* ---------- Casting Room ---------- */
+        #casting-room { position: fixed; inset: 0; z-index: 60; background: var(--paper); display: none; flex-direction: column; padding: max(18px, env(safe-area-inset-top)) 18px max(26px, env(safe-area-inset-bottom)); overflow-y: auto; }
+        #casting-room.open { display: flex; animation: np-rise 0.28s ease; }
+        .cr-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+        .cr-title { font-family: var(--serif); font-size: 1.4em; font-weight: 700; color: var(--ink); }
+        .cr-sub { color: var(--ink-3); font-size: 0.82em; margin-bottom: 12px; }
+        .cr-group-label { font-size: 0.72em; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); margin: 16px 4px 8px; font-weight: 700; }
+        .cr-card { background: var(--surface); border: 1px solid var(--hairline); border-radius: 16px; padding: 12px; margin-bottom: 12px; box-shadow: var(--shadow-1); }
+        .cr-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+        .cr-portrait { flex: 0 0 56px; width: 56px; height: 56px; border-radius: 50%; overflow: hidden; position: relative; background: var(--accent-wash); display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-weight: 700; color: var(--accent-deep); }
+        .cr-portrait img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .cr-meta { min-width: 0; }
+        .cr-name { font-weight: 700; color: var(--ink); font-size: 1.02em; }
+        .cr-flavor { color: var(--ink-3); font-size: 0.8em; }
+        .cr-current { color: var(--accent-deep); font-size: 0.78em; margin-top: 2px; }
+        .cr-voices { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 8px; -webkit-overflow-scrolling: touch; }
+        .cr-chip { flex: 0 0 auto; border: 1.5px solid var(--hairline); background: var(--surface-2); border-radius: 12px; padding: 8px 10px; min-width: 118px; cursor: pointer; user-select: none; -webkit-user-select: none; }
+        .cr-chip.active { border-color: var(--accent); background: var(--accent-wash); }
+        .cr-chip-name { font-weight: 600; color: var(--ink); font-size: 0.9em; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+        .cr-chip-sub { color: var(--ink-3); font-size: 0.72em; margin-top: 2px; }
+        .cr-star { border: none; background: none; color: var(--ink-3); font-size: 1.05em; line-height: 1; cursor: pointer; padding: 0 2px; }
+        .cr-chip.active .cr-star { color: var(--accent); }
+        .cr-showall { flex: 0 0 auto; align-self: center; background: none; border: none; color: var(--accent-deep); font-size: 0.78em; cursor: pointer; padding: 2px 8px; white-space: nowrap; }
+        .cast-room-btn { width: 100%; margin-bottom: 12px; padding: 12px; border: none; border-radius: 12px; background: var(--accent); color: #fff; font-weight: 700; font-size: 0.95em; cursor: pointer; box-shadow: var(--shadow-play); }
+
         .np-top {
             display: flex;
             align-items: center;
@@ -2401,10 +2426,20 @@ async loadDynamicVoices(providerId) {
                     }
                 }
 
+                this.currentSpeakers = speakers;
+
                 // Auto-cast: registry first (by name/alias), else best score-match.
                 await this.autoCastSpeakers(speakers);
 
                 rows.innerHTML = '';
+                if (!document.getElementById('open-casting-room')) {
+                    const crBtn = document.createElement('button');
+                    crBtn.id = 'open-casting-room';
+                    crBtn.className = 'cast-room-btn';
+                    crBtn.textContent = '🎭 Open Casting Room';
+                    crBtn.addEventListener('click', () => this.openCastingRoom());
+                    rows.parentNode.insertBefore(crBtn, rows);
+                }
                 for (const sp of speakers) {
                     const row = document.createElement('div');
                     row.className = 'cast-row';
@@ -2447,6 +2482,172 @@ async loadDynamicVoices(providerId) {
                     rows.appendChild(row);
                 }
                 card.style.display = 'block';
+            },
+
+            // ---------- Casting Room (immersive audition) ----------
+            castSignatures: {
+                "NARRATOR": "At first light, Eirenos breathed mist.",
+                "JUNIA": "It hums.",
+                "KA'EL": "Quiet. Listen.",
+                "LIRA": "Wait for me!",
+                "MOTHER": "Every voice has a color, little bird.",
+                "TESSARA": "Back to work — before sundown.",
+                "FOREMAN": "Back to work — before sundown.",
+                "FATHER SILAS": "We will not be hurried by fear.",
+                "KEEPER ELDER": "We will not be hurried by fear.",
+                "WATCHER": "Eyes up, hearts ready.",
+                "VIELL": "All roads lead to the same question.",
+                "DAVRIN": "Report. Now.",
+                "MARA": "Stay close to me.",
+                "CORVATH": "You should not have come here."
+            },
+            signatureLine(speaker) {
+                return this.castSignatures[this.normName(speaker)] || 'The words stay the same; the voice is what changes.';
+            },
+            flavorFor(speaker) {
+                const ch = this.registryLookup(speaker);
+                if (!ch) return 'New voice — auto-matched';
+                const reg = (this.registryRegions && this.registryRegions[ch.region] && this.registryRegions[ch.region].label) || ch.region || '';
+                const who = [ch.age, ch.gender].filter(Boolean).join(' ');
+                return [who, reg].filter(Boolean).join(' · ');
+            },
+            candidateVoices(speaker, showAll) {
+                const pool = this.allVoices || [];
+                if (showAll) return pool.slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                const ch = this.registryLookup(speaker) || { gender: '', age: 'adult', accent: '' };
+                const scale = this.registryAgeScale || ['child', 'teen', 'young', 'adult', 'senior'];
+                const idxOf = a => { const i = scale.indexOf(a || 'adult'); return i < 0 ? scale.indexOf('adult') : i; };
+                const wantG = (ch.gender || '').toLowerCase();
+                const wantAge = idxOf(ch.age);
+                const wantLoc = ch.accent || '';
+                const scored = pool.map(v => {
+                    let s = 100 - Math.abs(idxOf(v.age) - wantAge) * 10;
+                    if (wantLoc && v.locale === wantLoc) s += 15;
+                    else if (wantLoc && v.locale && v.locale.slice(0, 3) === wantLoc.slice(0, 3)) s += 5;
+                    const genderMatch = !wantG || (v.gender || '').toLowerCase() === wantG;
+                    return { v, s, genderMatch };
+                }).filter(x => x.genderMatch);
+                scored.sort((a, b) => b.s - a.s);
+                const top = scored.slice(0, 12).map(x => x.v);
+                return top.length ? top : pool.slice(0, 12);
+            },
+            async openCastingRoom() {
+                if (!this.allVoices || !this.allVoices.length) await this.loadAllVoices();
+                await this.loadRegistry();
+                let room = document.getElementById('casting-room');
+                if (!room) { room = document.createElement('div'); room.id = 'casting-room'; document.body.appendChild(room); }
+                this.renderCastingRoom(room);
+                room.classList.add('open');
+            },
+            closeCastingRoom() {
+                const room = document.getElementById('casting-room');
+                if (room) room.classList.remove('open');
+                if (this.previewAudio) { try { this.previewAudio.pause(); } catch (e) {} }
+            },
+            renderCastingRoom(room) {
+                const speakers = this.currentSpeakers || [];
+                room.innerHTML = '';
+                const top = document.createElement('div'); top.className = 'cr-top';
+                const title = document.createElement('div'); title.className = 'cr-title'; title.textContent = 'Casting Room';
+                const close = document.createElement('button'); close.className = 'np-icon-btn'; close.setAttribute('aria-label', 'Close');
+                close.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+                close.addEventListener('click', () => this.closeCastingRoom());
+                top.appendChild(title); top.appendChild(close); room.appendChild(top);
+                const sub = document.createElement('div'); sub.className = 'cr-sub';
+                sub.textContent = 'Tap a voice to hear this character say their line. Star to cast.';
+                room.appendChild(sub);
+
+                const groups = {};
+                for (const sp of speakers) {
+                    const ch = this.registryLookup(sp);
+                    const region = (ch && ch.region) || 'unknown';
+                    (groups[region] = groups[region] || []).push(sp);
+                }
+                const order = ['eirenos', 'foreign', 'unknown'];
+                const regionsInOrder = order.filter(r => groups[r]).concat(Object.keys(groups).filter(r => !order.includes(r)));
+                for (const region of regionsInOrder) {
+                    const label = document.createElement('div'); label.className = 'cr-group-label';
+                    label.textContent = (this.registryRegions && this.registryRegions[region] && this.registryRegions[region].label) || (region === 'unknown' ? 'Unassigned' : region);
+                    room.appendChild(label);
+                    for (const sp of groups[region]) room.appendChild(this.castingCard(sp));
+                }
+            },
+            castingCard(sp) {
+                const card = document.createElement('div'); card.className = 'cr-card';
+                const head = document.createElement('div'); head.className = 'cr-head';
+                const port = document.createElement('div'); port.className = 'cr-portrait';
+                const key = this.castKey(sp);
+                const slug = key.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+                port.textContent = sp === this.NARRATOR ? '¶' : (sp.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || '?');
+                const img = document.createElement('img'); img.alt = sp;
+                img.onerror = () => { img.onerror = () => img.remove(); img.src = 'avatars/' + slug + '.svg'; };
+                img.src = 'avatars/' + slug + '.png'; port.appendChild(img);
+                const meta = document.createElement('div'); meta.className = 'cr-meta';
+                const nm = document.createElement('div'); nm.className = 'cr-name'; nm.textContent = sp === this.NARRATOR ? 'Narrator' : sp;
+                const fl = document.createElement('div'); fl.className = 'cr-flavor'; fl.textContent = this.flavorFor(sp);
+                const cur = document.createElement('div'); cur.className = 'cr-current';
+                meta.appendChild(nm); meta.appendChild(fl); meta.appendChild(cur);
+                head.appendChild(port); head.appendChild(meta); card.appendChild(head);
+
+                const voicesWrap = document.createElement('div'); voicesWrap.className = 'cr-voices';
+                card.appendChild(voicesWrap);
+
+                const state = { showAll: false };
+                const updateCurrent = () => {
+                    const e = this.voiceEntryForSpeaker(sp);
+                    const match = (this.allVoices || []).find(v => v.provider === e.provider && v.voiceId === e.voiceId);
+                    cur.textContent = 'Cast: ' + (match ? match.name : e.voiceId) + ' · ' + e.provider;
+                };
+                const renderChips = () => {
+                    voicesWrap.innerHTML = '';
+                    const list = this.candidateVoices(sp, state.showAll);
+                    const e = this.voiceEntryForSpeaker(sp);
+                    for (const v of list) {
+                        const chip = document.createElement('div'); chip.className = 'cr-chip';
+                        if (v.provider === e.provider && v.voiceId === e.voiceId) chip.classList.add('active');
+                        const cn = document.createElement('div'); cn.className = 'cr-chip-name';
+                        const nameSpan = document.createElement('span'); nameSpan.textContent = v.name || v.voiceId;
+                        const star = document.createElement('button'); star.className = 'cr-star'; star.textContent = '★'; star.setAttribute('aria-label', 'Cast this voice');
+                        star.addEventListener('click', (ev) => { ev.stopPropagation(); this.lockVoice(sp, v.provider, v.voiceId); renderChips(); updateCurrent(); });
+                        cn.appendChild(nameSpan); cn.appendChild(star);
+                        const csub = document.createElement('div'); csub.className = 'cr-chip-sub';
+                        csub.textContent = [[v.age, v.gender].filter(Boolean).join(' '), (v.locale || ''), v.provider].filter(Boolean).join(' · ');
+                        chip.appendChild(cn); chip.appendChild(csub);
+                        chip.addEventListener('click', () => this.previewVoice(sp, v.provider, v.voiceId));
+                        voicesWrap.appendChild(chip);
+                    }
+                    const toggle = document.createElement('button'); toggle.className = 'cr-showall';
+                    toggle.textContent = state.showAll ? 'suggested only' : 'show all';
+                    toggle.addEventListener('click', () => { state.showAll = !state.showAll; renderChips(); });
+                    voicesWrap.appendChild(toggle);
+                };
+                updateCurrent(); renderChips();
+                return card;
+            },
+            async previewVoice(sp, provider, voiceId) {
+                const line = this.signatureLine(sp);
+                const cacheKey = provider + '||' + voiceId + '||' + line;
+                this.previewCache = this.previewCache || {};
+                try {
+                    if (!this.previewAudio) this.previewAudio = new Audio();
+                    let b64 = this.previewCache[cacheKey];
+                    if (!b64) {
+                        if (this.updateStatus) this.updateStatus('Auditioning ' + (sp === this.NARRATOR ? 'Narrator' : sp) + '…');
+                        const data = await this.fetchCloudChunk(provider, { text: line, voice: voiceId });
+                        b64 = data.audio; this.previewCache[cacheKey] = b64;
+                    }
+                    const blob = this.base64ToBlob(b64, 'audio/mpeg');
+                    this.previewAudio.src = URL.createObjectURL(blob);
+                    await this.previewAudio.play();
+                } catch (e) {
+                    if (this.updateStatus) this.updateStatus('Preview failed: ' + (e.message || e));
+                }
+            },
+            lockVoice(sp, provider, voiceId) {
+                // castMap is the source of truth; the classic Cast rows refresh on
+                // next render. We don't re-render them here to avoid churn per tap.
+                this.castMap[this.castKey(sp)] = { provider: provider, voiceId: voiceId };
+                this.saveCastMap();
             },
 
             buildDramatizedChunks(fullText, limit = 500) {
