@@ -1,0 +1,22 @@
+{
+  "version": "1.1-provisional",
+  "regions": {
+    "eirenos": { "label": "Eirenos native", "accent": "en-GB" },
+    "foreign": { "label": "Foreigner (twins' homeland)", "accent": "en-US" }
+  },
+  "ageScale": ["child", "teen", "young", "adult", "senior"],
+  "characters": [
+    { "name": "Narrator", "aliases": ["NARRATOR"], "region": "eirenos", "gender": "male", "age": "senior", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "john-rhys-davies" } },
+    { "name": "Junia", "aliases": [], "region": "foreign", "gender": "female", "age": "child", "accent": "en-US", "voice": { "provider": "speechify", "voiceId": "lisa" } },
+    { "name": "Ka'el", "aliases": ["Kael", "KA’EL", "KAEL"], "region": "foreign", "gender": "male", "age": "child", "accent": "en-US", "voice": { "provider": "speechify", "voiceId": "nick" } },
+    { "name": "Lira", "aliases": [], "region": "foreign", "gender": "female", "age": "child", "accent": "en-US", "voice": { "provider": "azure", "voiceId": "en-US-AnaNeural" } },
+    { "name": "Mother", "aliases": [], "region": "foreign", "gender": "female", "age": "adult", "accent": "en-US", "voice": null },
+    { "name": "Viell", "aliases": [], "region": "eirenos", "gender": "male", "age": "senior", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "ron" } },
+    { "name": "Father Silas", "aliases": ["KEEPER ELDER", "Keeper Elder", "Silas"], "region": "eirenos", "gender": "male", "age": "senior", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "douglas" } },
+    { "name": "Tessara", "aliases": ["FOREMAN", "Foreman"], "region": "eirenos", "gender": "female", "age": "adult", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "carol" } },
+    { "name": "Watcher", "aliases": [], "region": "eirenos", "gender": "male", "age": "senior", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "phil" } },
+    { "name": "Davrin", "aliases": [], "region": "eirenos", "gender": "male", "age": "adult", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "michael" } },
+    { "name": "Mara", "aliases": [], "region": "eirenos", "gender": "female", "age": "senior", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "marnie" } },
+    { "name": "Corvath", "aliases": [], "region": "eirenos", "gender": "male", "age": "adult", "accent": "en-GB", "voice": null }
+  ]
+}

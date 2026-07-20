@@ -2205,6 +2205,13 @@ async loadDynamicVoices(providerId) {
             loadCastMap() {
                 try { this.castMap = JSON.parse(localStorage.getItem('witness-cast-map') || '{}'); }
                 catch (e) { this.castMap = {}; }
+                // Migrate legacy string entries (voiceId only) -> { provider, voiceId }.
+                let migrated = false;
+                for (const k of Object.keys(this.castMap)) {
+                    const v = this.castMap[k];
+                    if (typeof v === 'string') { this.castMap[k] = { provider: 'speechify', voiceId: v }; migrated = true; }
+                }
+                if (migrated) this.saveCastMap();
             },
 
             saveCastMap() {
@@ -2212,8 +2219,9 @@ async loadDynamicVoices(providerId) {
             },
 
             castKey(name) {
-                // Cast keys are case-insensitive: "Ka’el" and "KA’EL" are one speaker.
-                return (name || '').trim().toUpperCase();
+                // Cast keys are case-insensitive and apostrophe-normalized:
+                // "Ka’el", "KA'EL" and "Kael" resolve to one speaker.
+                return (name || '').trim().toUpperCase().replace(/[’`]/g, "'");
             },
 
             // Build a <select> with voices grouped by age + gender and
@@ -2260,11 +2268,118 @@ async loadDynamicVoices(providerId) {
                 }
             },
 
+            // ---- Cross-provider voice resolution (v2.9 / TASK_007) ----
+            encVoice(provider, id) { return provider + '||' + id; },
+            decVoice(val) {
+                if (val && typeof val === 'object') return { provider: val.provider || 'speechify', voiceId: val.voiceId };
+                const s = String(val || '');
+                const i = s.indexOf('||');
+                return i < 0 ? { provider: 'speechify', voiceId: s } : { provider: s.slice(0, i), voiceId: s.slice(i + 2) };
+            },
+            voiceEntryForSpeaker(speaker) {
+                const key = this.castKey((!speaker || speaker === this.NARRATOR) ? this.NARRATOR : speaker);
+                const e = this.castMap[key];
+                if (e && typeof e === 'object' && e.voiceId) return { provider: e.provider || 'speechify', voiceId: e.voiceId };
+                if (typeof e === 'string' && e) return this.decVoice(e);
+                const p = (this.provider && this.provider !== 'local') ? this.provider : 'speechify';
+                return { provider: p, voiceId: this.voiceSelections[p] || this.voiceSelections.speechify };
+            },
             voiceForSpeaker(speaker) {
-                const key = (!speaker || speaker === this.NARRATOR)
-                    ? this.castKey(this.NARRATOR)
-                    : this.castKey(speaker);
-                return this.castMap[key] || this.voiceSelections.speechify;
+                const en = this.voiceEntryForSpeaker(speaker);
+                return this.encVoice(en.provider, en.voiceId);
+            },
+            async loadAllVoices() {
+                const providers = ['speechify', 'elevenlabs', 'azure'];
+                const SHORT = { speechify: 'SPX', elevenlabs: '11L', azure: 'AZ' };
+                for (const p of providers) {
+                    if (!this.voiceCache[p] || this.voiceCache[p].length === 0) {
+                        try { await this.loadDynamicVoices(p); } catch (e) {}
+                    }
+                }
+                const pool = [];
+                for (const p of providers) {
+                    for (const v of (this.voiceCache[p] || [])) {
+                        pool.push({
+                            value: this.encVoice(p, v.value),
+                            label: v.label + ' · ' + (SHORT[p] || p),
+                            name: v.name, gender: v.gender, age: v.age, locale: v.locale,
+                            provider: p, voiceId: v.value
+                        });
+                    }
+                }
+                this.allVoices = pool;
+                return pool;
+            },
+            normName(s) { return (s || '').toString().trim().toUpperCase().replace(/[’`]/g, "'"); },
+            async loadRegistry() {
+                if (this.registryIndex) return this.registryIndex;
+                this.registryIndex = {};
+                this.registryRegions = {};
+                this.registryAgeScale = ['child', 'teen', 'young', 'adult', 'senior'];
+                try {
+                    const r = await fetch('cast-registry.json');
+                    if (r.ok) {
+                        const reg = await r.json();
+                        this.registryRegions = reg.regions || {};
+                        if (Array.isArray(reg.ageScale)) this.registryAgeScale = reg.ageScale;
+                        for (const c of (reg.characters || [])) {
+                            const acc = c.accent || (this.registryRegions[c.region] && this.registryRegions[c.region].accent) || '';
+                            const entry = { gender: c.gender || '', age: c.age || 'adult', accent: acc, region: c.region || '', voice: c.voice || null };
+                            for (const nm of [c.name, ...(c.aliases || [])]) this.registryIndex[this.normName(nm)] = entry;
+                        }
+                    }
+                } catch (e) { /* registry optional */ }
+                return this.registryIndex;
+            },
+            registryLookup(speaker) {
+                return this.registryIndex ? (this.registryIndex[this.normName(speaker)] || null) : null;
+            },
+            scoreMatch(attrs, pool, used) {
+                const scale = this.registryAgeScale || ['child', 'teen', 'young', 'adult', 'senior'];
+                const idxOf = a => { const i = scale.indexOf(a || 'adult'); return i < 0 ? scale.indexOf('adult') : i; };
+                const wantG = (attrs.gender || '').toLowerCase();
+                const wantAge = idxOf(attrs.age);
+                const wantLoc = attrs.accent || '';
+                let best = null, bestScore = -1e9;
+                for (const v of pool) {
+                    if (wantG && (v.gender || '').toLowerCase() !== wantG) continue;
+                    let score = 100 - Math.abs(idxOf(v.age) - wantAge) * 10;
+                    if (wantLoc && v.locale === wantLoc) score += 15;
+                    else if (wantLoc && v.locale && v.locale.slice(0, 3) === wantLoc.slice(0, 3)) score += 5;
+                    if (used.has(v.provider + '||' + v.voiceId)) score -= 60;
+                    if (score > bestScore) { bestScore = score; best = v; }
+                }
+                return best;
+            },
+            async autoCastSpeakers(speakers) {
+                await this.loadRegistry();
+                const pool = this.allVoices || (await this.loadAllVoices());
+                const has = (prov) => pool.some(v => v.provider === prov);
+                const used = new Set();
+                for (const sp of speakers) {
+                    const e = this.castMap[this.castKey(sp)];
+                    if (e && e.voiceId) used.add((e.provider || 'speechify') + '||' + e.voiceId);
+                }
+                // Pass 1 — reserve every registry-locked voice first, so a
+                // score-match can never steal a canon voice from its character.
+                const pending = [];
+                for (const sp of speakers) {
+                    const k = this.castKey(sp);
+                    if (this.castMap[k] && this.castMap[k].voiceId) continue; // already seated
+                    const ch = this.registryLookup(sp);
+                    if (ch && ch.voice && ch.voice.voiceId && has(ch.voice.provider)) {
+                        this.castMap[k] = { provider: ch.voice.provider, voiceId: ch.voice.voiceId };
+                        used.add(ch.voice.provider + '||' + ch.voice.voiceId);
+                    } else {
+                        pending.push({ k, attrs: ch || { gender: '', age: 'adult', accent: '' } });
+                    }
+                }
+                // Pass 2 — score-match the rest against whatever's left.
+                for (const { k, attrs } of pending) {
+                    const pick = this.scoreMatch(attrs, pool, used);
+                    if (pick) { this.castMap[k] = { provider: pick.provider, voiceId: pick.voiceId }; used.add(pick.provider + '||' + pick.voiceId); }
+                }
+                this.saveCastMap();
             },
 
             async renderCastPanel() {
@@ -2273,11 +2388,8 @@ async loadDynamicVoices(providerId) {
                 if (!card || !rows) return;
                 if (!this.hasScriptTags) { card.style.display = 'none'; return; }
 
-                // Cast voices come from the live Speechify list
-                if (!this.voiceCache.speechify || this.voiceCache.speechify.length === 0) {
-                    await this.loadDynamicVoices('speechify');
-                }
-                const voices = this.voiceCache.speechify || [];
+                // Cast voices come from ALL keyed providers (cross-provider casting)
+                const voices = await this.loadAllVoices();
 
                 const speakers = [this.NARRATOR];
                 const seenKeys = new Set([this.castKey(this.NARRATOR)]);
@@ -2289,19 +2401,8 @@ async loadDynamicVoices(providerId) {
                     }
                 }
 
-                // Default assignments: narrator follows the main Speechify voice
-                // unless explicitly overridden here; new speakers get the next
-                // voices in the (already narrator-first sorted) list.
-                const used = new Set();
-                used.add(this.voiceForSpeaker(this.NARRATOR));
-                for (const sp of speakers) {
-                    if (sp === this.NARRATOR) continue;
-                    const k = this.castKey(sp);
-                    if (this.castMap[k]) { used.add(this.castMap[k]); continue; }
-                    const pick = voices.find(v => !used.has(v.value));
-                    if (pick) { this.castMap[k] = pick.value; used.add(pick.value); }
-                }
-                this.saveCastMap();
+                // Auto-cast: registry first (by name/alias), else best score-match.
+                await this.autoCastSpeakers(speakers);
 
                 rows.innerHTML = '';
                 for (const sp of speakers) {
@@ -2338,7 +2439,7 @@ async loadDynamicVoices(providerId) {
                     this.fillVoiceSelect(sel, voices);
                     sel.value = this.voiceForSpeaker(sp);
                     sel.addEventListener('change', () => {
-                        this.castMap[this.castKey(sp)] = sel.value;
+                        this.castMap[this.castKey(sp)] = this.decVoice(sel.value);
                         this.saveCastMap();
                     });
                     row.appendChild(name);
@@ -2355,13 +2456,15 @@ async loadDynamicVoices(providerId) {
                 const chunks = [];
                 for (const seg of segs) {
                     const segText = fullText.slice(seg.start, seg.end);
+                    const entry = this.voiceEntryForSpeaker(seg.speaker);
                     for (const c of this.buildCloudChunks(segText, limit)) {
                         chunks.push({
                             start: c.start + seg.start,
                             end: c.end + seg.start,
                             text: c.text,
                             speaker: seg.speaker,
-                            voice: this.voiceForSpeaker(seg.speaker)
+                            provider: entry.provider,
+                            voice: entry.voiceId
                         });
                     }
                 }
@@ -2469,7 +2572,7 @@ async loadDynamicVoices(providerId) {
                 this.markVoiceLoading(provider);
                 this.updateStatus(`Generating audio with ${provider}...`);
 
-                const dramatized = this.hasScriptTags && provider === 'speechify';
+                const dramatized = this.hasScriptTags && provider !== 'local';
                 let chunks = (dramatized
                     ? this.buildDramatizedChunks(fullText)
                     : this.buildCloudChunks(fullText)
@@ -2484,7 +2587,7 @@ async loadDynamicVoices(providerId) {
 
                 const prefetch = (i) => {
                     if (i >= chunks.length || engine.cache[i]) return;
-                    engine.cache[i] = this.fetchCloudChunk(provider, chunks[i]);
+                    engine.cache[i] = this.fetchCloudChunk(chunks[i].provider || provider, chunks[i]);
                     engine.cache[i].catch(() => { delete engine.cache[i]; });
                 };
 
@@ -2720,6 +2823,7 @@ async loadDynamicVoices(providerId) {
         }
 
         // Start app
+        window.app = app; // expose for debugging / diagnostics
         app.init();
     </script>
 </body>
