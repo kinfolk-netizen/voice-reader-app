@@ -8,8 +8,8 @@
   "ageScale": ["child", "teen", "young", "adult", "senior"],
   "characters": [
     { "name": "Narrator", "aliases": ["NARRATOR"], "region": "eirenos", "gender": "male", "age": "senior", "accent": "en-GB", "voice": { "provider": "elevenlabs", "voiceId": "onwK4e9ZLuTAKqWW03F9" } },
-    { "name": "Junia", "aliases": [], "region": "foreign", "gender": "female", "age": "child", "accent": "en-US", "voice": { "provider": "speechify", "voiceId": "lisa" } },
-    { "name": "Ka'el", "aliases": ["Kael", "KA’EL", "KAEL"], "region": "foreign", "gender": "male", "age": "child", "accent": "en-US", "voice": { "provider": "speechify", "voiceId": "nick" } },
+    { "name": "Junia", "aliases": [], "region": "foreign", "gender": "female", "age": "child", "accent": "en-US", "voice": { "provider": "speechify", "voiceId": "evie" } },
+    { "name": "Ka'el", "aliases": ["Kael", "KA’EL", "KAEL"], "region": "foreign", "gender": "male", "age": "child", "accent": "en-US", "voice": { "provider": "speechify", "voiceId": "rory" } },
     { "name": "Lira", "aliases": [], "region": "foreign", "gender": "female", "age": "child", "accent": "en-US", "voice": { "provider": "azure", "voiceId": "en-US-AnaNeural" } },
     { "name": "Mother", "aliases": [], "region": "foreign", "gender": "female", "age": "adult", "accent": "en-US", "voice": null },
     { "name": "Viell", "aliases": [], "region": "eirenos", "gender": "male", "age": "senior", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "ron" } },
