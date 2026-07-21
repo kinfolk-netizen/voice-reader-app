@@ -2790,20 +2790,145 @@ async loadDynamicVoices(providerId) {
                 return out.sort((a, b) => a.startTime - b.startTime);
             },
 
+            // ---------- Audio chunk cache (IndexedDB) + fetch resilience (v2.15) ----------
+            audioDB() {
+                if (!this.audioDBPromise) {
+                    this.audioDBPromise = new Promise((resolve, reject) => {
+                        const req = indexedDB.open('vr-audio-cache', 1);
+                        req.onupgradeneeded = () => {
+                            const db = req.result;
+                            if (!db.objectStoreNames.contains('chunks')) {
+                                const st = db.createObjectStore('chunks');
+                                st.createIndex('ts', 'ts');
+                            }
+                        };
+                        req.onsuccess = () => resolve(req.result);
+                        req.onerror = () => reject(req.error);
+                    });
+                }
+                return this.audioDBPromise;
+            },
+
+            async audioCacheGet(key) {
+                try {
+                    const db = await this.audioDB();
+                    return await new Promise((resolve) => {
+                        const req = db.transaction('chunks').objectStore('chunks').get(key);
+                        req.onsuccess = () => resolve(req.result || null);
+                        req.onerror = () => resolve(null);
+                    });
+                } catch (e) { return null; }
+            },
+
+            async audioCachePut(key, data) {
+                try {
+                    const db = await this.audioDB();
+                    await new Promise((resolve) => {
+                        const tx = db.transaction('chunks', 'readwrite');
+                        tx.objectStore('chunks').put({ audio: data.audio, speechMarks: data.speechMarks || null, ts: Date.now() }, key);
+                        tx.oncomplete = resolve;
+                        tx.onerror = resolve;
+                        tx.onabort = resolve;
+                    });
+                    this.audioCachePrune();
+                } catch (e) { /* cache is best-effort */ }
+            },
+
+            async audioCachePrune(cap = 500) {
+                // FIFO eviction by insert time — keeps roughly a few chapters' worth of
+                // audio on-device so re-listens and sentence-skips replay instantly.
+                if (this.audioPruning) return;
+                this.audioPruning = true;
+                try {
+                    const db = await this.audioDB();
+                    await new Promise((resolve) => {
+                        const tx = db.transaction('chunks', 'readwrite');
+                        const store = tx.objectStore('chunks');
+                        const cReq = store.count();
+                        cReq.onsuccess = () => {
+                            let excess = cReq.result - cap;
+                            if (excess <= 0) return;
+                            const cur = store.index('ts').openCursor();
+                            cur.onsuccess = () => {
+                                const c = cur.result;
+                                if (c && excess > 0) { c.delete(); excess--; c.continue(); }
+                            };
+                        };
+                        tx.oncomplete = resolve;
+                        tx.onerror = resolve;
+                        tx.onabort = resolve;
+                    });
+                } catch (e) { /* best-effort */ }
+                finally { this.audioPruning = false; }
+            },
+
+            chunkCacheKey(provider, voice, model, text) {
+                // djb2 — stable, fast, plenty for cache keying alongside the length guard.
+                let h = 5381;
+                for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) >>> 0;
+                return provider + '|' + (voice || '') + '|' + (model || '') + '|' + text.length + '|' + h.toString(36);
+            },
+
+            // Per-provider concurrency gate. ElevenLabs allows only a couple of
+            // concurrent generations — parallel prefetches past that get throttled,
+            // fail, and stall playback. Providers without a cap run unrestricted.
+            ttsSlots: { elevenlabs: 2 },
+            async ttsAcquire(provider) {
+                const cap = this.ttsSlots[provider];
+                if (!cap) return () => {};
+                if (!this.ttsSem) this.ttsSem = {};
+                const s = this.ttsSem[provider] || (this.ttsSem[provider] = { busy: 0, queue: [] });
+                if (s.busy >= cap) {
+                    await new Promise(res => s.queue.push(res)); // slot handed over on release
+                } else {
+                    s.busy++;
+                }
+                let released = false;
+                return () => {
+                    if (released) return;
+                    released = true;
+                    const next = s.queue.shift();
+                    if (next) next();   // transfer the slot directly; busy count unchanged
+                    else s.busy--;
+                };
+            },
+
             async fetchCloudChunk(provider, chunk) {
-                const response = await fetch('/.netlify/functions/tts-proxy', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        providerId: provider,
-                        text: chunk.text,
-                        voice: chunk.voice || this.voiceSelections[provider],
-                        options: { model: this.providerModels[provider] }
-                    })
-                });
-                const data = await response.json();
-                if (!data.success) throw new Error(data.error || 'TTS request failed');
-                return data;
+                const voice = chunk.voice || this.voiceSelections[provider];
+                const model = this.providerModels[provider];
+                const key = this.chunkCacheKey(provider, voice, model, chunk.text);
+
+                // Served from the on-device cache: replays, sentence-skips, and
+                // engine restarts cost zero network and can never stutter.
+                const cached = await this.audioCacheGet(key);
+                if (cached && cached.audio) {
+                    return { success: true, audio: cached.audio, speechMarks: cached.speechMarks };
+                }
+
+                const release = await this.ttsAcquire(provider);
+                try {
+                    let lastErr = null;
+                    for (let attempt = 0; attempt < 3; attempt++) {
+                        if (attempt) await new Promise(r => setTimeout(r, attempt === 1 ? 600 : 1800));
+                        try {
+                            const response = await fetch('/.netlify/functions/tts-proxy', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    providerId: provider,
+                                    text: chunk.text,
+                                    voice: voice,
+                                    options: { model: model }
+                                })
+                            });
+                            const data = await response.json();
+                            if (!data.success) throw new Error(data.error || 'TTS request failed');
+                            this.audioCachePut(key, data); // fire-and-forget
+                            return data;
+                        } catch (e) { lastErr = e; }
+                    }
+                    throw lastErr || new Error('TTS request failed');
+                } finally { release(); }
             },
 
             stopCloud() {
@@ -2846,7 +2971,7 @@ async loadDynamicVoices(providerId) {
                 }
                 console.log('[CLOUD TTS] Queued', chunks.length, 'chunks | provider:', provider, dramatized ? '| DRAMATIZED (' + new Set(chunks.map(c => c.speaker)).size + ' voices)' : '');
 
-                const engine = { provider, chunks, idx: 0, audio: null, cache: {}, interval: null, pausedByUser: false, stopped: false, bufferAhead: 3 };
+                const engine = { provider, chunks, idx: 0, audio: null, cache: {}, interval: null, pausedByUser: false, stopped: false, bufferAhead: 4 };
                 this.cloudEngine = engine;
 
                 const prefetch = (i) => {
