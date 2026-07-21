@@ -20,10 +20,11 @@
     { "name": "Mara", "aliases": [], "region": "eirenos", "gender": "female", "age": "senior", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "marnie" } },
     { "name": "Corvath", "aliases": [], "region": "eirenos", "gender": "male", "age": "adult", "accent": "en-GB", "voice": null },
     { "name": "Maren", "aliases": [], "region": "panel", "gender": "female", "age": "teen", "accent": "", "voice": { "provider": "speechify", "voiceId": "linda" } },
-    { "name": "Silas", "aliases": [], "region": "panel", "gender": "male", "age": "adult", "accent": "", "voice": { "provider": "speechify", "voiceId": "michael" } },
+    { "name": "The Joiner", "aliases": ["Joiner", "THE JOINER", "JOINER", "Silas", "SILAS"], "region": "panel", "gender": "male", "age": "adult", "accent": "", "voice": { "provider": "speechify", "voiceId": "michael" } },
     { "name": "Cole", "aliases": [], "region": "panel", "gender": "male", "age": "adult", "accent": "", "voice": { "provider": "elevenlabs", "voiceId": "N2lVS1w4EtoT3dr4eOWO" } },
     { "name": "Amos", "aliases": [], "region": "panel", "gender": "male", "age": "senior", "accent": "", "voice": { "provider": "speechify", "voiceId": "douglas" } },
     { "name": "The Keeper", "aliases": ["THE KEEPER", "Keeper"], "region": "panel", "gender": "female", "age": "adult", "accent": "", "voice": { "provider": "speechify", "voiceId": "helen" } },
-    { "name": "The Author's Seat", "aliases": ["THE AUTHOR'S SEAT", "Author's Seat", "Author"], "region": "panel", "gender": "male", "age": "adult", "accent": "", "voice": { "provider": "elevenlabs", "voiceId": "5M1W9IgOqnGaZnqjhACC" } }
+    { "name": "The Author's Seat", "aliases": ["THE AUTHOR'S SEAT", "Author's Seat", "Author"], "region": "panel", "gender": "male", "age": "adult", "accent": "", "voice": { "provider": "elevenlabs", "voiceId": "5M1W9IgOqnGaZnqjhACC" } },
+    { "name": "The Witness Tone", "aliases": ["THE WITNESS TONE", "Witness Tone", "Witness", "WITNESS TONE", "WITNESS", "The Commissioned Pen"], "region": "panel", "gender": "male", "age": "senior", "accent": "", "voice": { "provider": "speechify", "voiceId": "ron" } }
   ]
 }

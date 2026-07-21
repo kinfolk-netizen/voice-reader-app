@@ -2500,6 +2500,7 @@ async loadDynamicVoices(providerId) {
             },
 
             // ---------- Casting Room (immersive audition) ----------
+            // Casting-Room audition lines (v2.16: + The Joiner rename, + The Witness Tone seated)
             castSignatures: {
                 "NARRATOR": "At first light, Eirenos breathed mist.",
                 "JUNIA": "It hums.",
@@ -2517,10 +2518,15 @@ async loadDynamicVoices(providerId) {
                 "CORVATH": "You should not have come here.",
                 "MAREN": "Oh — I leaned right in.",
                 "SILAS": "Pick one — it's doing the same job twice.",
+                "THE JOINER": "Pick one — it's doing the same job twice.",
+                "JOINER": "Pick one — it's doing the same job twice.",
                 "COLE": "I braced for a sermon. Didn't get one. Fine.",
                 "AMOS": "That grace felt earned, not cheap.",
                 "THE KEEPER": "Answer her point, not your own.",
-                "THE AUTHOR'S SEAT": "Keep what's earned. Cut what's forced."
+                "THE AUTHOR'S SEAT": "Keep what's earned. Cut what's forced.",
+                "THE WITNESS TONE": "The gesture is the whole sentence.",
+                "WITNESS TONE": "The gesture is the whole sentence.",
+                "WITNESS": "The gesture is the whole sentence."
             },
             signatureLine(speaker) {
                 return this.castSignatures[this.normName(speaker)] || 'The words stay the same; the voice is what changes.';
