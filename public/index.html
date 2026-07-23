@@ -703,6 +703,13 @@
         .card.collapsible.collapsed > :not(.card-title) { display: none; }
 
         /* ---------- Now Playing (full-screen player) ---------- */
+        #np-time { font-size: 13px; opacity: 0.75; text-align: center; margin: 2px 0 6px; min-height: 16px; }
+        .np-speed-wrap { position: relative; }
+        .np-speed-pop { position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%); background: rgba(28,28,34,0.97); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 12px 14px; width: 230px; z-index: 60; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+        .np-speed-pop.hidden { display: none; }
+        .np-speed-pop input[type="range"] { width: 100%; }
+        .np-speed-presets { display: flex; gap: 6px; justify-content: space-between; margin-top: 8px; }
+        .np-speed-presets button { flex: 1; background: rgba(255,255,255,0.08); color: inherit; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 4px 0; font-size: 12px; cursor: pointer; }
         .np-open-btn {
             display: block;
             width: 100%;
@@ -938,7 +945,7 @@
                         <span>Speed</span>
                         <span id="speed-value">1.0x</span>
                     </div>
-                    <input type="range" id="speed" min="0.5" max="2" step="0.1" value="1">
+                    <input type="range" id="speed" min="0.5" max="2" step="0.05" value="1">
                 </div>
 
                 <div class="slider-group">
@@ -1079,6 +1086,7 @@
             </div>
             <div class="np-bottom">
                 <div id="np-status"></div>
+                <div id="np-time"></div>
                 <div class="np-progress"><div id="np-progress-fill"></div></div>
                 <div class="np-controls">
                     <button class="control-btn" id="np-back" title="Previous sentence"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11 12l8.5-6v12L11 12zm-6.5 0L13 6v12l-8.5-6z"/></svg></button>
@@ -1086,7 +1094,19 @@
                     <button class="control-btn" id="np-fwd" title="Next sentence"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13 12L4.5 6v12L13 12zm6.5 0L11 6v12l8.5-6z"/></svg></button>
                 </div>
                 <div class="np-extras">
-                    <button class="np-chip" id="np-speed" title="Playback speed">1x</button>
+                    <div class="np-speed-wrap">
+                        <button class="np-chip" id="np-speed" title="Playback speed">1×</button>
+                        <div id="np-speed-pop" class="np-speed-pop hidden">
+                            <input type="range" id="np-speed-slider" min="0.5" max="2" step="0.05" value="1">
+                            <div class="np-speed-presets">
+                                <button data-speed="0.85">0.85</button>
+                                <button data-speed="1">1.0</button>
+                                <button data-speed="1.15">1.15</button>
+                                <button data-speed="1.25">1.25</button>
+                                <button data-speed="1.5">1.5</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1182,7 +1202,8 @@
                     this.updateActiveVoiceLabel();
                 });
                 document.getElementById('speed').addEventListener('input', (e) => {
-                    document.getElementById('speed-value').textContent = e.target.value + 'x';
+                    if (this.applySpeed) this.applySpeed(e.target.value);
+                    else document.getElementById('speed-value').textContent = e.target.value + 'x';
                 });
                 document.getElementById('pitch').addEventListener('input', (e) => {
                     document.getElementById('pitch-value').textContent = e.target.value;
@@ -2137,20 +2158,36 @@ async loadDynamicVoices(providerId) {
                 document.getElementById('np-back').addEventListener('click', () => this.skipSentence(-1));
                 document.getElementById('np-fwd').addEventListener('click', () => this.skipSentence(1));
                 document.getElementById('np-note').addEventListener('click', () => this.openNoteEditor());
-                document.getElementById('np-speed').addEventListener('click', () => {
+                // v2.20: fine speed control — one applySpeed used by the desk slider,
+                // the Now Playing popover slider, and the preset chips. Persists.
+                const applySpeed = (v) => {
+                    v = Math.min(2, Math.max(0.5, parseFloat(v) || 1));
                     const speedEl = document.getElementById('speed');
-                    const cur = parseFloat(speedEl.value) || 1;
-                    // step to the next preset (closest current -> next, wrapping)
-                    let idx = this.npSpeeds.findIndex(s => Math.abs(s - cur) < 0.01);
-                    idx = (idx + 1) % this.npSpeeds.length;
-                    const next = this.npSpeeds[idx];
-                    speedEl.value = String(next);
-                    document.getElementById('speed-value').textContent = next + 'x';
-                    document.getElementById('np-speed').textContent = next + 'x';
-                    // apply live to whatever is playing
-                    if (this.cloudEngine && this.cloudEngine.audio) this.cloudEngine.audio.playbackRate = next;
-                    else if (this.sharedAudio) this.sharedAudio.playbackRate = next;
+                    if (speedEl) speedEl.value = String(v);
+                    const sv = document.getElementById('speed-value');
+                    if (sv) sv.textContent = this.fmtSpeed(v);
+                    const chip = document.getElementById('np-speed');
+                    if (chip) chip.textContent = this.fmtSpeed(v);
+                    const npSl = document.getElementById('np-speed-slider');
+                    if (npSl) npSl.value = String(v);
+                    try { localStorage.setItem('vr-speed', String(v)); } catch (e) {}
+                    if (this.cloudEngine && this.cloudEngine.audio) this.cloudEngine.audio.playbackRate = v;
+                    else if (this.sharedAudio) this.sharedAudio.playbackRate = v;
+                };
+                this.applySpeed = applySpeed;
+                document.getElementById('np-speed').addEventListener('click', () => {
+                    const pop = document.getElementById('np-speed-pop');
+                    if (pop) pop.classList.toggle('hidden');
                 });
+                const npSlider = document.getElementById('np-speed-slider');
+                if (npSlider) npSlider.addEventListener('input', (e) => applySpeed(e.target.value));
+                document.querySelectorAll('.np-speed-presets button').forEach(b => {
+                    b.addEventListener('click', () => applySpeed(b.dataset.speed));
+                });
+                try {
+                    const saved = parseFloat(localStorage.getItem('vr-speed'));
+                    if (saved >= 0.5 && saved <= 2) applySpeed(saved);
+                } catch (e) {}
             },
 
             openNowPlaying() {
@@ -2195,7 +2232,7 @@ async loadDynamicVoices(providerId) {
                 // speed chip reflects the slider
                 const chip = document.getElementById('np-speed');
                 const speedEl = document.getElementById('speed');
-                if (chip && speedEl) chip.textContent = (parseFloat(speedEl.value) || 1) + 'x';
+                if (chip && speedEl) chip.textContent = this.fmtSpeed(parseFloat(speedEl.value) || 1);
             },
 
             // ---------- Dramatized Reader ----------
@@ -2796,6 +2833,80 @@ async loadDynamicVoices(providerId) {
                 return out.sort((a, b) => a.startTime - b.startTime);
             },
 
+            // ---------- v2.20 timing: weighted estimation + time-remaining ----------
+            buildWeightCurve(text) {
+                // Cumulative "speaking cost" per character: 1 per char plus virtual
+                // pause-chars at punctuation, so estimated highlighting slows where
+                // speech actually slows instead of drifting linearly.
+                const cum = new Float64Array(text.length + 1);
+                let w = 0;
+                for (let k = 0; k < text.length; k++) {
+                    const c = text[k];
+                    w += 1;
+                    if (c === '.' || c === '?' || c === '!') w += 12;
+                    else if (c === ',' || c === ';' || c === ':' || c === '—') w += 6;
+                    else if (c === '\n') w += 18;
+                    cum[k + 1] = w;
+                }
+                return cum;
+            },
+            charAtWeight(cum, frac) {
+                if (!cum || cum.length < 2) return 0;
+                const target = frac * cum[cum.length - 1];
+                let lo = 0, hi = cum.length - 1;
+                while (lo < hi) {
+                    const mid = (lo + hi) >> 1;
+                    if (cum[mid] < target) lo = mid + 1; else hi = mid;
+                }
+                return Math.max(0, lo - 1);
+            },
+            cpsKey(provider) { return provider + '||' + (this.voiceSelections[provider] || ''); },
+            getCps(provider) {
+                if (!this.cpsCache) this.cpsCache = {};
+                const key = this.cpsKey(provider);
+                if (this.cpsCache[key]) return this.cpsCache[key];
+                try {
+                    const v = parseFloat(localStorage.getItem('vr-cps-' + key));
+                    if (v > 3 && v < 40) return v;
+                } catch (e) {}
+                return 15.5; // seed: typical narration chars/sec
+            },
+            updateCps(provider, chunk, duration) {
+                if (!duration || duration <= 0) return;
+                const chars = (chunk.end - chunk.start) || 1;
+                const inst = chars / duration;
+                if (inst < 3 || inst > 40) return; // discard absurd measurements
+                const key = this.cpsKey(provider);
+                if (!this.cpsCache) this.cpsCache = {};
+                const next = this.getCps(provider) * 0.7 + inst * 0.3;
+                this.cpsCache[key] = next;
+                this.cpsMeasured = (this.cpsMeasured || 0) + 1;
+                try { localStorage.setItem('vr-cps-' + key, String(next)); } catch (e) {}
+            },
+            updateTimeRemaining(engine, i, audio) {
+                const el = document.getElementById('np-time');
+                if (!el) return;
+                const rate = (audio && audio.playbackRate) || 1;
+                const cps = this.getCps(engine.provider);
+                let known = 0, unknownChars = 0;
+                for (let k = i; k < engine.chunks.length; k++) {
+                    if (engine.durMap[k]) known += engine.durMap[k];
+                    else unknownChars += (engine.chunks[k].end - engine.chunks[k].start);
+                }
+                const intoCurrent = (audio && audio.currentTime) || 0;
+                const secs = Math.max(0, (known + unknownChars / cps - intoCurrent) / rate);
+                const approx = (this.cpsMeasured || 0) < 3 ? '~' : '';
+                el.textContent = approx + this.fmtClock(secs) + ' left · ' + this.fmtSpeed(rate);
+            },
+            fmtClock(s) {
+                s = Math.round(s);
+                const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+                return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(sec).padStart(2, '0');
+            },
+            fmtSpeed(v) {
+                return String(Math.round((parseFloat(v) || 1) * 100) / 100) + '×';
+            },
+
             // ---------- Audio chunk cache (IndexedDB) + fetch resilience (v2.15) ----------
             audioDB() {
                 if (!this.audioDBPromise) {
@@ -2977,7 +3088,7 @@ async loadDynamicVoices(providerId) {
                 }
                 console.log('[CLOUD TTS] Queued', chunks.length, 'chunks | provider:', provider, dramatized ? '| DRAMATIZED (' + new Set(chunks.map(c => c.speaker)).size + ' voices)' : '');
 
-                const engine = { provider, chunks, idx: 0, audio: null, cache: {}, interval: null, pausedByUser: false, stopped: false, bufferAhead: 4 };
+                const engine = { provider, chunks, idx: 0, audio: null, cache: {}, interval: null, pausedByUser: false, stopped: false, bufferAhead: 4, durMap: {}, playedDur: 0 };
                 this.cloudEngine = engine;
 
                 const prefetch = (i) => {
@@ -3020,15 +3131,29 @@ async loadDynamicVoices(providerId) {
                         audio.playbackRate = parseFloat(document.getElementById('speed').value) || 1;
 
                         const marks = this.flattenSpeechMarks(data.speechMarks);
-                        // The shared audio element persists across chunks, so remove the
-                        // previous chunk's highlighter before adding this one — otherwise a
-                        // 74-chunk chapter accumulates 74 listeners all firing at once.
+                        // v2.20: ONE 100ms tick drives highlighting in BOTH modes
+                        // (browser timeupdate fires too sparsely on mobile), captures
+                        // per-chunk duration for the time-remaining model, and
+                        // re-anchors the caption at every chunk boundary. The shared
+                        // audio element persists across chunks, so stale listeners are
+                        // removed before adding this chunk's.
                         if (engine.tuHandler) audio.removeEventListener('timeupdate', engine.tuHandler);
                         if (engine.lmHandler) audio.removeEventListener('loadedmetadata', engine.lmHandler);
                         engine.tuHandler = null; engine.lmHandler = null;
-                        if (marks.length) {
-                            engine.tuHandler = () => {
-                                if (engine.stopped) return;
+                        if (engine.interval) { clearInterval(engine.interval); engine.interval = null; }
+                        this.highlightSentenceAt(chunk.start); // boundary re-anchor: never show a stale sentence
+                        const curve = marks.length ? null
+                            : this.buildWeightCurve(this.currentText.slice(chunk.start, chunk.end));
+                        engine.lmHandler = () => {
+                            if (audio.duration && isFinite(audio.duration)) {
+                                engine.durMap[i] = audio.duration;
+                                this.updateCps(provider, chunk, audio.duration);
+                            }
+                        };
+                        audio.addEventListener('loadedmetadata', engine.lmHandler);
+                        engine.interval = setInterval(() => {
+                            if (engine.stopped || audio.paused || audio.ended) return;
+                            if (marks.length) {
                                 const tMs = audio.currentTime * 1000;
                                 let lo = 0, hi = marks.length - 1, best = 0;
                                 while (lo <= hi) {
@@ -3036,26 +3161,19 @@ async loadDynamicVoices(providerId) {
                                     if (marks[mid].startTime <= tMs) { best = mid; lo = mid + 1; } else { hi = mid - 1; }
                                 }
                                 this.highlightSentenceAt(chunk.start + marks[best].start);
-                            };
-                            audio.addEventListener('timeupdate', engine.tuHandler);
-                        } else {
-                            engine.lmHandler = () => {
-                                const duration = audio.duration;
-                                if (!duration) return;
-                                if (engine.interval) clearInterval(engine.interval);
-                                engine.interval = setInterval(() => {
-                                    if (engine.stopped || audio.paused || audio.ended) return;
-                                    const frac = Math.min(audio.currentTime / duration, 0.999);
-                                    const charIndex = chunk.start + Math.floor((chunk.end - chunk.start) * frac);
-                                    this.highlightSentenceAt(charIndex);
-                                }, 200);
-                            };
-                            audio.addEventListener('loadedmetadata', engine.lmHandler);
-                        }
+                            } else if (audio.duration && isFinite(audio.duration)) {
+                                // punctuation-weighted estimation: audio fraction maps
+                                // through a speaking-cost curve, not linear characters.
+                                const frac = Math.min(audio.currentTime / audio.duration, 0.999);
+                                this.highlightSentenceAt(chunk.start + this.charAtWeight(curve, frac));
+                            }
+                            this.updateTimeRemaining(engine, i, audio);
+                        }, 100);
 
                         audio.onended = () => {
                             URL.revokeObjectURL(audioUrl);
                             if (engine.interval) { clearInterval(engine.interval); engine.interval = null; }
+                            engine.playedDur += (engine.durMap[i] || 0);
                             if (!engine.stopped && !engine.pausedByUser) playChunk(i + 1);
                         };
                         audio.onerror = () => {

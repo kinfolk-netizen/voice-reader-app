@@ -69,7 +69,9 @@ exports.handler = async (event, context) => {
         break;
       case 'elevenlabs':
         apiKey = process.env.ELEVENLABS_API_KEY;
-        apiEndpoint = `https://api.elevenlabs.io/v1/text-to-speech/${voice || 'default'}`;
+        // v2.20: request character-level timestamps so the reader gets real
+        // word-sync marks from ElevenLabs (falls back to plain audio below).
+        apiEndpoint = `https://api.elevenlabs.io/v1/text-to-speech/${voice || 'default'}/with-timestamps`;
         break;
       case 'speechify':
         apiKey = process.env.SPEECHIFY_API_KEY;
@@ -135,21 +137,25 @@ exports.handler = async (event, context) => {
         })
       });
     } else if (providerId === 'elevenlabs') {
-      response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'xi-api-key': apiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          text: text,
-          model_id: options.model || 'eleven_multilingual_v2',
-          voice_settings: options.voiceSettings || {
-            stability: 0.5,
-            similarity_boost: 0.5
-          }
-        })
+      const elHeaders = {
+        'xi-api-key': apiKey,
+        'Content-Type': 'application/json'
+      };
+      const elBody = JSON.stringify({
+        text: text,
+        model_id: options.model || 'eleven_multilingual_v2',
+        voice_settings: options.voiceSettings || {
+          stability: 0.5,
+          similarity_boost: 0.5
+        }
       });
+      response = await fetch(apiEndpoint, { method: 'POST', headers: elHeaders, body: elBody });
+      if (!response.ok) {
+        // with-timestamps unavailable for this voice/model — fall back to the
+        // plain endpoint (audio only; the reader degrades to estimated sync).
+        const plainEndpoint = `https://api.elevenlabs.io/v1/text-to-speech/${voice || 'default'}`;
+        response = await fetch(plainEndpoint, { method: 'POST', headers: elHeaders, body: elBody });
+      }
     } else if (providerId === 'azure') {
       if (!apiEndpoint) {
         return {
@@ -246,8 +252,13 @@ exports.handler = async (event, context) => {
     const contentType = response.headers.get('content-type') || '';
     if (providerId === 'speechify' || contentType.includes('application/json')) {
       const json = await response.json();
-      audioBase64 = json.audio_data || json.audioData || json.audio;
+      audioBase64 = json.audio_data || json.audioData || json.audio || json.audio_base64;
       speechMarks = json.speech_marks || json.speechMarks || null;
+      // ElevenLabs with-timestamps: convert character alignment -> word marks
+      // in the same shape the reader already consumes ({start, start_time}).
+      if (!speechMarks && (json.alignment || json.normalized_alignment)) {
+        speechMarks = elAlignmentToMarks(json.alignment || json.normalized_alignment);
+      }
       if (!audioBase64) {
         return {
           statusCode: 502,
@@ -310,3 +321,27 @@ exports.handler = async (event, context) => {
     };
   }
 };
+
+// v2.20: ElevenLabs character alignment -> word-level speech marks.
+// Groups characters into words at whitespace; each word yields
+// { start: charOffsetInSentText, start_time: ms } — the exact shape
+// flattenSpeechMarks() in the reader already consumes.
+function elAlignmentToMarks(alignment) {
+  if (!alignment || !Array.isArray(alignment.characters) ||
+      !Array.isArray(alignment.character_start_times_seconds)) return null;
+  const chars = alignment.characters;
+  const times = alignment.character_start_times_seconds;
+  const marks = [];
+  let inWord = false;
+  for (let i = 0; i < chars.length; i++) {
+    const isSpace = /\s/.test(chars[i] || ' ');
+    if (!isSpace && !inWord) {
+      marks.push({ start: i, start_time: Math.round((times[i] || 0) * 1000) });
+      inWord = true;
+    } else if (isSpace) {
+      inWord = false;
+    }
+  }
+  return marks.length ? marks : null;
+}
+exports._elAlignmentToMarks = elAlignmentToMarks;
