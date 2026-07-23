@@ -2248,7 +2248,12 @@ async loadDynamicVoices(providerId) {
             parseScriptSegments(text) {
                 const tagRe = /^([A-Z][A-Z'’.\-]*(?:[ ][A-Z][A-Z'’.\-]*){0,2}):\s+/;
                 const segs = [];
-                const paraRe = /[^\n][\s\S]*?(?=\n\s*\n|$)/g;
+                // A paragraph ends at a blank line OR right before a line that
+                // begins with a speaker tag. The second boundary makes dramatized
+                // scripts survive blank-line collapse (mobile copy/paste often
+                // strips the blank lines between turns; without this the whole
+                // script became one Narrator paragraph and the Cast never showed).
+                const paraRe = /[^\n][\s\S]*?(?=\n\s*\n|\n(?=[A-Z][A-Z'’.\-]*(?:[ ][A-Z][A-Z'’.\-]*){0,2}:\s)|$)/g;
                 let m;
                 while ((m = paraRe.exec(text)) !== null) {
                     const paraStart = m.index;

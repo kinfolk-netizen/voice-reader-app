@@ -10,7 +10,9 @@ const app = {
   parseScriptSegments(text) {
     const tagRe = /^([A-Z][A-Z'’.\-]*(?:[ ][A-Z][A-Z'’.\-]*){0,2}):\s+/;
     const segs = [];
-    const paraRe = /[^\n][\s\S]*?(?=\n\s*\n|$)/g;
+    // Kept in sync with public/index.html: paragraph ends at a blank line OR
+    // before a line that begins with a speaker tag (survives blank-line collapse).
+    const paraRe = /[^\n][\s\S]*?(?=\n\s*\n|\n(?=[A-Z][A-Z'’.\-]*(?:[ ][A-Z][A-Z'’.\-]*){0,2}:\s)|$)/g;
     let m;
     while ((m = paraRe.exec(text)) !== null) {
       const paraStart = m.index;
@@ -192,6 +194,33 @@ const edgeSpoken = edge.slice(edgeSegs[0].start, edgeSegs[0].end);
 if (!/^Beware: the tower/.test(edgeSpoken)) {
   console.error('FAIL "Beware:" was stripped as a tag instead of narrated:',
     JSON.stringify(edgeSpoken.slice(0, 30))); pass = false;
+}
+
+// ---- Test 6: blank-line collapse (mobile copy/paste strips the blank lines
+// between turns). Turns separated by a SINGLE newline must STILL split into
+// per-speaker segments, or the Cast card never appears and it reads as one
+// Narrator. This is the regression that hid the Casting Room. ----
+const collapsed = 'NARRATOR: The hall is set.\nKA’EL: I count the cobbles.\nJUNIA: Mine is gold.\nMARA: May I come in?';
+const collapsedSegs = app.parseScriptSegments(collapsed);
+const collapsedSpeakers = collapsedSegs.map(s => s.speaker);
+if (JSON.stringify(collapsedSpeakers) !== JSON.stringify(['Narrator', 'KA’EL', 'JUNIA', 'MARA'])) {
+  console.error('FAIL collapse split — expected 4 segments in order, got:', collapsedSpeakers); pass = false;
+}
+if (collapsedSegs.filter(s => s.speaker !== app.NARRATOR).length !== 3) {
+  console.error('FAIL collapse — hasScriptTags would be false (Cast card would stay hidden)'); pass = false;
+}
+// tag must be stripped from spoken content so speech-mark offsets stay aligned
+const kaelSeg = collapsedSegs.find(s => s.speaker === 'KA’EL');
+const kaelSpoken = collapsed.slice(kaelSeg.start, kaelSeg.end);
+if (!/^I count the cobbles/.test(kaelSpoken)) {
+  console.error('FAIL collapse — tag not stripped from spoken text:', JSON.stringify(kaelSpoken)); pass = false;
+}
+
+// ---- Test 7: blank-line format still works unchanged (no regression) ----
+const blanks = 'NARRATOR: The hall is set.\n\nKA’EL: I count the cobbles.\n\nJUNIA: Mine is gold.';
+const blankSpeakers = app.parseScriptSegments(blanks).map(s => s.speaker);
+if (JSON.stringify(blankSpeakers) !== JSON.stringify(['Narrator', 'KA’EL', 'JUNIA'])) {
+  console.error('FAIL blank-line format regressed:', blankSpeakers); pass = false;
 }
 
 console.log(pass ? '\nALL CORE TESTS PASS' : '\nTESTS FAILED');
