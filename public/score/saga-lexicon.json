@@ -1,0 +1,88 @@
+{
+  "version": "1.0",
+  "name": "Resonance Field Saga — pronunciation lexicon",
+  "updated": "2026-07-23",
+  "notes": "Single source of truth for invented-name pronunciation. Curated allow-list only (Risk A2: never a fuzzy pass). 'match' strings are matched case-insensitively, whole-word, tolerant of straight/curly apostrophes and a trailing possessive. 'alias' is the ElevenLabs .pls respelling (works on all EL models). 'say' is the plain-text respelling for engines without a dictionary (Speechify), kept to a single token so word-sync stays 1:1. 'ipa' enriches EL flash_v2/v3 where supported. Respellings are first-pass, to be tuned by ear (Phase A acceptance).",
+  "characters": [
+    {
+      "name": "Ka'el",
+      "match": ["Ka'el", "Ka’el", "Kael"],
+      "alias": "Kahell",
+      "say": "Kahell",
+      "ipa": "kɑːˈɛl",
+      "gloss": "kah-EL"
+    },
+    {
+      "name": "Junia",
+      "match": ["Junia"],
+      "alias": "Joonia",
+      "say": "Joonia",
+      "ipa": "ˈdʒuːniə",
+      "gloss": "JOO-nee-uh"
+    },
+    {
+      "name": "Eirenos",
+      "match": ["Eirenos"],
+      "alias": "Eyerenoss",
+      "say": "Eyerenoss",
+      "ipa": "aɪˈrɛnɒs",
+      "gloss": "eye-REN-oss"
+    },
+    {
+      "name": "Alyrion",
+      "match": ["Alyrion"],
+      "alias": "Uhleerion",
+      "say": "Uhleerion",
+      "ipa": "əˈlɪəriɒn",
+      "gloss": "uh-LEER-ee-on"
+    },
+    {
+      "name": "Malakai",
+      "match": ["Malakai"],
+      "alias": "Mallakye",
+      "say": "Mallakye",
+      "ipa": "ˈmæləkaɪ",
+      "gloss": "MAL-uh-kye"
+    },
+    {
+      "name": "Tessara",
+      "match": ["Tessara"],
+      "alias": "Tessahra",
+      "say": "Tessahra",
+      "ipa": "tɛˈsɑːrə",
+      "gloss": "teh-SAR-uh"
+    },
+    {
+      "name": "Corvath",
+      "match": ["Corvath"],
+      "alias": "Korvath",
+      "say": "Korvath",
+      "ipa": "ˈkɔːrvæθ",
+      "gloss": "KOR-vath"
+    },
+    {
+      "name": "Viell",
+      "match": ["Viell"],
+      "alias": "Veeell",
+      "say": "Veeell",
+      "ipa": "viˈɛl",
+      "gloss": "vee-ELL"
+    },
+    {
+      "name": "Davrin",
+      "match": ["Davrin"],
+      "alias": "Davrin",
+      "say": "Davrin",
+      "ipa": "ˈdævrɪn",
+      "gloss": "DAV-rin"
+    },
+    {
+      "name": "Mara",
+      "match": ["Mara"],
+      "alias": "Marra",
+      "say": "Marra",
+      "ipa": "ˈmɑːrə",
+      "gloss": "MAR-uh"
+    }
+  ]
+}

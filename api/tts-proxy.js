@@ -6,6 +6,13 @@
  * Document ID: VR-API-TTS-Proxy-241210-1445
  */
 
+// Phase A (2026-07-23): pronunciation lexicon. LEXICON is the single source of
+// truth (public/score/saga-lexicon.json). ElevenLabs uses a pronunciation
+// dictionary (spoken text is NEVER mutated, so word-sync offsets stay aligned);
+// Speechify uses caption-safe substitution + offset remap (helpers at bottom).
+// Both degrade gracefully to today's behavior when unconfigured.
+const LEXICON = require('../public/score/saga-lexicon.json');
+
 exports.handler = async (event, context) => {
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
@@ -36,6 +43,12 @@ exports.handler = async (event, context) => {
 
   try {
     const { providerId, text, voice, options = {} } = JSON.parse(event.body);
+
+    // Phase A: set only on the Speechify lexicon path; drives the mark remap
+    // that keeps captions aligned to the ORIGINAL (displayed) text.
+    let lexiconEdits = null;
+    let speechifyInput = null; // the exact text sent to Speechify (post-lexicon)
+    let elDictAttached = false; // true when an EL pronunciation dictionary rode the request
 
     // Validate required fields
     if (!providerId || !text) {
@@ -141,14 +154,20 @@ exports.handler = async (event, context) => {
         'xi-api-key': apiKey,
         'Content-Type': 'application/json'
       };
-      const elBody = JSON.stringify({
+      // Phase A: attach the pronunciation dictionary (alias respellings) when
+      // provisioned. The `text` itself is unchanged, so the /with-timestamps
+      // alignment still indexes the source characters -> captions stay exact.
+      const elBodyObj = {
         text: text,
         model_id: options.model || 'eleven_multilingual_v2',
         voice_settings: options.voiceSettings || {
           stability: 0.5,
           similarity_boost: 0.5
         }
-      });
+      };
+      const pdLocators = elPronLocators(options);
+      if (pdLocators) { elBodyObj.pronunciation_dictionary_locators = pdLocators; elDictAttached = true; }
+      const elBody = JSON.stringify(elBodyObj);
       response = await fetch(apiEndpoint, { method: 'POST', headers: elHeaders, body: elBody });
       if (!response.ok) {
         // with-timestamps unavailable for this voice/model — fall back to the
@@ -177,8 +196,18 @@ exports.handler = async (event, context) => {
         body: ssml
       });
     } else if (providerId === 'speechify') {
+      // Phase A: Speechify has no pronunciation dictionary, so we substitute
+      // lexicon names in the SPOKEN text and remap the returned marks back to
+      // source offsets (below). Behind SPEECHIFY_LEXICON=on so the narrator's
+      // word-sync can't regress before the live caption check.
+      speechifyInput = text;
+      if (process.env.SPEECHIFY_LEXICON === 'on') {
+        const applied = applyLexicon(text);
+        speechifyInput = applied.spoken;
+        lexiconEdits = applied.edits;
+      }
       // Speechify hard limit: 2000 chars per request (frontend chunks well below this)
-      if (text.length > 2000) {
+      if (speechifyInput.length > 2000) {
         return {
           statusCode: 400,
           headers: {
@@ -198,7 +227,7 @@ exports.handler = async (event, context) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          input: text,
+          input: speechifyInput,
           voice_id: voice || 'oliver',
           model: options.model || 'simba-3.2',
           audio_format: options.format || 'mp3'
@@ -218,7 +247,7 @@ exports.handler = async (event, context) => {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            input: text,
+            input: speechifyInput != null ? speechifyInput : text,
             voice_id: voice || 'oliver',
             model: 'simba-english',
             audio_format: options.format || 'mp3'
@@ -254,10 +283,26 @@ exports.handler = async (event, context) => {
       const json = await response.json();
       audioBase64 = json.audio_data || json.audioData || json.audio || json.audio_base64;
       speechMarks = json.speech_marks || json.speechMarks || null;
+      // Phase A: names were substituted in the spoken text, so the marks index
+      // the substituted string. Remap every offset back to the source text so
+      // the reader highlights the right displayed word.
+      if (lexiconEdits && lexiconEdits.length && speechMarks) {
+        speechMarks = remapMarksToSource(speechMarks, lexiconEdits);
+      }
       // ElevenLabs with-timestamps: convert character alignment -> word marks
       // in the same shape the reader already consumes ({start, start_time}).
       if (!speechMarks && (json.alignment || json.normalized_alignment)) {
-        speechMarks = elAlignmentToMarks(json.alignment || json.normalized_alignment);
+        const al = json.alignment || json.normalized_alignment;
+        // Phase A safety net: if a pronunciation dictionary is attached and the
+        // returned alignment no longer indexes the source text 1:1 (an alias
+        // could shift it), drop the marks so the reader falls back to weighted
+        // estimation rather than highlighting the wrong word. No dictionary
+        // attached -> unchanged behavior (never regresses today's captions).
+        if (elDictAttached && Array.isArray(al.characters) && al.characters.length !== text.length) {
+          speechMarks = null;
+        } else {
+          speechMarks = elAlignmentToMarks(al);
+        }
       }
       if (!audioBase64) {
         return {
@@ -345,3 +390,102 @@ function elAlignmentToMarks(alignment) {
   return marks.length ? marks : null;
 }
 exports._elAlignmentToMarks = elAlignmentToMarks;
+
+// ============================================================================
+// Phase A — pronunciation lexicon (caption-safe)
+// ============================================================================
+
+// ElevenLabs pronunciation-dictionary locators. Options override env; env is the
+// provisioned default (set once after uploading saga-lexicon.pls). null -> today.
+function elPronLocators(options) {
+  if (options && Array.isArray(options.pronunciationDictionaryLocators)) {
+    return options.pronunciationDictionaryLocators;
+  }
+  const id = process.env.ELEVENLABS_PRON_DICT_ID;
+  if (!id) return null;
+  const ver = process.env.ELEVENLABS_PRON_DICT_VERSION;
+  return [ ver
+    ? { pronunciation_dictionary_id: id, version_id: ver }
+    : { pronunciation_dictionary_id: id } ];
+}
+
+// Cached matcher built from the lexicon. Longest match wins; apostrophes are
+// straight/curly-tolerant; boundaries are letter-only so possessives ("Ka'el's")
+// and embedded substrings ("Kaelin") are handled correctly.
+let _matcher = null;
+function _key(s) { return s.toLowerCase().replace(/[’]/g, "'"); }
+function getMatcher() {
+  if (_matcher) return _matcher;
+  const entries = [];
+  for (const c of LEXICON.characters) for (const m of c.match) entries.push({ m, say: c.say });
+  entries.sort((a, b) => b.m.length - a.m.length);
+  const alts = [];
+  const map = new Map();
+  for (const e of entries) {
+    alts.push(e.m.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/['’]/g, "['’]"));
+    map.set(_key(e.m), e.say);
+  }
+  const re = new RegExp('(?<![A-Za-z])(' + alts.join('|') + ')(?![A-Za-z])', 'gi');
+  _matcher = { re, map };
+  return _matcher;
+}
+
+// text -> { spoken, edits:[{srcStart,srcEnd,dstStart,dstEnd}] }.
+// Whole-word, case-insensitive, curated allow-list (Risk A2). No match -> spoken
+// === text and edits === [] (pure no-op).
+function applyLexicon(text) {
+  const { re, map } = getMatcher();
+  const edits = [];
+  let out = '', last = 0, m;
+  re.lastIndex = 0;
+  while ((m = re.exec(text)) !== null) {
+    const matched = m[1];
+    const say = map.get(_key(matched));
+    if (say === undefined) continue;
+    const srcStart = m.index, srcEnd = srcStart + matched.length;
+    out += text.slice(last, srcStart);
+    const dstStart = out.length;
+    out += say;
+    edits.push({ srcStart, srcEnd, dstStart, dstEnd: out.length });
+    last = srcEnd;
+  }
+  out += text.slice(last);
+  return { spoken: out, edits };
+}
+
+// Map a spoken-text offset back to the source-text offset. Offsets inside a
+// substituted token collapse to that name's start (whole-word highlight).
+function remapOffset(dst, edits) {
+  let delta = 0;
+  for (const e of edits) {
+    if (dst < e.dstStart) break;
+    if (dst < e.dstEnd) return e.srcStart;
+    delta += (e.dstEnd - e.dstStart) - (e.srcEnd - e.srcStart);
+  }
+  return dst - delta;
+}
+
+// Deep-clone speech marks, remapping every numeric start/end to source space.
+function remapMarksToSource(sm, edits) {
+  if (!sm || !edits || !edits.length) return sm;
+  const walk = (node) => {
+    if (Array.isArray(node)) return node.map(walk);
+    if (node && typeof node === 'object') {
+      const copy = {};
+      for (const k of Object.keys(node)) {
+        if (k === 'start' && typeof node.start === 'number') copy.start = remapOffset(node.start, edits);
+        else if (k === 'end' && typeof node.end === 'number') copy.end = remapOffset(node.end, edits);
+        else copy[k] = walk(node[k]);
+      }
+      return copy;
+    }
+    return node;
+  };
+  return walk(sm);
+}
+
+exports._elPronLocators = elPronLocators;
+exports._applyLexicon = applyLexicon;
+exports._remapOffset = remapOffset;
+exports._remapMarksToSource = remapMarksToSource;
+exports._LEXICON = LEXICON;
