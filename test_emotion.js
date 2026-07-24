@@ -76,4 +76,36 @@ ok('tag is bracketed and lowercase', /^\[[a-z]+\]$/.test(proxy._elEmotionTag('ur
 ok('unknown cue -> null (plain delivery)', proxy._elEmotionTag('smug') === null);
 ok('empty -> null', proxy._elEmotionTag(null) === null);
 
+console.log('Test 7 — EL v3 emotion caption remap (exact source-indexed marks)');
+(() => {
+  // Alignment string is `[nervous] Be careful with it.` (tag = 9 chars, +1 space).
+  const tag = proxy._elEmotionTag('afraid'); // [nervous]
+  const prefixLen = tag.length + 1;           // 10
+  const text = 'Be careful with it.';
+  const contentLen = text.length;
+  // Marks as elAlignmentToMarks would emit over the full string: tag word at 0,
+  // then each spoken word offset by prefixLen.
+  const cols = [0, 3, 11, 16]; // Be / careful / with / it. within `text`
+  const marks = [{ start: 0, start_time: 0 }].concat(
+    cols.map((c, i) => ({ start: prefixLen + c, end: prefixLen + c + 2, start_time: (i + 1) * 100 }))
+  );
+  const out = proxy._remapElEmotionMarks(marks, prefixLen, contentLen);
+  ok('tag mark is dropped (only spoken words remain)', out.length === cols.length);
+  ok('spoken words map back to source columns', out.every((m, i) => m.start === cols[i]));
+  ok('first spoken word lands at offset 0', out[0].start === 0);
+  ok('remapped offsets index the correct source chars',
+     out.every((m, i) => text[m.start] === text[cols[i]]));
+  ok('timing preserved (tag dropped, not the times)', out[1].start_time === 200);
+})();
+
+console.log('Test 8 — EL remap edge cases');
+ok('null marks -> null', proxy._remapElEmotionMarks(null, 10, 20) === null);
+ok('empty marks -> null', proxy._remapElEmotionMarks([], 10, 20) === null);
+ok('all-tag marks -> null (nothing survives)',
+   proxy._remapElEmotionMarks([{ start: 0, start_time: 0 }], 10, 20) === null);
+ok('offset never exceeds contentLen-1 (clamped)', (() => {
+  const out = proxy._remapElEmotionMarks([{ start: 999, start_time: 0 }], 10, 5);
+  return out[0].start === 4;
+})());
+
 console.log(`\nALL ${passed} ASSERTIONS PASSED ✅`);

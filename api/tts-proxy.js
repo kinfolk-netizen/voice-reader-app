@@ -177,6 +177,11 @@ exports.handler = async (event, context) => {
       const elBodyObj = {
         text: elText,
         model_id: elModel,
+        // Phase C: disable EL's text normalization so with-timestamps alignment
+        // indexes the source characters 1:1 (no number/abbreviation expansion
+        // silently lengthening the string). Fewer spurious length mismatches ->
+        // fewer estimation fallbacks -> more exact word-sync.
+        apply_text_normalization: 'off',
         voice_settings: options.voiceSettings || {
           stability: 0.5,
           similarity_boost: 0.5
@@ -328,12 +333,22 @@ exports.handler = async (event, context) => {
       // in the same shape the reader already consumes ({start, start_time}).
       if (!speechMarks && (json.alignment || json.normalized_alignment)) {
         const al = json.alignment || json.normalized_alignment;
-        // Phase B (EL v3 emotion): the non-spoken audio tag makes v3's alignment
-        // offsets unreliable (and v3 captioning is unverified), so these lines
-        // caption via weighted estimation — never a wrong highlight. Emotion still
-        // performs; only these few EL lines estimate instead of exact-sync.
+        // Phase C (EL v3 emotion): the live v3 probe confirmed the audio tag sits
+        // at the FRONT of the returned alignment with a known length (prefixLen),
+        // and the alignment length equals prefixLen + contentLen. So we can recover
+        // EXACT source-indexed captions: convert the alignment to marks, drop the
+        // tag's own mark, and subtract the fixed prefix shift. If the alignment
+        // length doesn't match the expected total (unexpected normalization), we
+        // fall back to weighted estimation — never a wrong highlight.
         if (elEmotionShift) {
-          speechMarks = null;
+          const expected = elEmotionShift.prefixLen + elEmotionShift.contentLen;
+          if (Array.isArray(al.characters) && al.characters.length === expected) {
+            speechMarks = remapElEmotionMarks(
+              elAlignmentToMarks(al), elEmotionShift.prefixLen, elEmotionShift.contentLen
+            );
+          } else {
+            speechMarks = null; // shape drifted -> estimate (safe)
+          }
         // Phase A safety net: if a pronunciation dictionary is attached and the
         // returned alignment no longer indexes the source text 1:1, drop the marks
         // so the reader estimates rather than highlighting the wrong word.
@@ -429,6 +444,28 @@ function elAlignmentToMarks(alignment) {
   return marks.length ? marks : null;
 }
 exports._elAlignmentToMarks = elAlignmentToMarks;
+
+// Phase C — EL v3 emotion caption remap. Marks come from elAlignmentToMarks over
+// the alignment string `tag + ' ' + text`. Drop any mark inside the tag prefix
+// (the tag is non-spoken), then shift the rest back onto the SOURCE text by
+// subtracting prefixLen. Offsets are clamped to [0, contentLen-1] so a highlight
+// can never point outside the displayed line. Returns null if nothing survives
+// (caller then estimates).
+function remapElEmotionMarks(marks, prefixLen, contentLen) {
+  if (!Array.isArray(marks) || !marks.length) return null;
+  const out = [];
+  for (const m of marks) {
+    if (typeof m.start !== 'number' || m.start < prefixLen) continue; // tag / pre-text
+    const shifted = Math.max(0, Math.min(contentLen - 1, m.start - prefixLen));
+    const nm = Object.assign({}, m, { start: shifted });
+    if (typeof m.end === 'number') {
+      nm.end = Math.max(shifted, Math.min(contentLen, m.end - prefixLen));
+    }
+    out.push(nm);
+  }
+  return out.length ? out : null;
+}
+exports._remapElEmotionMarks = remapElEmotionMarks;
 
 // ============================================================================
 // Phase A — pronunciation lexicon (caption-safe)
