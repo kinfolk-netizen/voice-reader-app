@@ -2911,6 +2911,20 @@ async loadDynamicVoices(providerId) {
                         }
                     }
                 }
+                // DJ Scores collision-clip (Listening-Pass ruling C, ratified by ear):
+                // a reserved hold stands alone — never let the next handoff stack a
+                // second big pause on its heels (Scarcity Law). If a chunk fired a
+                // Layer-B hold, clamp the pause after the FOLLOWING chunk to <=150ms
+                // (unless that next chunk fired its own hold).
+                if (holds.length) {
+                    const firedAt = (idx) => {
+                        const t = (chunks[idx].text || '').replace(/\s+$/, '');
+                        return holds.some(h => h && h.anchor && typeof h.after === 'number' && t.endsWith(h.anchor));
+                    };
+                    for (let i = 0; i < chunks.length - 1; i++) {
+                        if (firedAt(i) && !firedAt(i + 1) && track[i + 1] > 150) track[i + 1] = 150;
+                    }
+                }
                 return track;
             },
 
