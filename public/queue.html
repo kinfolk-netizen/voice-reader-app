@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Witness Reader — Listening Queue</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --card2:#1d212a; --edge:#2a2f3a;
+    --ink:#e8eaed; --dim:#9aa3b2; --accent:#e0a86b; --accent2:#7fb0e6;
+    --heard:#5bbd7a; --next:#e0a86b; --new:#7fb0e6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;padding:20px 16px 60px;}
+  .wrap{max-width:720px;margin:0 auto;}
+  h1{font-size:1.5rem;margin:0 0 4px;letter-spacing:.2px;}
+  .sub{color:var(--dim);font-size:.9rem;margin:0 0 16px;}
+  .order{background:rgba(224,168,107,.1);border:1px solid var(--edge);border-left:3px solid var(--accent);
+    border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:.84rem;color:var(--ink);}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--dim);
+    background:var(--card);border:1px solid var(--edge);border-radius:10px;padding:10px 12px;margin-bottom:10px;}
+  .legend b{color:var(--ink);font-weight:600;}
+  .formats{font-size:.78rem;color:var(--dim);margin:0 0 22px;padding-left:2px;}
+  .formats b{color:var(--ink);}
+  h2{font-size:.82rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);
+    margin:26px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--edge);}
+  .item{background:var(--card);border:1px solid var(--edge);border-radius:12px;
+    padding:13px 14px;margin-bottom:10px;display:flex;align-items:center;gap:11px;}
+  .seq{flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--card2);border:1px solid var(--edge);
+    color:var(--dim);font-size:.82rem;font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .status{font-size:1.2rem;flex:0 0 auto;width:20px;text-align:center;}
+  .body{flex:1 1 auto;min-width:0;}
+  .title{font-weight:600;font-size:1rem;margin:0;}
+  .meta{color:var(--dim);font-size:.78rem;margin:2px 0 0;}
+  .pill{display:inline-block;font-size:.66rem;text-transform:uppercase;letter-spacing:.5px;
+    padding:2px 7px;border-radius:20px;margin-left:6px;vertical-align:middle;}
+  .p-heard{background:rgba(91,189,122,.15);color:var(--heard);}
+  .p-next{background:rgba(224,168,107,.15);color:var(--next);}
+  .p-new{background:rgba(127,176,230,.15);color:var(--new);}
+  .btns{display:flex;flex-direction:column;gap:6px;flex:0 0 auto;}
+  a.open{text-decoration:none;background:var(--card2);border:1px solid var(--edge);
+    color:var(--accent2);font-weight:600;font-size:.8rem;padding:8px 13px;border-radius:9px;
+    white-space:nowrap;text-align:center;}
+  a.open:active{background:#232833;}
+  a.solo{align-self:center;}
+  .note{background:var(--card);border:1px solid var(--edge);border-left:3px solid var(--accent);
+    border-radius:10px;padding:12px 14px;margin-top:24px;font-size:.86rem;color:var(--dim);}
+  .note b{color:var(--ink);}
+  .foot{color:var(--dim);font-size:.78rem;margin-top:22px;text-align:center;}
+  .foot a{color:var(--accent2);text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎧 Witness Reader — Listening Queue</h1>
+  <p class="sub">Everything made for you to hear, in one place · this page updates itself — bookmark it.</p>
+
+  <div class="order">▶️ <b>Listen top-to-bottom in each section.</b> Items are numbered oldest → newest by when we made them, so your notes and reactions stay in flow order.</div>
+
+  <div class="legend">
+    <span><b>✅ Heard</b></span>
+    <span><b>⏭️ Up next</b></span>
+    <span><b>☐ New</b></span>
+    <span>Tell Claude when you finish one and it'll flip.</span>
+  </div>
+  <p class="formats">Each saga chapter comes two ways: <b>🎭 Dramatized</b> (full cast) and <b>🎙️ Listening</b> (single Narrator voice).</p>
+
+  <h2>The Saga — chapters (in story order)</h2>
+
+  <div class="item">
+    <div class="seq">1</div>
+    <div class="status">✅</div>
+    <div class="body">
+      <p class="title">Chapter 1 — The Silent Tower <span class="pill p-heard">Heard</span></p>
+      <p class="meta">Dramatized v2.0 · Listening v2.1</p>
+    </div>
+    <div class="btns">
+      <a class="open" href="https://drive.google.com/file/d/1JqWyegC_vKkLK52ehocwBXax0_ug5xWH/view" target="_blank" rel="noopener">🎭 Dramatized</a>
+      <a class="open" href="https://drive.google.com/file/d/11ID8mIFKvZklzL26iLeAI64GEYI4PLip/view" target="_blank" rel="noopener">🎙️ Listening</a>
+    </div>
+  </div>
+
+  <div class="item">
+    <div class="seq">2</div>
+    <div class="status">⏭️</div>
+    <div class="body">
+      <p class="title">Chapter 2 — The Bells of Division <span class="pill p-next">Up next</span></p>
+      <p class="meta">Dramatized v2.0 · Listening v1.2</p>
+    </div>
+    <div class="btns">
+      <a class="open" href="https://drive.google.com/file/d/1IbIDVsOd34oCAl2gbJNHkTjPoxe9cSaD/view" target="_blank" rel="noopener">🎭 Dramatized</a>
+      <a class="open" href="https://drive.google.com/file/d/1duBkCt3fmk8QtnSjNKW9U4_YGg4GxzTf/view" target="_blank" rel="noopener">🎙️ Listening</a>
+    </div>
+  </div>
+
+  <div class="item">
+    <div class="seq">3</div>
+    <div class="status">☐</div>
+    <div class="body">
+      <p class="title">Chapter 3 <span class="pill p-new">New</span></p>
+      <p class="meta">Dramatized v1.0 · Listening v1.0</p>
+    </div>
+    <div class="btns">
+      <a class="open" href="https://drive.google.com/file/d/1cJ0mgqSqSF3kwHbAZCM0Q2BCf2Ja1Y9L/view" target="_blank" rel="noopener">🎭 Dramatized</a>
+      <a class="open" href="https://drive.google.com/file/d/1FT91q3LbGz1N9WRgcttAoe8U1QTrV8yU/view" target="_blank" rel="noopener">🎙️ Listening</a>
+    </div>
+  </div>
+
+  <h2>The Keeper's Table — Listening Passes</h2>
+
+  <div class="item">
+    <div class="seq">1</div>
+    <div class="status">☐</div>
+    <div class="body">
+      <p class="title">Ch1 Listening Pass — the panel hears the score <span class="pill p-new">New</span></p>
+      <p class="meta">2026-07-24 · LP1 v1.1 · voices incl. THE CONDUCTOR (Charlie)</p>
+    </div>
+    <a class="open solo" href="https://drive.google.com/file/d/14vfe6qQLzFo4wGqEDKBDH3mQIxqEs34G/view" target="_blank" rel="noopener">🎭 Open</a>
+  </div>
+
+  <h2>Special Sessions — the christenings</h2>
+
+  <div class="item">
+    <div class="seq">1</div>
+    <div class="status">☐</div>
+    <div class="body">
+      <p class="title">The Naming of the Director's Seat → THE CONDUCTOR <span class="pill p-new">New</span></p>
+      <p class="meta">2026-07-24 (first) · dramatized ruling v1.0</p>
+    </div>
+    <a class="open solo" href="https://drive.google.com/file/d/1-XHB6c6DapNeLCxmQ7lhcf5sBEw3nrob/view" target="_blank" rel="noopener">🎭 Open</a>
+  </div>
+
+  <div class="item">
+    <div class="seq">2</div>
+    <div class="status">☐</div>
+    <div class="body">
+      <p class="title">The Renaming of the Joiner → GIDEON <span class="pill p-new">New</span></p>
+      <p class="meta">2026-07-24 (second) · dramatized ruling v1.0</p>
+    </div>
+    <a class="open solo" href="https://drive.google.com/file/d/1M_ZsprTOFxdx5X4P8KLnDlqp10naqK__/view" target="_blank" rel="noopener">🎭 Open</a>
+  </div>
+
+  <div class="note">
+    <b>Coming (Phase 2):</b> these buttons will open the reader with the script already loaded — tap and play, no hunting. <b>Archived:</b> older panel review rounds live in each chapter's <b>scripts/</b> folder.
+  </div>
+
+  <p class="foot">Living queue · <a href="index.html">← back to the reader</a> · updated 2026-07-24</p>
+</div>
+</body>
+</html>
