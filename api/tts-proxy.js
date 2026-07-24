@@ -49,6 +49,7 @@ exports.handler = async (event, context) => {
     let lexiconEdits = null;
     let speechifyInput = null; // the exact text sent to Speechify (post-lexicon/SSML)
     let elDictAttached = false; // true when an EL pronunciation dictionary rode the request
+    let elEmotionShift = null; // {prefixLen, contentLen} when an EL v3 emotion tag prefixes the text
     let emotionWrap = null; // Phase B: {prefixLen, contentLen} when emotion SSML wraps the input
 
     // Validate required fields
@@ -155,12 +156,27 @@ exports.handler = async (event, context) => {
         'xi-api-key': apiKey,
         'Content-Type': 'application/json'
       };
+      // Phase B (ElevenLabs v3): route an emotion-cued line to v3 with an inline
+      // audio tag (e.g. [nervous]). The tag is non-spoken but occupies leading
+      // characters, so captions are remapped/guarded at extraction. Behind
+      // ELEVENLABS_EMOTION so nothing changes until the live v3 check passes; if
+      // v3 is unavailable the request falls back to the plain endpoint below.
+      let elText = text;
+      let elModel = options.model || 'eleven_multilingual_v2';
+      if (process.env.ELEVENLABS_EMOTION === 'on' && options.emotion) {
+        const tag = elEmotionTag(options.emotion);
+        if (tag) {
+          elText = tag + ' ' + text;
+          elModel = process.env.ELEVENLABS_V3_MODEL || 'eleven_v3';
+          elEmotionShift = { prefixLen: tag.length + 1, contentLen: text.length };
+        }
+      }
       // Phase A: attach the pronunciation dictionary (alias respellings) when
-      // provisioned. The `text` itself is unchanged, so the /with-timestamps
-      // alignment still indexes the source characters -> captions stay exact.
+      // provisioned. The spoken text is otherwise unchanged, so with-timestamps
+      // alignment indexes the source characters (the emotion tag is handled below).
       const elBodyObj = {
-        text: text,
-        model_id: options.model || 'eleven_multilingual_v2',
+        text: elText,
+        model_id: elModel,
         voice_settings: options.voiceSettings || {
           stability: 0.5,
           similarity_boost: 0.5
@@ -312,12 +328,16 @@ exports.handler = async (event, context) => {
       // in the same shape the reader already consumes ({start, start_time}).
       if (!speechMarks && (json.alignment || json.normalized_alignment)) {
         const al = json.alignment || json.normalized_alignment;
+        // Phase B (EL v3 emotion): the non-spoken audio tag makes v3's alignment
+        // offsets unreliable (and v3 captioning is unverified), so these lines
+        // caption via weighted estimation — never a wrong highlight. Emotion still
+        // performs; only these few EL lines estimate instead of exact-sync.
+        if (elEmotionShift) {
+          speechMarks = null;
         // Phase A safety net: if a pronunciation dictionary is attached and the
-        // returned alignment no longer indexes the source text 1:1 (an alias
-        // could shift it), drop the marks so the reader falls back to weighted
-        // estimation rather than highlighting the wrong word. No dictionary
-        // attached -> unchanged behavior (never regresses today's captions).
-        if (elDictAttached && Array.isArray(al.characters) && al.characters.length !== text.length) {
+        // returned alignment no longer indexes the source text 1:1, drop the marks
+        // so the reader estimates rather than highlighting the wrong word.
+        } else if (elDictAttached && Array.isArray(al.characters) && al.characters.length !== text.length) {
           speechMarks = null;
         } else {
           speechMarks = elAlignmentToMarks(al);
@@ -595,3 +615,31 @@ function remapEmotionMarks(sm, wrap) {
 exports._speechifyEmotionSSML = speechifyEmotionSSML;
 exports._remapEmotionMarks = remapEmotionMarks;
 exports._resolveCue = resolveCue;
+
+// ============================================================================
+// Phase B — ElevenLabs v3 emotion (audio tags)
+// ============================================================================
+
+// Neutral cue -> ElevenLabs v3 inline audio tag. v3 speaks the tag as a
+// non-verbal performance instruction (it is not read aloud). Unknown cue -> null
+// -> plain delivery on multilingual_v2 (graceful).
+const EL_EMO = {
+  whisper: '[whispers]',
+  soft:    '[softly]',
+  warm:    '[softly]',
+  tender:  '[softly]',
+  calm:    '[calmly]',
+  sad:     '[sorrowful]',
+  afraid:  '[nervous]',
+  angry:   '[angry]',
+  firm:    '[flatly]',
+  bright:  '[cheerfully]',
+  urgent:  '[rushed]',
+  flat:    '[flatly]',
+  weary:   '[tired]'
+};
+function elEmotionTag(cue) {
+  const key = resolveCue(cue);
+  return (key && EL_EMO[key]) ? EL_EMO[key] : null;
+}
+exports._elEmotionTag = elEmotionTag;

@@ -67,4 +67,13 @@ console.log('Test 4 — plain-indexed marks are left untouched (no double-shift)
 console.log('Test 5 — empty / missing marks are safe');
 ok('null marks pass through', proxy._remapEmotionMarks(null, { prefixLen: 42, contentLen: 15 }) === null);
 
+console.log('Test 6 — ElevenLabs v3 emotion tags');
+ok('afraid -> [nervous]', proxy._elEmotionTag('afraid') === '[nervous]');
+ok('whisper -> [whispers]', proxy._elEmotionTag('whisper') === '[whispers]');
+ok('sad -> [sorrowful]', proxy._elEmotionTag('sad') === '[sorrowful]');
+ok('synonym quiet -> [softly]', proxy._elEmotionTag('quiet') === '[softly]');
+ok('tag is bracketed and lowercase', /^\[[a-z]+\]$/.test(proxy._elEmotionTag('urgent')));
+ok('unknown cue -> null (plain delivery)', proxy._elEmotionTag('smug') === null);
+ok('empty -> null', proxy._elEmotionTag(null) === null);
+
 console.log(`\nALL ${passed} ASSERTIONS PASSED ✅`);
