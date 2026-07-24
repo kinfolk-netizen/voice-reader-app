@@ -51,6 +51,7 @@ exports.handler = async (event, context) => {
     let elDictAttached = false; // true when an EL pronunciation dictionary rode the request
     let elEmotionShift = null; // {prefixLen, contentLen} when an EL v3 emotion tag prefixes the text
     let emotionWrap = null; // Phase B: {prefixLen, contentLen} when emotion SSML wraps the input
+    let withinLineBreaks = false; // v2.26 Layer A.2: mid-line SSML <break> present -> captions estimate
 
     // Validate required fields
     if (!providerId || !text) {
@@ -241,6 +242,22 @@ exports.handler = async (event, context) => {
           emotionWrap = { prefixLen: wrap.prefixLen, contentLen: wrap.contentLen };
         }
       }
+      // v2.26 Layer A.2 (DJ Scores): within-line breath. If the line has a MID-LINE
+      // em-dash/ellipsis, rebuild the SSML with a <break> at those points so the
+      // narrator reads the sentence as one continuous breath with a catch in the
+      // middle (line-final dashes are the reader's inter-segment job). Composes the
+      // emotion style itself, so it overrides the emotion-only wrap above. The
+      // inserted tags shift Speechify's mark offsets, so these lines estimate
+      // captions (never-wrong) until a live probe lets us remap exactly.
+      if (process.env.SPEECHIFY_WITHIN_LINE !== 'off' && (!lexiconEdits || !lexiconEdits.length)) {
+        const breath = speechifyBreathSSML(text, (process.env.SPEECHIFY_EMOTION === 'on') ? options.emotion : null);
+        if (breath) {
+          speechifyInput = breath.ssml;
+          speechifyModel = 'simba-english';
+          emotionWrap = null;          // captions estimate on breath lines (safe)
+          withinLineBreaks = true;
+        }
+      }
       // Speechify hard limit: 2000 chars per request (frontend chunks well below this)
       if (speechifyInput.length > 2000) {
         return {
@@ -318,6 +335,9 @@ exports.handler = async (event, context) => {
       const json = await response.json();
       audioBase64 = json.audio_data || json.audioData || json.audio || json.audio_base64;
       speechMarks = json.speech_marks || json.speechMarks || null;
+      // v2.26 Layer A.2: lines given within-line <break> estimate captions
+      // (never-wrong) until a live probe lets us remap Speechify's break-shifted marks.
+      if (withinLineBreaks) speechMarks = null;
       // Phase A: names were substituted in the spoken text, so the marks index
       // the substituted string. Remap every offset back to the source text so
       // the reader highlights the right displayed word.
@@ -618,6 +638,38 @@ function speechifyEmotionSSML(text, cue) {
   return { ssml: ssml, prefixLen: ssml.indexOf(text), contentLen: text.length };
 }
 
+// v2.26 Layer A.2 — within-line breath. Insert an SSML <break> after a MID-LINE
+// em-dash or ellipsis so the narrator reads the sentence as one continuous breath
+// with a catch in the middle; line-FINAL dashes are left to the reader's
+// inter-segment silence. Composes the emotion style when a cue is present. Returns
+// null (-> unchanged) when the text is SSML-unsafe (&/<) or has no mid-line break.
+function speechifyBreathSSML(text, cue) {
+  if (/[&<]/.test(text)) return null;
+  let hadBreak = false, out = '', last = 0, m;
+  const re = /(—|–|\.\.\.|…)/g;
+  while ((m = re.exec(text)) !== null) {
+    const endPos = m.index + m[0].length;
+    if (text.slice(endPos).replace(/\s+$/, '').length === 0) continue; // line-final: skip
+    const ms = (m[0] === '…' || m[0] === '...') ? 300 : 180;
+    out += text.slice(last, endPos) + '<break time="' + ms + 'ms"/>';
+    last = endPos;
+    hadBreak = true;
+  }
+  if (!hadBreak) return null;
+  out += text.slice(last);
+  let inner = out;
+  const key = cue ? resolveCue(cue) : null;
+  if (key) {
+    const mm = SPEECHIFY_EMO[key];
+    const pros = [];
+    if (mm.rate) pros.push('rate="' + mm.rate + '"');
+    if (mm.volume) pros.push('volume="' + mm.volume + '"');
+    if (pros.length) inner = '<prosody ' + pros.join(' ') + '>' + inner + '</prosody>';
+    inner = '<speechify:style emotion="' + mm.style + '">' + inner + '</speechify:style>';
+  }
+  return { ssml: '<speak>' + inner + '</speak>', hadBreak: true };
+}
+
 // Undo the SSML prefix if Speechify indexed its marks into the SSML string.
 // Detection: the smallest mark offset is >= the prefix length, i.e. the first
 // spoken word begins after the opening tags. If marks are already plain-text-
@@ -652,6 +704,7 @@ function remapEmotionMarks(sm, wrap) {
 exports._speechifyEmotionSSML = speechifyEmotionSSML;
 exports._remapEmotionMarks = remapEmotionMarks;
 exports._resolveCue = resolveCue;
+exports._speechifyBreathSSML = speechifyBreathSSML;
 
 // ============================================================================
 // Phase B — ElevenLabs v3 emotion (audio tags)

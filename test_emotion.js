@@ -108,4 +108,17 @@ ok('offset never exceeds contentLen-1 (clamped)', (() => {
   return out[0].start === 4;
 })());
 
+console.log('Test 9 — Speechify within-line breath (Layer A.2)');
+const B = proxy._speechifyBreathSSML;
+ok('mid-line em-dash inserts a 180ms break', /<break time="180ms"\/>/.test(B('a map he could learn by heart—a thing his feet did', null).ssml));
+ok('wrapped in <speak>', (() => { const r = B('one—two', null); return r.ssml.startsWith('<speak>') && r.ssml.endsWith('</speak>'); })());
+ok('ellipsis mid-line -> 300ms', /<break time="300ms"\/>/.test(B('The square felt… loud today. Even the quiet parts.', null).ssml));
+ok('line-final em-dash only -> null (Layer A handles it)', B('How did you—', null) === null);
+ok('no dashes -> null', B('A plain sentence here.', null) === null);
+ok('SSML-unsafe text (& or <) -> null', B('you & me — them', null) === null);
+ok('spoken words unchanged (only tags added)', B('one—two—three', null).ssml.replace(/<[^>]+>/g, '') === 'one—two—three');
+ok('two mid-line em-dashes -> two breaks', (B('a—b—c', null).ssml.match(/<break/g) || []).length === 2);
+ok('composes emotion style when cue present', (() => { const s = B('a map—a thing', 'soft').ssml; return /speechify:style emotion="calm"/.test(s) && /volume="soft"/.test(s); })());
+ok('em-dash at end (with trailing space) -> null', B('trailing thought — ', null) === null);
+
 console.log(`\nALL ${passed} ASSERTIONS PASSED ✅`);
