@@ -2246,14 +2246,18 @@ async loadDynamicVoices(providerId) {
             NARRATOR: 'Narrator',
 
             parseScriptSegments(text) {
-                const tagRe = /^([A-Z][A-Z'’.\-]*(?:[ ][A-Z][A-Z'’.\-]*){0,2}):\s+/;
+                // Speaker tag, with an OPTIONAL emotion cue in parens before the
+                // colon: "JUNIA (afraid): line". Group 2 is the cue; it's stripped
+                // from the spoken text (contentStart skips the whole tag) so caption
+                // offsets stay aligned. No cue -> group 2 undefined -> today's behavior.
+                const tagRe = /^([A-Z][A-Z'’.\-]*(?:[ ][A-Z][A-Z'’.\-]*){0,2})(?:\s*\(([a-z][a-z\/-]*)\))?:\s+/;
                 const segs = [];
                 // A paragraph ends at a blank line OR right before a line that
                 // begins with a speaker tag. The second boundary makes dramatized
                 // scripts survive blank-line collapse (mobile copy/paste often
                 // strips the blank lines between turns; without this the whole
                 // script became one Narrator paragraph and the Cast never showed).
-                const paraRe = /[^\n][\s\S]*?(?=\n\s*\n|\n(?=[A-Z][A-Z'’.\-]*(?:[ ][A-Z][A-Z'’.\-]*){0,2}:\s)|$)/g;
+                const paraRe = /[^\n][\s\S]*?(?=\n\s*\n|\n(?=[A-Z][A-Z'’.\-]*(?:[ ][A-Z][A-Z'’.\-]*){0,2}(?:\s*\([a-z][a-z\/-]*\))?:\s)|$)/g;
                 let m;
                 while ((m = paraRe.exec(text)) !== null) {
                     const paraStart = m.index;
@@ -2261,9 +2265,11 @@ async loadDynamicVoices(providerId) {
                     const tag = para.match(tagRe);
                     let speaker = this.NARRATOR;
                     let contentStart = paraStart;
+                    let emotion = null;
                     if (tag) {
                         speaker = tag[1].trim();
                         if (speaker.toUpperCase() === 'NARRATOR') speaker = this.NARRATOR;
+                        emotion = tag[2] ? tag[2].toLowerCase() : null;
                         contentStart = paraStart + tag[0].length;
                     }
                     const end = paraStart + para.length;
@@ -2272,7 +2278,7 @@ async loadDynamicVoices(providerId) {
                     if (last && last.speaker === speaker && !tag) {
                         last.end = end; // merge consecutive narrator paragraphs
                     } else {
-                        segs.push({ speaker, start: contentStart, end });
+                        segs.push({ speaker, start: contentStart, end, emotion });
                     }
                 }
                 return segs;
@@ -2776,7 +2782,9 @@ async loadDynamicVoices(providerId) {
                             text: c.text,
                             speaker: seg.speaker,
                             provider: entry.provider,
-                            voice: entry.voiceId
+                            voice: entry.voiceId,
+                            emotion: seg.emotion || null,
+                            role: (seg.speaker === this.NARRATOR ? 'narrator' : 'dialogue')
                         });
                     }
                 }
@@ -2984,11 +2992,12 @@ async loadDynamicVoices(providerId) {
                 finally { this.audioPruning = false; }
             },
 
-            chunkCacheKey(provider, voice, model, text) {
+            chunkCacheKey(provider, voice, model, text, emotion) {
                 // djb2 — stable, fast, plenty for cache keying alongside the length guard.
+                // emotion is part of the key so the same line at two tones never collides.
                 let h = 5381;
                 for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) >>> 0;
-                return provider + '|' + (voice || '') + '|' + (model || '') + '|' + text.length + '|' + h.toString(36);
+                return provider + '|' + (voice || '') + '|' + (model || '') + '|' + (emotion || '') + '|' + text.length + '|' + h.toString(36);
             },
 
             // Per-provider concurrency gate. ElevenLabs allows only a couple of
@@ -3018,7 +3027,7 @@ async loadDynamicVoices(providerId) {
             async fetchCloudChunk(provider, chunk) {
                 const voice = chunk.voice || this.voiceSelections[provider];
                 const model = this.providerModels[provider];
-                const key = this.chunkCacheKey(provider, voice, model, chunk.text);
+                const key = this.chunkCacheKey(provider, voice, model, chunk.text, chunk.emotion);
 
                 // Served from the on-device cache: replays, sentence-skips, and
                 // engine restarts cost zero network and can never stutter.
@@ -3040,7 +3049,7 @@ async loadDynamicVoices(providerId) {
                                     providerId: provider,
                                     text: chunk.text,
                                     voice: voice,
-                                    options: { model: model }
+                                    options: { model: model, emotion: chunk.emotion || null, role: chunk.role || null }
                                 })
                             });
                             const data = await response.json();

@@ -2,18 +2,18 @@
 <lexicon version="1.0"
   xmlns="http://www.w3.org/2005/01/pronunciation-lexicon"
   alphabet="ipa" xml:lang="en-US">
-  <!-- Generated from saga-lexicon.json v1.0 — do not hand-edit; run devtest/gen-lexicon-artifacts.js -->
+  <!-- Generated from saga-lexicon.json v1.2 — do not hand-edit; run devtest/gen-lexicon-artifacts.js -->
   <lexeme>
     <grapheme>Ka&apos;el</grapheme>
-    <alias>Kahell</alias>
+    <alias>Kah Ell</alias>
   </lexeme>
   <lexeme>
     <grapheme>Ka’el</grapheme>
-    <alias>Kahell</alias>
+    <alias>Kah Ell</alias>
   </lexeme>
   <lexeme>
     <grapheme>Kael</grapheme>
-    <alias>Kahell</alias>
+    <alias>Kah Ell</alias>
   </lexeme>
   <lexeme>
     <grapheme>Junia</grapheme>
@@ -21,7 +21,7 @@
   </lexeme>
   <lexeme>
     <grapheme>Eirenos</grapheme>
-    <alias>Eyerenoss</alias>
+    <alias>Heir Rain Oss</alias>
   </lexeme>
   <lexeme>
     <grapheme>Alyrion</grapheme>
@@ -29,7 +29,7 @@
   </lexeme>
   <lexeme>
     <grapheme>Malakai</grapheme>
-    <alias>Mallakye</alias>
+    <alias>Mal Uh Kye</alias>
   </lexeme>
   <lexeme>
     <grapheme>Tessara</grapheme>
@@ -49,6 +49,6 @@
   </lexeme>
   <lexeme>
     <grapheme>Mara</grapheme>
-    <alias>Marra</alias>
+    <alias>Mar Uh</alias>
   </lexeme>
 </lexicon>

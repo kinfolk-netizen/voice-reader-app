@@ -1,13 +1,13 @@
 {
-  "version": "1.0",
+  "version": "1.2",
   "name": "Resonance Field Saga — pronunciation lexicon",
   "updated": "2026-07-23",
-  "notes": "Single source of truth for invented-name pronunciation. Curated allow-list only (Risk A2: never a fuzzy pass). 'match' strings are matched case-insensitively, whole-word, tolerant of straight/curly apostrophes and a trailing possessive. 'alias' is the ElevenLabs .pls respelling (works on all EL models). 'say' is the plain-text respelling for engines without a dictionary (Speechify), kept to a single token so word-sync stays 1:1. 'ipa' enriches EL flash_v2/v3 where supported. Respellings are first-pass, to be tuned by ear (Phase A acceptance).",
+  "notes": "Single source of truth for invented-name pronunciation. Curated allow-list only (Risk A2: never a fuzzy pass). 'match' strings are matched case-insensitively, whole-word, tolerant of straight/curly apostrophes and a trailing possessive. 'alias' is the ElevenLabs .pls respelling (works on all EL models). 'say' is the plain-text respelling for engines without a dictionary (Speechify), kept to a single token so word-sync stays 1:1. 'ipa' enriches EL flash_v2/v3 where supported. Respellings are first-pass, to be tuned by ear (Phase A acceptance). v1.1 (2026-07-23): retuned Ka'el, Eirenos, Mara, Malakai by ear on ElevenLabs — aliases now use spaced syllables so EL's G2P reads them cleanly; the other six were confirmed correct. v1.2 (2026-07-23): Eirenos retuned to 'Heir Rain Oss' (air-RAIN-oss) after second ear-check; the other three v1.1 fixes confirmed correct.",
   "characters": [
     {
       "name": "Ka'el",
       "match": ["Ka'el", "Ka’el", "Kael"],
-      "alias": "Kahell",
+      "alias": "Kah Ell",
       "say": "Kahell",
       "ipa": "kɑːˈɛl",
       "gloss": "kah-EL"
@@ -23,10 +23,10 @@
     {
       "name": "Eirenos",
       "match": ["Eirenos"],
-      "alias": "Eyerenoss",
+      "alias": "Heir Rain Oss",
       "say": "Eyerenoss",
-      "ipa": "aɪˈrɛnɒs",
-      "gloss": "eye-REN-oss"
+      "ipa": "ɛərˈreɪnɒs",
+      "gloss": "air-RAIN-oss"
     },
     {
       "name": "Alyrion",
@@ -39,7 +39,7 @@
     {
       "name": "Malakai",
       "match": ["Malakai"],
-      "alias": "Mallakye",
+      "alias": "Mal Uh Kye",
       "say": "Mallakye",
       "ipa": "ˈmæləkaɪ",
       "gloss": "MAL-uh-kye"
@@ -79,7 +79,7 @@
     {
       "name": "Mara",
       "match": ["Mara"],
-      "alias": "Marra",
+      "alias": "Mar Uh",
       "say": "Marra",
       "ipa": "ˈmɑːrə",
       "gloss": "MAR-uh"

@@ -47,8 +47,9 @@ exports.handler = async (event, context) => {
     // Phase A: set only on the Speechify lexicon path; drives the mark remap
     // that keeps captions aligned to the ORIGINAL (displayed) text.
     let lexiconEdits = null;
-    let speechifyInput = null; // the exact text sent to Speechify (post-lexicon)
+    let speechifyInput = null; // the exact text sent to Speechify (post-lexicon/SSML)
     let elDictAttached = false; // true when an EL pronunciation dictionary rode the request
+    let emotionWrap = null; // Phase B: {prefixLen, contentLen} when emotion SSML wraps the input
 
     // Validate required fields
     if (!providerId || !text) {
@@ -206,6 +207,19 @@ exports.handler = async (event, context) => {
         speechifyInput = applied.spoken;
         lexiconEdits = applied.edits;
       }
+      let speechifyModel = options.model || 'simba-3.2';
+      // Phase B: wrap in emotion SSML when a cue is present and enabled. Emotion
+      // needs simba-english. Skipped if lexicon substitution is active (avoids a
+      // double remap) or the cue is unknown / the line has &/< (see helper). The
+      // cue was already stripped from the spoken text by the parser.
+      if (process.env.SPEECHIFY_EMOTION === 'on' && options.emotion && (!lexiconEdits || !lexiconEdits.length)) {
+        const wrap = speechifyEmotionSSML(speechifyInput, options.emotion);
+        if (wrap) {
+          speechifyInput = wrap.ssml;
+          speechifyModel = 'simba-english';
+          emotionWrap = { prefixLen: wrap.prefixLen, contentLen: wrap.contentLen };
+        }
+      }
       // Speechify hard limit: 2000 chars per request (frontend chunks well below this)
       if (speechifyInput.length > 2000) {
         return {
@@ -229,7 +243,7 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({
           input: speechifyInput,
           voice_id: voice || 'oliver',
-          model: options.model || 'simba-3.2',
+          model: speechifyModel,
           audio_format: options.format || 'mp3'
         })
       });
@@ -288,6 +302,11 @@ exports.handler = async (event, context) => {
       // the reader highlights the right displayed word.
       if (lexiconEdits && lexiconEdits.length && speechMarks) {
         speechMarks = remapMarksToSource(speechMarks, lexiconEdits);
+      }
+      // Phase B: undo the SSML prefix shift if Speechify indexed marks into the
+      // SSML string (auto-detected). No-op if marks are already plain-text-indexed.
+      if (emotionWrap && speechMarks) {
+        speechMarks = remapEmotionMarks(speechMarks, emotionWrap);
       }
       // ElevenLabs with-timestamps: convert character alignment -> word marks
       // in the same shape the reader already consumes ({start, start_time}).
@@ -489,3 +508,90 @@ exports._applyLexicon = applyLexicon;
 exports._remapOffset = remapOffset;
 exports._remapMarksToSource = remapMarksToSource;
 exports._LEXICON = LEXICON;
+
+// ============================================================================
+// Phase B — Speechify emotion (caption-safe)
+// ============================================================================
+
+// Neutral cue -> Speechify <speechify:style emotion> (+ optional prosody).
+// The 13-cue vocabulary maps onto Speechify's emotion set; a few common
+// synonyms are folded in. Anything not here -> plain delivery (graceful).
+const SPEECHIFY_EMO = {
+  whisper: { style: 'calm',      volume: 'x-soft' },
+  soft:    { style: 'calm',      volume: 'soft'   },
+  warm:    { style: 'warm'                        },
+  tender:  { style: 'warm',      volume: 'soft'   },
+  calm:    { style: 'calm'                        },
+  sad:     { style: 'sad'                         },
+  afraid:  { style: 'fearful'                     },
+  angry:   { style: 'angry'                       },
+  firm:    { style: 'assertive'                   },
+  bright:  { style: 'bright'                       },
+  urgent:  { style: 'energetic', rate: 'fast'     },
+  flat:    { style: 'direct'                       },
+  weary:   { style: 'relaxed',   rate: 'slow'     }
+};
+const SPEECHIFY_EMO_SYN = {
+  quiet: 'soft', hushed: 'soft', scared: 'afraid', terrified: 'afraid',
+  gentle: 'tender', tired: 'weary', hard: 'firm', excited: 'bright', flatly: 'flat'
+};
+function resolveCue(cue) {
+  if (!cue) return null;
+  const c = String(cue).toLowerCase();
+  if (SPEECHIFY_EMO[c]) return c;
+  if (SPEECHIFY_EMO_SYN[c]) return SPEECHIFY_EMO_SYN[c];
+  return null;
+}
+
+// Wrap plain text in Speechify emotion SSML. Returns null (-> plain delivery) if
+// the cue is unknown or the text contains &/< (kept out of SSML so escaping can
+// never shift caption offsets). Quotes/apostrophes are legal in element text and
+// left as-is. prefixLen is the byte offset where the spoken text begins.
+function speechifyEmotionSSML(text, cue) {
+  const key = resolveCue(cue);
+  if (!key) return null;
+  if (/[&<]/.test(text)) return null;
+  const m = SPEECHIFY_EMO[key];
+  let inner = text;
+  const pros = [];
+  if (m.rate) pros.push('rate="' + m.rate + '"');
+  if (m.volume) pros.push('volume="' + m.volume + '"');
+  if (pros.length) inner = '<prosody ' + pros.join(' ') + '>' + text + '</prosody>';
+  const ssml = '<speak><speechify:style emotion="' + m.style + '">' + inner + '</speechify:style></speak>';
+  return { ssml: ssml, prefixLen: ssml.indexOf(text), contentLen: text.length };
+}
+
+// Undo the SSML prefix if Speechify indexed its marks into the SSML string.
+// Detection: the smallest mark offset is >= the prefix length, i.e. the first
+// spoken word begins after the opening tags. If marks are already plain-text-
+// indexed (Speechify stripped the markup for alignment), this is a no-op.
+function remapEmotionMarks(sm, wrap) {
+  const starts = [];
+  (function collect(n) {
+    if (!n) return;
+    if (Array.isArray(n)) { n.forEach(collect); return; }
+    if (typeof n.start === 'number') starts.push(n.start);
+    if (n.chunks) collect(n.chunks);
+  })(sm);
+  if (!starts.length) return sm;
+  if (Math.min.apply(null, starts) < wrap.prefixLen) return sm; // already plain-indexed
+  const shift = (o) => Math.max(0, Math.min(wrap.contentLen - 1, o - wrap.prefixLen));
+  const walk = (node) => {
+    if (Array.isArray(node)) return node.map(walk);
+    if (node && typeof node === 'object') {
+      const copy = {};
+      for (const k of Object.keys(node)) {
+        if (k === 'start' && typeof node.start === 'number') copy.start = shift(node.start);
+        else if (k === 'end' && typeof node.end === 'number') copy.end = shift(node.end);
+        else copy[k] = walk(node[k]);
+      }
+      return copy;
+    }
+    return node;
+  };
+  return walk(sm);
+}
+
+exports._speechifyEmotionSSML = speechifyEmotionSSML;
+exports._remapEmotionMarks = remapEmotionMarks;
+exports._resolveCue = resolveCue;

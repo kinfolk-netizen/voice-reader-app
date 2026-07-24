@@ -8,11 +8,10 @@ const app = {
   voiceSelections: { speechify: 'john-rhys-davies' },
 
   parseScriptSegments(text) {
-    const tagRe = /^([A-Z][A-Z'’.\-]*(?:[ ][A-Z][A-Z'’.\-]*){0,2}):\s+/;
+    // Kept in sync with public/index.html (Phase B): optional (cue) before colon.
+    const tagRe = /^([A-Z][A-Z'’.\-]*(?:[ ][A-Z][A-Z'’.\-]*){0,2})(?:\s*\(([a-z][a-z\/-]*)\))?:\s+/;
     const segs = [];
-    // Kept in sync with public/index.html: paragraph ends at a blank line OR
-    // before a line that begins with a speaker tag (survives blank-line collapse).
-    const paraRe = /[^\n][\s\S]*?(?=\n\s*\n|\n(?=[A-Z][A-Z'’.\-]*(?:[ ][A-Z][A-Z'’.\-]*){0,2}:\s)|$)/g;
+    const paraRe = /[^\n][\s\S]*?(?=\n\s*\n|\n(?=[A-Z][A-Z'’.\-]*(?:[ ][A-Z][A-Z'’.\-]*){0,2}(?:\s*\([a-z][a-z\/-]*\))?:\s)|$)/g;
     let m;
     while ((m = paraRe.exec(text)) !== null) {
       const paraStart = m.index;
@@ -20,9 +19,11 @@ const app = {
       const tag = para.match(tagRe);
       let speaker = this.NARRATOR;
       let contentStart = paraStart;
+      let emotion = null;
       if (tag) {
         speaker = tag[1].trim();
         if (speaker.toUpperCase() === 'NARRATOR') speaker = this.NARRATOR;
+        emotion = tag[2] ? tag[2].toLowerCase() : null;
         contentStart = paraStart + tag[0].length;
       }
       const end = paraStart + para.length;
@@ -31,7 +32,7 @@ const app = {
       if (last && last.speaker === speaker && !tag) {
         last.end = end;
       } else {
-        segs.push({ speaker, start: contentStart, end });
+        segs.push({ speaker, start: contentStart, end, emotion });
       }
     }
     return segs;
@@ -222,6 +223,24 @@ const blankSpeakers = app.parseScriptSegments(blanks).map(s => s.speaker);
 if (JSON.stringify(blankSpeakers) !== JSON.stringify(['Narrator', 'KA’EL', 'JUNIA'])) {
   console.error('FAIL blank-line format regressed:', blankSpeakers); pass = false;
 }
+
+// ---- Test 8 (Phase B): emotion cue is extracted, stripped, offsets aligned ----
+const emo = "JUNIA (afraid): Do you hear it?\nKA’EL (quiet): I hear it.\nNARRATOR: She drew back.\nTESSARA: Brace the wall.";
+const emoSegs = app.parseScriptSegments(emo);
+const emoSpeakers = emoSegs.map(s => s.speaker);
+if (JSON.stringify(emoSpeakers) !== JSON.stringify(['JUNIA', 'KA’EL', 'Narrator', 'TESSARA'])) {
+  console.error('FAIL emotion: speakers', emoSpeakers); pass = false;
+}
+if (JSON.stringify(emoSegs.map(s => s.emotion)) !== JSON.stringify(['afraid', 'quiet', null, null])) {
+  console.error('FAIL emotion: cues', emoSegs.map(s => s.emotion)); pass = false;
+}
+// the spoken slice must NOT contain the "(cue)" — it was stripped with the tag
+const juniaText = emo.slice(emoSegs[0].start, emoSegs[0].end);
+if (juniaText !== 'Do you hear it?' ) { console.error('FAIL emotion: spoken text not clean:', JSON.stringify(juniaText)); pass = false; }
+const kaelText = emo.slice(emoSegs[1].start, emoSegs[1].end);
+if (kaelText !== 'I hear it.') { console.error('FAIL emotion: kael spoken:', JSON.stringify(kaelText)); pass = false; }
+// no-cue lines still parse with emotion=null (backward compatible)
+if (emoSegs[3].emotion !== null) { console.error('FAIL emotion: uncued line should be null'); pass = false; }
 
 console.log(pass ? '\nALL CORE TESTS PASS' : '\nTESTS FAILED');
 process.exit(pass ? 0 : 1);

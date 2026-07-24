@@ -1,0 +1,5 @@
+# Keep score + test-relevant files LF so tests (e.g. test_lexicon.js anti-drift)
+# don't trip on Windows checkouts where core.autocrlf would hand them CRLF.
+*.pls  text eol=lf
+*.json text eol=lf
+*.js   text eol=lf
