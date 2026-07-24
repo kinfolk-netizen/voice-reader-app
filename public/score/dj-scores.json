@@ -3,6 +3,9 @@
   "note": "DJ Scores Layer B — hand-scored dramatic holds. 'after' = ms of silence held AFTER the anchored line. 'anchor' matches the END of a spoken line. Caption-safe (inter-segment silence only). SPARSE BY DESIGN (Scarcity Law): a handful of beats per chapter. These holds intentionally exceed Layer A's 900ms ceiling — that is the point of the reserved tier. Modeled Director pass v1; tuned by ear against Chapter 1 (the ground-truth target). RESTRAINT LAW note: Viell's 'unsettle stone. And hearts.' is deliberately NOT held — a pushed hold there would milk a line that lands harder plain (Amos's ruling).",
   "holds": [
     { "anchor": "Do I know you?", "after": 2000, "note": "Ch1 cellar reveal — the mother hollowed out, reading kind. The panel's emblem: every chair, blind, named the silence after this line. The chapter's biggest hold." },
+    { "anchor": "No recognition.", "after": 200, "note": "Ch1 aftermath fragment 1 — graded descent begins (Listening Pass ruling D1, ratified by ear 2026-07-24)." },
+    { "anchor": "No memory.", "after": 280, "note": "Ch1 aftermath fragment 2 — the fall continues (D1)." },
+    { "anchor": "Nothing.", "after": 900, "note": "Ch1 aftermath fragment 3 — exhale-hold; the void settles (D1). The son's grief, a second bell distinct from the mother's fermata — the graded descent the prose wrote in three periods. Ratified by ear (Jonathan's 88% beat)." },
     { "anchor": "Not one song. Three. With space between.", "after": 1200, "note": "Ch1 archive — the reveal must land in quiet, then ring. Cole: slow, drop, let real silence sit, then land it." },
     { "anchor": "That difference isn't dangerous. Sameness is.", "after": 1000, "note": "Ch1 cellar — the mother's thesis. Held reverently, firm not milked (Restraint Law)." },
     { "anchor": "I think we already are.", "after": 1000, "note": "Ch1 tower — the dread lands after Ka'el finally admits it." },
