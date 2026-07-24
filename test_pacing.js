@@ -57,6 +57,19 @@ function computePauseTrack(chunks, fullText, opts) {
         if (track[i] > CEIL) track[i] = CEIL;
         if (i > 0 && track[i] > 600 && track[i - 1] > 600) track[i] = Math.min(track[i], 400);
     }
+    // Layer B — hand-scored holds, applied last, allowed to exceed the ceiling/no-stack.
+    const holds = Array.isArray(opts.holds) ? opts.holds : [];
+    if (holds.length) {
+        for (let i = 0; i < chunks.length; i++) {
+            const ct = (chunks[i].text || '').replace(/\s+$/, '');
+            for (const h of holds) {
+                if (h && h.anchor && typeof h.after === 'number' && ct.endsWith(h.anchor)) {
+                    track[i] = Math.round(h.after * intensity);
+                    break;
+                }
+            }
+        }
+    }
     return track;
 }
 const one = (chunk, next, ft) => computePauseAfterOne(chunk, next, ft || '');
@@ -104,5 +117,16 @@ ok('disabled -> all zeros', computePauseTrack(tChunks, 'One.\n\nTwo.', { enabled
 ok('disabled track length matches chunks', computePauseTrack(tChunks, 'One.\n\nTwo.', { enabled: false }).length === tChunks.length);
 ok('intensity 0.5 halves (180 -> 90)', computePauseTrack([{ text: 'A sentence here.' }], '', { intensity: 0.5 })[0] === 90);
 ok('default intensity is 1', computePauseTrack([{ text: 'A sentence here.' }], '', {})[0] === 180);
+
+console.log('Test 7 — Layer B hand-scored holds (reserved dramatic fermata)');
+const HOLDS = [{ anchor: 'Do I know you?', after: 2000 }, { anchor: 'We always do.', after: 1400 }];
+ok('anchored line gets the hold, exceeding the ceiling', computePauseTrack([{ text: "I'm sorry, dear. Do I know you?" }], '', { holds: HOLDS })[0] === 2000);
+ok('hold bypasses the 900 ceiling', computePauseTrack([{ text: 'Do I know you?' }], '', { holds: HOLDS })[0] > 900);
+ok('a second anchor also fires', computePauseTrack([{ text: 'We run. I know. We always do.' }], '', { holds: HOLDS })[0] === 1400);
+ok('non-anchored line keeps its Layer A value', computePauseTrack([{ text: 'A plain sentence here.' }], '', { holds: HOLDS })[0] === 180);
+ok('anchor must match the END, not the middle', computePauseTrack([{ text: 'Do I know you? she asked quietly.' }], '', { holds: HOLDS })[0] !== 2000);
+ok('intensity scales the hold (2000 -> 1000)', computePauseTrack([{ text: 'Do I know you?' }], '', { holds: HOLDS, intensity: 0.5 })[0] === 1000);
+ok('disabled ignores holds (all zeros)', computePauseTrack([{ text: 'Do I know you?' }], '', { enabled: false, holds: HOLDS })[0] === 0);
+ok('no holds -> pure Layer A', computePauseTrack([{ text: 'Do I know you?' }], '', {})[0] === 180);
 
 console.log(`\nALL ${passed} ASSERTIONS PASSED ✅`);

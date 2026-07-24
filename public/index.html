@@ -1168,6 +1168,7 @@
             init() {
                 this.loadStaticVoices();
                 this.loadCastMap();
+                this.loadDjScore();
                 this.initThemes();
                 this.initCollapsibles();
                 this.initNowPlaying();
@@ -2422,6 +2423,19 @@ async loadDynamicVoices(providerId) {
             registryLookup(speaker) {
                 return this.registryIndex ? (this.registryIndex[this.normName(speaker)] || null) : null;
             },
+            // v2.27 DJ Scores Layer B: load the hand-scored dramatic holds (sidecar).
+            // Optional — if the fetch fails, Layer A pacing stands on its own.
+            async loadDjScore() {
+                this.djScore = [];
+                try {
+                    const r = await fetch('score/dj-scores.json');
+                    if (r.ok) {
+                        const data = await r.json();
+                        if (data && Array.isArray(data.holds)) this.djScore = data.holds;
+                    }
+                } catch (e) { /* Layer B score optional */ }
+                return this.djScore;
+            },
             scoreMatch(attrs, pool, used) {
                 const scale = this.registryAgeScale || ['child', 'teen', 'young', 'adult', 'senior'];
                 const idxOf = a => { const i = scale.indexOf(a || 'adult'); return i < 0 ? scale.indexOf('adult') : i; };
@@ -2880,6 +2894,23 @@ async loadDynamicVoices(providerId) {
                     if (track[i] > CEIL) track[i] = CEIL;
                     if (i > 0 && track[i] > 600 && track[i - 1] > 600) track[i] = Math.min(track[i], 400);
                 }
+                // Layer B (DJ Scores hand-scored holds): reserved dramatic fermatas that
+                // intentionally EXCEED the Layer-A ceiling and the no-stack rule. Applied
+                // last so nothing clips them. Sparse by design (Scarcity Law) — a handful
+                // of beats per chapter, authored in the score sidecar. Anchor matches the
+                // END of a spoken line; still caption-safe (inter-segment silence only).
+                const holds = Array.isArray(opts.holds) ? opts.holds : [];
+                if (holds.length) {
+                    for (let i = 0; i < chunks.length; i++) {
+                        const ct = (chunks[i].text || '').replace(/\s+$/, '');
+                        for (const h of holds) {
+                            if (h && h.anchor && typeof h.after === 'number' && ct.endsWith(h.anchor)) {
+                                track[i] = Math.round(h.after * intensity);
+                                break;
+                            }
+                        }
+                    }
+                }
                 return track;
             },
 
@@ -3167,8 +3198,9 @@ async loadDynamicVoices(providerId) {
 
                 const engine = { provider, chunks, idx: 0, audio: null, cache: {}, interval: null, pausedByUser: false, stopped: false, bufferAhead: 4, durMap: {}, playedDur: 0, pauseTimer: null, inGap: false, gapNextIdx: 0, pauseTrack: [] };
                 this.cloudEngine = engine;
-                // v2.25 DJ Scores Layer A: precompute caption-safe inter-segment silence.
-                engine.pauseTrack = this.computePauseTrack(chunks, fullText, { enabled: this.pacingEnabled !== false, intensity: this.pacingIntensity || 1 });
+                // v2.25 DJ Scores Layer A + v2.27 Layer B: precompute caption-safe
+                // inter-segment silence, then overlay the hand-scored dramatic holds.
+                engine.pauseTrack = this.computePauseTrack(chunks, fullText, { enabled: this.pacingEnabled !== false, intensity: this.pacingIntensity || 1, holds: this.djScore || [] });
 
                 const prefetch = (i) => {
                     if (i >= chunks.length || engine.cache[i]) return;
