@@ -335,9 +335,14 @@ exports.handler = async (event, context) => {
       const json = await response.json();
       audioBase64 = json.audio_data || json.audioData || json.audio || json.audio_base64;
       speechMarks = json.speech_marks || json.speechMarks || null;
-      // v2.26 Layer A.2: lines given within-line <break> estimate captions
-      // (never-wrong) until a live probe lets us remap Speechify's break-shifted marks.
-      if (withinLineBreaks) speechMarks = null;
+      // v2.28 Layer A.2 captions: the live Speechify probe confirmed marks are indexed
+      // into the PLAIN source text even with an inserted <break> (Speechify strips the
+      // markup), so the within-line breath does NOT shift word offsets — these lines
+      // caption EXACTLY. Guard: if any offset falls outside the source text (unexpected),
+      // drop to weighted estimation (never a wrong highlight).
+      if (withinLineBreaks && speechMarks && !marksWithinSource(speechMarks, text.length)) {
+        speechMarks = null;
+      }
       // Phase A: names were substituted in the spoken text, so the marks index
       // the substituted string. Remap every offset back to the source text so
       // the reader highlights the right displayed word.
@@ -705,6 +710,22 @@ exports._speechifyEmotionSSML = speechifyEmotionSSML;
 exports._remapEmotionMarks = remapEmotionMarks;
 exports._resolveCue = resolveCue;
 exports._speechifyBreathSSML = speechifyBreathSSML;
+
+// v2.28 Layer A.2 captions: verify Speechify's marks index into the source text.
+// The live probe confirmed marks are plain-text-indexed even with an inserted <break>
+// (markup stripped), so within-line-break lines caption exactly; this guard just
+// confirms every offset is in range before we trust them (else -> estimate).
+function marksWithinSource(sm, textLen) {
+  let any = false, ok = true;
+  (function walk(n) {
+    if (!n) return;
+    if (Array.isArray(n)) { n.forEach(walk); return; }
+    if (typeof n.start === 'number') { any = true; if (n.start >= textLen) ok = false; }
+    if (n.chunks) walk(n.chunks);
+  })(sm);
+  return any && ok;
+}
+exports._marksWithinSource = marksWithinSource;
 
 // ============================================================================
 // Phase B — ElevenLabs v3 emotion (audio tags)

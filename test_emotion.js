@@ -121,4 +121,12 @@ ok('two mid-line em-dashes -> two breaks', (B('a—b—c', null).ssml.match(/<br
 ok('composes emotion style when cue present', (() => { const s = B('a map—a thing', 'soft').ssml; return /speechify:style emotion="calm"/.test(s) && /volume="soft"/.test(s); })());
 ok('em-dash at end (with trailing space) -> null', B('trailing thought — ', null) === null);
 
+console.log('Test 10 — within-line-break caption guard (v2.28, probe-confirmed source indexing)');
+const MW = proxy._marksWithinSource;
+ok('marks inside source pass the guard (use them -> exact captions)', MW({ chunks: [{ start: 0 }, { start: 6 }, { start: 17 }] }, 23) === true);
+ok('an offset at/after source length fails the guard (-> estimate)', MW({ chunks: [{ start: 0 }, { start: 99 }] }, 23) === false);
+ok('no marks -> guard false (nothing to trust)', MW({ chunks: [] }, 23) === false);
+ok('flat mark list supported', MW([{ start: 0 }, { start: 5 }], 10) === true);
+ok('probe shape (Alpha beta gamma delta) passes at len 22', MW({ chunks: [{ start: 0 }, { start: 0 }, { start: 6 }, { start: 11 }, { start: 17 }] }, 22) === true);
+
 console.log(`\nALL ${passed} ASSERTIONS PASSED ✅`);
