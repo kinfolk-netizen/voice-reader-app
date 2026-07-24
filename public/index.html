@@ -2828,6 +2828,61 @@ async loadDynamicVoices(providerId) {
                 return chunks.map(c => ({ start: c.start, end: c.end, text: text.slice(c.start, c.end) }));
             },
 
+            // ---------- v2.25 DJ Scores Layer A: weighted inter-segment silence ----------
+            // CAPTION-SAFE by construction: the pause is wall-clock silence inserted
+            // BETWEEN rendered audio segments, so neither the displayed text nor the TTS
+            // alignment is ever mutated — word-highlight cannot drift. Governed by the
+            // Restraint Law (quiet/sacred cues only ever LENGTHEN silence, never shorten)
+            // and the Scarcity Law (no two big pauses back-to-back; the dramatic HOLD is
+            // reserved for hand-scored Layer B and is never produced here).
+            PACING_QUIET_CUES: { soft: 1, whisper: 1, tender: 1, sad: 1, flat: 1, weary: 1, calm: 1 },
+
+            computePauseAfterOne(chunk, next, fullText) {
+                const t = (chunk.text || '').replace(/\s+$/, '');
+                let base;
+                if (/(?:…|\.\.\.)$/.test(t)) base = 320;                 // searching pause
+                else if (/[—–-]$/.test(t)) base = 150;                    // caught breath
+                else if (/[.!?][")'”’\]]?$/.test(t)) {                    // sentence end
+                    const lastSent = (t.match(/[^.!?]*[.!?][")'”’\]]?$/) || [t])[0];
+                    const words = lastSent.replace(/[^A-Za-z0-9'’ ]/g, ' ').trim().split(/\s+/).filter(Boolean);
+                    base = (words.length <= 2) ? 260 : 180;              // one/two-word fragment rings longer
+                } else base = 0;                                         // mid-clause: leave to TTS
+                let structural = 0;
+                if (next) {
+                    const gapText = fullText.slice(chunk.end, next.start);
+                    const paraBreak = /\n\s*\n/.test(gapText);
+                    if (next.speaker !== chunk.speaker) {
+                        const narration = (chunk.role === 'narrator' || next.role === 'narrator');
+                        if (narration) structural = 550;                 // narration<->dialogue camera move
+                        else structural = ((chunk.text || '').length < 90 && (next.text || '').length < 90) ? 240 : 320;
+                    } else if (paraBreak) {
+                        structural = 300;                                // same speaker, new paragraph
+                    }
+                }
+                let pause = Math.max(base, structural);                  // combine base vs structural, never stack
+                const cue = (chunk.emotion || '').toLowerCase();
+                if (this.PACING_QUIET_CUES[cue]) pause += 150;           // Restraint: quiet lengthens only
+                return pause;
+            },
+
+            computePauseTrack(chunks, fullText, opts) {
+                opts = opts || {};
+                const track = [];
+                if (opts.enabled === false) { for (let i = 0; i < chunks.length; i++) track.push(0); return track; }
+                const intensity = (typeof opts.intensity === 'number') ? opts.intensity : 1;
+                for (let i = 0; i < chunks.length; i++) {
+                    track.push(Math.round(this.computePauseAfterOne(chunks[i], chunks[i + 1] || null, fullText) * intensity));
+                }
+                // Scarcity Law + Layer-A ceiling: clamp everything under the reserved-HOLD
+                // floor, and never allow two big pauses in a row (the rare pause stays rare).
+                const CEIL = 900;
+                for (let i = 0; i < track.length; i++) {
+                    if (track[i] > CEIL) track[i] = CEIL;
+                    if (i > 0 && track[i] > 600 && track[i - 1] > 600) track[i] = Math.min(track[i], 400);
+                }
+                return track;
+            },
+
             flattenSpeechMarks(sm) {
                 // Speechify speech marks arrive as { chunks: [...] } (word marks with
                 // start_time in ms and start char offsets) or as a flat list.
@@ -3066,6 +3121,7 @@ async loadDynamicVoices(providerId) {
                 if (this.cloudEngine) {
                     this.cloudEngine.stopped = true;
                     if (this.cloudEngine.interval) clearInterval(this.cloudEngine.interval);
+                    if (this.cloudEngine.pauseTimer) { clearTimeout(this.cloudEngine.pauseTimer); this.cloudEngine.pauseTimer = null; }
                     if (this.cloudEngine.audio) { try { this.cloudEngine.audio.pause(); } catch (e) {} }
                     this.cloudEngine = null;
                 }
@@ -3074,12 +3130,19 @@ async loadDynamicVoices(providerId) {
 
             async playCloud() {
                 // Resume if the user paused mid-listen
-                if (this.cloudEngine && this.cloudEngine.audio && this.cloudEngine.pausedByUser) {
-                    this.cloudEngine.pausedByUser = false;
-                    this.cloudEngine.audio.play();
+                if (this.cloudEngine && this.cloudEngine.pausedByUser) {
+                    const eng = this.cloudEngine;
+                    eng.pausedByUser = false;
                     this.isPlaying = true;
                     this.updatePlayButton();
                     this.updateStatus('Playing...');
+                    if (eng.inGap && typeof eng._playChunk === 'function') {
+                        // paused during an inter-segment silence — advance to the queued chunk
+                        eng.inGap = false;
+                        eng._playChunk(eng.gapNextIdx);
+                    } else if (eng.audio) {
+                        eng.audio.play();
+                    }
                     return;
                 }
 
@@ -3102,8 +3165,10 @@ async loadDynamicVoices(providerId) {
                 }
                 console.log('[CLOUD TTS] Queued', chunks.length, 'chunks | provider:', provider, dramatized ? '| DRAMATIZED (' + new Set(chunks.map(c => c.speaker)).size + ' voices)' : '');
 
-                const engine = { provider, chunks, idx: 0, audio: null, cache: {}, interval: null, pausedByUser: false, stopped: false, bufferAhead: 4, durMap: {}, playedDur: 0 };
+                const engine = { provider, chunks, idx: 0, audio: null, cache: {}, interval: null, pausedByUser: false, stopped: false, bufferAhead: 4, durMap: {}, playedDur: 0, pauseTimer: null, inGap: false, gapNextIdx: 0, pauseTrack: [] };
                 this.cloudEngine = engine;
+                // v2.25 DJ Scores Layer A: precompute caption-safe inter-segment silence.
+                engine.pauseTrack = this.computePauseTrack(chunks, fullText, { enabled: this.pacingEnabled !== false, intensity: this.pacingIntensity || 1 });
 
                 const prefetch = (i) => {
                     if (i >= chunks.length || engine.cache[i]) return;
@@ -3188,7 +3253,18 @@ async loadDynamicVoices(providerId) {
                             URL.revokeObjectURL(audioUrl);
                             if (engine.interval) { clearInterval(engine.interval); engine.interval = null; }
                             engine.playedDur += (engine.durMap[i] || 0);
-                            if (!engine.stopped && !engine.pausedByUser) playChunk(i + 1);
+                            if (engine.stopped || engine.pausedByUser) return;
+                            // v2.25: caption-safe weighted silence between segments (DJ Scores Layer A).
+                            const gap = (engine.pauseTrack && engine.pauseTrack[i]) || 0;
+                            if (gap > 0 && (i + 1) < chunks.length) {
+                                engine.inGap = true; engine.gapNextIdx = i + 1;
+                                engine.pauseTimer = setTimeout(() => {
+                                    engine.pauseTimer = null; engine.inGap = false;
+                                    if (!engine.stopped && !engine.pausedByUser) playChunk(i + 1);
+                                }, gap);
+                            } else {
+                                playChunk(i + 1);
+                            }
                         };
                         audio.onerror = () => {
                             const code = audio.error && audio.error.code;
@@ -3224,6 +3300,7 @@ async loadDynamicVoices(providerId) {
                         this.updatePlayButton();
                     }
                 };
+                engine._playChunk = playChunk;
 
                 playChunk(0);
             },
