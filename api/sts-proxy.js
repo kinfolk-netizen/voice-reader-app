@@ -17,6 +17,8 @@
  *     mimeType:  "audio/m4a",               // optional (default audio/mpeg)
  *     filename:  "recording.m4a",           // optional (default audio.mp3)
  *     modelId:   "eleven_multilingual_sts_v2", // optional
+ *     // The knobs below are accepted nested under `options` OR at the top level,
+ *     // in camelCase OR snake_case (output_format, remove_background_noise, ...):
  *     options: {
  *       outputFormat: "mp3_44100_128",      // optional (ElevenLabs output_format)
  *       removeBackgroundNoise: false,       // optional
@@ -64,6 +66,21 @@ exports.handler = async (event) => {
 
     const { voiceId, audio, mimeType, filename, modelId, options = {} } = payload;
 
+    // Tunable knobs are accepted either nested under `options` or at the top
+    // level, and in camelCase or snake_case — so callers can send the natural
+    // ElevenLabs field names (e.g. remove_background_noise) without contortion.
+    const opt = options || {};
+    const pick = (...keys) => {
+      for (const k of keys) {
+        if (opt[k] != null) return opt[k];
+        if (payload[k] != null) return payload[k];
+      }
+      return undefined;
+    };
+    const outputFormat = pick('outputFormat', 'output_format');
+    const removeBackgroundNoise = pick('removeBackgroundNoise', 'remove_background_noise');
+    const voiceSettings = pick('voiceSettings', 'voice_settings');
+
     // Validate required fields
     if (!voiceId) return fail(400, 'Missing required field: voiceId');
     if (!audio) return fail(400, 'Missing required field: audio (base64)');
@@ -85,12 +102,12 @@ exports.handler = async (event) => {
     // runtime) ships global fetch/FormData/Blob via undici, so no dependency needed.
     const form = new FormData();
     form.append('model_id', modelId || 'eleven_multilingual_sts_v2');
-    if (options.outputFormat) form.append('output_format', options.outputFormat);
-    if (options.removeBackgroundNoise != null) {
-      form.append('remove_background_noise', String(!!options.removeBackgroundNoise));
+    if (outputFormat) form.append('output_format', outputFormat);
+    if (removeBackgroundNoise != null) {
+      form.append('remove_background_noise', String(!!removeBackgroundNoise));
     }
-    if (options.voiceSettings) {
-      form.append('voice_settings', JSON.stringify(options.voiceSettings));
+    if (voiceSettings) {
+      form.append('voice_settings', JSON.stringify(voiceSettings));
     }
     const blob = new Blob([audioBuffer], { type: mimeType || 'audio/mpeg' });
     form.append('audio', blob, filename || 'audio.mp3');
@@ -125,7 +142,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         success: true,
         audio: audioBase64,
-        format: (options.outputFormat || 'mp3_44100_128').startsWith('mp3') ? 'mp3' : 'raw',
+        format: (outputFormat || 'mp3_44100_128').startsWith('mp3') ? 'mp3' : 'raw',
         provider: 'elevenlabs',
         voice: voiceId,
         sourceBytes: audioBuffer.length
