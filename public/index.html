@@ -2172,8 +2172,18 @@ async loadDynamicVoices(providerId) {
                     const npSl = document.getElementById('np-speed-slider');
                     if (npSl) npSl.value = String(v);
                     try { localStorage.setItem('vr-speed', String(v)); } catch (e) {}
-                    if (this.cloudEngine && this.cloudEngine.audio) this.cloudEngine.audio.playbackRate = v;
-                    else if (this.sharedAudio) this.sharedAudio.playbackRate = v;
+                    // "Hold the rests, not the words" (Keeper's Table, 2026-07-25):
+                    // slowing a rendered clip stretches the words and flattens the read.
+                    // preservesPitch keeps the voice from dropping into the slurred/"drunk"
+                    // register when slowed. (Full fix — regenerate slow at the TTS layer
+                    // instead of stretching — is scoped separately; see the ledger.)
+                    if (this.cloudEngine && this.cloudEngine.audio) {
+                        try { this.cloudEngine.audio.preservesPitch = true; } catch (e) {}
+                        this.cloudEngine.audio.playbackRate = v;
+                    } else if (this.sharedAudio) {
+                        try { this.sharedAudio.preservesPitch = true; } catch (e) {}
+                        this.sharedAudio.playbackRate = v;
+                    }
                 };
                 this.applySpeed = applySpeed;
                 document.getElementById('np-speed').addEventListener('click', () => {
