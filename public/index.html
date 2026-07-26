@@ -1905,7 +1905,7 @@ async loadDynamicVoices(providerId) {
                 }
             },
 
-            loadText() {
+            async loadText() {
                 const text = document.getElementById('text').value.trim();
                 if (!text) {
                     alert('Please enter some text');
@@ -1915,13 +1915,36 @@ async loadDynamicVoices(providerId) {
                 this.currentText = text;
                 this.readStartOffset = 0;
                 this.detectScript();
-                this.renderCastPanel(); // async; shows the Cast card if speaker tags exist
                 this.prepareReaderText();
                 this.collapseSetupCards(); // fold Voice + Manuscript so the Reader leads
                 document.getElementById('player-card').style.display = 'block';
                 this.loadNotes();
                 this.offerResume();
-                this.updateStatus('Text loaded - Ready to play');
+
+                if (!this.hasScriptTags) {
+                    this.renderCastPanel();
+                    this.updateStatus('Text loaded - Ready to play');
+                    return;
+                }
+
+                // v2.34: dramatized scripts seat their cast NOW, against the
+                // voices that are actually available, and say so out loud —
+                // so a dark provider is visible here rather than as silence
+                // when the play button is pressed.
+                this.updateStatus('Seating the cast…');
+                let rep = null;
+                try { rep = await this.renderCastPanel(); }
+                catch (e) { console.error('[CAST] seating failed:', e); }
+                this.updateStatus(this.seatingStatusLine(rep));
+            },
+
+            seatingStatusLine(rep) {
+                if (!rep) return 'Text loaded - Ready to play';
+                const bits = [rep.count + ' voices seated'];
+                if (rep.seats) bits.push(rep.seats);
+                if (rep.reseated) bits.push(rep.reseated + ' re-seated');
+                if (rep.dark && rep.dark.length) bits.push('⚠ ' + rep.dark.join(', '));
+                return bits.join(' · ') + ' — Ready to play';
             },
 
             prepareReaderText() {
@@ -2256,6 +2279,124 @@ async loadDynamicVoices(providerId) {
             // offsets stay aligned with the source text.
             NARRATOR: 'Narrator',
 
+            // ---------- v2.34 Live Cast Seating ----------
+            // "Seat whichever voices are actually available right now, when the
+            // text loads." The account voice list is NOT proof of availability:
+            // /v1/voices answers happily at zero remaining credit. So a provider
+            // is only treated as live once it has actually spoken. Everything
+            // below hangs off that one distinction.
+
+            providerLive: null,   // { elevenlabs: {ok, reason}, speechify: {...} }
+            castReseated: [],     // chairs moved by the reconcile pass, for the report
+
+            // The panel chairs are not saga characters and are not in the saga
+            // registry. Seat them explicitly, in preference order: canon
+            // ElevenLabs voice first, Speechify understudy when EL is dark.
+            // PLACEHOLDER, pending a Casting Room pass: DJ Scores (River) and
+            // every Speechify understudy. THE KEEPER on Lily is inherited from
+            // registry v1.3 and is left exactly as canon has it.
+            PANEL_BENCH: {
+                "THE KEEPER":        { elevenlabs: 'pFZP5JQG7iQjIQuC4Bku', speechify: 'douglas' },
+                "THE CONDUCTOR":     { elevenlabs: 'IKne3meq5aSn9XLyUdCD', speechify: 'lorne'   },
+                "DJ SCORES":         { elevenlabs: 'SAz9YHcvj6GT2YYXdXww', speechify: 'mason'   },
+                "GIDEON":            { elevenlabs: 'CwhRBWXzGAHq8TQ4Fs17', speechify: 'alec'    },
+                "COLE":              { elevenlabs: 'N2lVS1w4EtoT3dr4eOWO', speechify: 'oliver'  },
+                "AMOS":              { elevenlabs: 'pqHfZKP75CvOlQylNhV4', speechify: 'collin'  },
+                "THE WITNESS TONE":  { elevenlabs: 'nPczCjzI2devNBz1zQrb', speechify: 'hugh_32' },
+                "THE AUTHOR'S SEAT": { elevenlabs: '5M1W9IgOqnGaZnqjhACC', speechify: 'george'  },
+                "MAREN":             { elevenlabs: 'cgSgspJ2msm6clMCkdW9', speechify: 'kara'    }
+            },
+            PROVIDER_ORDER: ['elevenlabs', 'speechify'],
+            PROBE_TEXT: 'Lamps up.',   // 9 characters, once per provider per tab
+
+            // One tiny synthesis per provider, cached for the life of the tab.
+            // This is the only honest test of "available right now".
+            async probeProvider(provider) {
+                const cacheKey = 'witness-provider-live-' + provider;
+                try {
+                    const cached = JSON.parse(sessionStorage.getItem(cacheKey) || 'null');
+                    if (cached && typeof cached.ok === 'boolean') return cached;
+                } catch (e) { /* sessionStorage optional */ }
+
+                const anyVoice = ((this.allVoices || []).find(v => v.provider === provider) || {}).voiceId;
+                let res;
+                if (!anyVoice) {
+                    res = { ok: false, reason: 'no voices returned — API key not configured' };
+                } else {
+                    try {
+                        const r = await fetch('/.netlify/functions/tts-proxy', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                providerId: provider,
+                                text: this.PROBE_TEXT,
+                                voice: anyVoice,
+                                options: { model: this.providerModels[provider] }
+                            })
+                        });
+                        const data = await r.json().catch(() => ({}));
+                        res = (r.ok && data && data.success && data.audio)
+                            ? { ok: true }
+                            : { ok: false, reason: this.shortProviderError(r.status, data) };
+                    } catch (e) {
+                        res = { ok: false, reason: e.message || 'network error' };
+                    }
+                }
+                try { sessionStorage.setItem(cacheKey, JSON.stringify(res)); } catch (e) {}
+                console.log('[CAST] provider probe', provider, res);
+                return res;
+            },
+
+            shortProviderError(status, data) {
+                const raw = ((data && (data.error || data.details)) || '') + '';
+                if (/quota|credit|insufficient|exceeded/i.test(raw)) return 'out of credit';
+                if (status === 401 || /unauthor|api key/i.test(raw)) return 'key rejected';
+                if (status === 429) return 'rate limited';
+                return raw.slice(0, 80) || ('HTTP ' + status);
+            },
+
+            async refreshProviderLiveness(providers) {
+                this.providerLive = this.providerLive || {};
+                for (const p of providers) {
+                    if (p === 'local') continue;
+                    if (this.providerLive[p] && typeof this.providerLive[p].ok === 'boolean') continue;
+                    this.providerLive[p] = await this.probeProvider(p);
+                }
+                return this.providerLive;
+            },
+
+            // Voices we are willing to seat: listed by the account AND on a
+            // provider that has proven it can speak.
+            livePool() {
+                const pool = this.allVoices || [];
+                if (!this.providerLive) return pool;
+                return pool.filter(v => {
+                    const st = this.providerLive[v.provider];
+                    return !st || st.ok !== false;
+                });
+            },
+
+            markProviderDark(provider, reason) {
+                this.providerLive = this.providerLive || {};
+                this.providerLive[provider] = { ok: false, reason: reason || 'refused' };
+                try { sessionStorage.setItem('witness-provider-live-' + provider, JSON.stringify(this.providerLive[provider])); } catch (e) {}
+            },
+
+            // The understudy a chair falls to when its provider goes dark
+            // mid-session, so playback survives instead of stopping.
+            understudyFor(speaker, deadProvider) {
+                const bench = this.PANEL_BENCH[this.castKey(speaker)];
+                if (!bench) return null;
+                for (const p of this.PROVIDER_ORDER) {
+                    if (p === deadProvider || !bench[p]) continue;
+                    const st = this.providerLive && this.providerLive[p];
+                    if (st && st.ok === false) continue;
+                    return { provider: p, voiceId: bench[p] };
+                }
+                return null;
+            },
+            // ---------- end Live Cast Seating ----------
+
             parseScriptSegments(text) {
                 // Speaker tag, with an OPTIONAL emotion cue in parens before the
                 // colon: "JUNIA (afraid): line". Group 2 is the cue; it's stripped
@@ -2463,35 +2604,105 @@ async loadDynamicVoices(providerId) {
                 }
                 return best;
             },
+            // v2.34: seats the whole cast against what is LIVE at load time.
+            // Pass 0 reconcile · Pass 1 panel bench then saga registry ·
+            // Pass 2 score-match. Returns a report for the status line.
             async autoCastSpeakers(speakers) {
                 await this.loadRegistry();
-                const pool = this.allVoices || (await this.loadAllVoices());
-                const has = (prov) => pool.some(v => v.provider === prov);
+                if (!this.allVoices || !this.allVoices.length) await this.loadAllVoices();
+
+                // Probe only the providers this script could actually need.
+                const wanted = new Set();
+                for (const sp of speakers) {
+                    const k = this.castKey(sp);
+                    const bench = this.PANEL_BENCH[k];
+                    if (bench) for (const p of Object.keys(bench)) wanted.add(p);
+                    const ch = this.registryLookup(sp);
+                    if (ch && ch.voice && ch.voice.provider) wanted.add(ch.voice.provider);
+                    const seated = this.castMap[k];
+                    if (seated && seated.provider) wanted.add(seated.provider);
+                }
+                wanted.delete('local');
+                await this.refreshProviderLiveness([...wanted]);
+
+                const pool = this.livePool();
+                const liveIds = new Set(pool.map(v => v.provider + '||' + v.voiceId));
+                const idOf = (e) => (e.provider || 'speechify') + '||' + e.voiceId;
+
+                // Pass 0 — RECONCILE. A seat survives only if its voice is
+                // available right now. This is what makes the cast self-healing:
+                // a deleted voice, a removed key or an exhausted provider no
+                // longer leaves a chair permanently stuck on a dead voice.
+                this.castReseated = [];
+                for (const sp of speakers) {
+                    const k = this.castKey(sp);
+                    const e = this.castMap[k];
+                    if (e && e.voiceId && !liveIds.has(idOf(e))) {
+                        this.castReseated.push({ speaker: sp, from: idOf(e) });
+                        delete this.castMap[k];
+                    }
+                }
+
                 const used = new Set();
                 for (const sp of speakers) {
                     const e = this.castMap[this.castKey(sp)];
-                    if (e && e.voiceId) used.add((e.provider || 'speechify') + '||' + e.voiceId);
+                    if (e && e.voiceId) used.add(idOf(e));
                 }
-                // Pass 1 — reserve every registry-locked voice first, so a
-                // score-match can never steal a canon voice from its character.
+
+                // Pass 1 — panel bench in provider-preference order, then the
+                // saga registry. Both reserve before any score-match runs, so a
+                // guess can never steal a canon voice from its character.
                 const pending = [];
                 for (const sp of speakers) {
                     const k = this.castKey(sp);
                     if (this.castMap[k] && this.castMap[k].voiceId) continue; // already seated
+                    const bench = this.PANEL_BENCH[k];
+                    let seated = false;
+                    if (bench) {
+                        for (const prov of this.PROVIDER_ORDER) {
+                            const id = bench[prov];
+                            if (id && liveIds.has(prov + '||' + id)) {
+                                this.castMap[k] = { provider: prov, voiceId: id };
+                                used.add(prov + '||' + id);
+                                seated = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (seated) continue;
                     const ch = this.registryLookup(sp);
-                    if (ch && ch.voice && ch.voice.voiceId && has(ch.voice.provider)) {
+                    if (ch && ch.voice && ch.voice.voiceId && liveIds.has(idOf(ch.voice))) {
                         this.castMap[k] = { provider: ch.voice.provider, voiceId: ch.voice.voiceId };
-                        used.add(ch.voice.provider + '||' + ch.voice.voiceId);
+                        used.add(idOf(ch.voice));
                     } else {
                         pending.push({ k, attrs: ch || { gender: '', age: 'adult', accent: '' } });
                     }
                 }
-                // Pass 2 — score-match the rest against whatever's left.
+                // Pass 2 — score-match the rest against whatever is live and left.
                 for (const { k, attrs } of pending) {
                     const pick = this.scoreMatch(attrs, pool, used);
                     if (pick) { this.castMap[k] = { provider: pick.provider, voiceId: pick.voiceId }; used.add(pick.provider + '||' + pick.voiceId); }
                 }
                 this.saveCastMap();
+                return this.castSeatingReport(speakers);
+            },
+
+            castSeatingReport(speakers) {
+                const byProv = {};
+                for (const sp of speakers) {
+                    const e = this.castMap[this.castKey(sp)];
+                    if (e && e.provider) byProv[e.provider] = (byProv[e.provider] || 0) + 1;
+                }
+                const SHORT = { elevenlabs: '11L', speechify: 'SPX', azure: 'AZ', openai: 'OAI' };
+                const seats = Object.entries(byProv)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([p, n]) => n + '×' + (SHORT[p] || p)).join(' + ');
+                const dark = Object.entries(this.providerLive || {})
+                    .filter(([, s]) => s && s.ok === false)
+                    .map(([p, s]) => (SHORT[p] || p) + ' ' + (s.reason || 'unavailable'));
+                const report = { seats, dark, reseated: (this.castReseated || []).length, count: speakers.length };
+                console.log('[CAST] seated', report, this.castMap);
+                return report;
             },
 
             async renderCastPanel() {
@@ -2515,8 +2726,10 @@ async loadDynamicVoices(providerId) {
 
                 this.currentSpeakers = speakers;
 
-                // Auto-cast: registry first (by name/alias), else best score-match.
-                await this.autoCastSpeakers(speakers);
+                // Auto-cast against what is live right now: reconcile, then
+                // panel bench / registry, then score-match. v2.34.
+                const seatingReport = await this.autoCastSpeakers(speakers);
+                this.lastSeatingReport = seatingReport;
 
                 rows.innerHTML = '';
                 if (!document.getElementById('open-casting-room')) {
@@ -2569,6 +2782,7 @@ async loadDynamicVoices(providerId) {
                     rows.appendChild(row);
                 }
                 card.style.display = 'block';
+                return seatingReport;
             },
 
             // ---------- Casting Room (immersive audition) ----------
@@ -3147,8 +3361,10 @@ async loadDynamicVoices(providerId) {
                 }
 
                 const release = await this.ttsAcquire(provider);
+                let lastErr = null;
+                let lastStatus = 0;
+                let lastData = null;
                 try {
-                    let lastErr = null;
                     for (let attempt = 0; attempt < 3; attempt++) {
                         if (attempt) await new Promise(r => setTimeout(r, attempt === 1 ? 600 : 1800));
                         try {
@@ -3162,14 +3378,57 @@ async loadDynamicVoices(providerId) {
                                     options: { model: model, emotion: chunk.emotion || null, role: chunk.role || null }
                                 })
                             });
+                            lastStatus = response.status;
                             const data = await response.json();
+                            lastData = data;
                             if (!data.success) throw new Error(data.error || 'TTS request failed');
                             this.audioCachePut(key, data); // fire-and-forget
                             return data;
                         } catch (e) { lastErr = e; }
                     }
-                    throw lastErr || new Error('TTS request failed');
                 } finally { release(); }
+
+                // v2.34 — the provider went dark mid-session. Three attempts is
+                // enough to tell a hiccup from a refusal. Rather than stopping
+                // the session dead (the exact silence this was built to answer),
+                // move this chair to its understudy on the other provider and
+                // keep reading. Every later chunk for that provider re-seats the
+                // same way, because the provider is now marked dark for the tab.
+                const alt = this.failoverChunk(provider, chunk, lastStatus, lastData);
+                if (alt) {
+                    this.updateStatus('Voice provider unavailable — switching ' +
+                        (chunk.speaker || 'the cast') + ' to a backup voice…');
+                    return await this.fetchCloudChunk(alt.provider, alt.chunk);
+                }
+                throw lastErr || new Error('TTS request failed');
+            },
+
+            // Re-seat one chair off a dead provider. Returns the retry pair, or
+            // null when there is nowhere left to go (then the original error
+            // stands and the user sees the real reason).
+            failoverChunk(provider, chunk, status, data) {
+                if (chunk && chunk._failedOver) return null;   // one hop only
+                const reason = this.shortProviderError(status, data);
+                if (!this.providerLive || !this.providerLive[provider] || this.providerLive[provider].ok !== false) {
+                    this.markProviderDark(provider, reason);
+                    console.warn('[CAST] provider went dark mid-session:', provider, reason);
+                }
+                const speaker = chunk && chunk.speaker;
+                if (!speaker) return null;
+                const sub = this.understudyFor(speaker, provider);
+                if (!sub) return null;
+
+                const k = this.castKey(speaker);
+                this.castMap[k] = { provider: sub.provider, voiceId: sub.voiceId };
+                this.saveCastMap();
+                console.log('[CAST] re-seated', speaker, '->', sub.provider, sub.voiceId);
+
+                const next = Object.assign({}, chunk, {
+                    provider: sub.provider,
+                    voice: sub.voiceId,
+                    _failedOver: true
+                });
+                return { provider: sub.provider, chunk: next };
             },
 
             stopCloud() {
