@@ -1126,18 +1126,21 @@
                 local: [],
                 openai: [],
                 elevenlabs: [],
-                speechify: []
+                speechify: [],
+                polly: []
             },
             voiceSelections: {
                 local: '',
                 openai: 'alloy',
                 elevenlabs: 'Rachel',
-                speechify: 'john-rhys-davies'
+                speechify: 'john-rhys-davies',
+                polly: 'Joanna'
             },
             providerModels: {
                 openai: 'tts-1',
                 elevenlabs: 'eleven_multilingual_v2',
-                speechify: 'simba-english'
+                speechify: 'simba-english',
+                polly: 'neural'
             },
             cloudEngine: null,
             // Dramatized Reader: speaker -> Speechify voice id (persisted)
@@ -2529,8 +2532,8 @@ async loadDynamicVoices(providerId) {
                 return this.encVoice(en.provider, en.voiceId);
             },
             async loadAllVoices() {
-                const providers = ['speechify', 'elevenlabs', 'azure'];
-                const SHORT = { speechify: 'SPX', elevenlabs: '11L', azure: 'AZ' };
+                const providers = ['speechify', 'elevenlabs', 'polly', 'azure'];
+                const SHORT = { speechify: 'SPX', elevenlabs: '11L', polly: 'POLLY', azure: 'AZ' };
                 for (const p of providers) {
                     if (!this.voiceCache[p] || this.voiceCache[p].length === 0) {
                         try { await this.loadDynamicVoices(p); } catch (e) {}
@@ -2560,11 +2563,12 @@ async loadDynamicVoices(providerId) {
                     const r = await fetch('cast-registry.json');
                     if (r.ok) {
                         const reg = await r.json();
+                        this.registry = reg;   // raw registry, for locked/reserved derivation
                         this.registryRegions = reg.regions || {};
                         if (Array.isArray(reg.ageScale)) this.registryAgeScale = reg.ageScale;
                         for (const c of (reg.characters || [])) {
                             const acc = c.accent || (this.registryRegions[c.region] && this.registryRegions[c.region].accent) || '';
-                            const entry = { gender: c.gender || '', age: c.age || 'adult', accent: acc, region: c.region || '', voice: c.voice || null };
+                            const entry = { gender: c.gender || '', age: c.age || 'adult', accent: acc, region: c.region || '', locked: !!c.locked, voice: c.voice || null };
                             for (const nm of [c.name, ...(c.aliases || [])]) this.registryIndex[this.normName(nm)] = entry;
                         }
                     }
@@ -2587,14 +2591,22 @@ async loadDynamicVoices(providerId) {
                 } catch (e) { /* Layer B score optional */ }
                 return this.djScore;
             },
-            scoreMatch(attrs, pool, used) {
+            scoreMatch(attrs, pool, used, reserved) {
                 const scale = this.registryAgeScale || ['child', 'teen', 'young', 'adult', 'senior'];
                 const idxOf = a => { const i = scale.indexOf(a || 'adult'); return i < 0 ? scale.indexOf('adult') : i; };
                 const wantG = (attrs.gender || '').toLowerCase();
                 const wantAge = idxOf(attrs.age);
                 const wantLoc = attrs.accent || '';
+                const isChild = (attrs.age || '') === 'child';
                 let best = null, bestScore = -1e9;
                 for (const v of pool) {
+                    // Reserved canon voices (e.g. Justin/Ivy/Kevin) are never
+                    // score-matched to anyone but their locked character.
+                    if (reserved && reserved.has(v.provider + '||' + v.voiceId)) continue;
+                    // Child safety: a child is never score-matched onto an adult or
+                    // senior voice. If nothing child/teen/young is free, best stays
+                    // null and the caller falls back to the Narrator voice.
+                    if (isChild && (v.age === 'adult' || v.age === 'senior')) continue;
                     if (wantG && (v.gender || '').toLowerCase() !== wantG) continue;
                     let score = 100 - Math.abs(idxOf(v.age) - wantAge) * 10;
                     if (wantLoc && v.locale === wantLoc) score += 15;
@@ -2629,6 +2641,17 @@ async loadDynamicVoices(providerId) {
                 const liveIds = new Set(pool.map(v => v.provider + '||' + v.voiceId));
                 const idOf = (e) => (e.provider || 'speechify') + '||' + e.voiceId;
 
+                // Locked canon voices are reserved — never handed to another
+                // character by score-match (Justin/Ivy/Kevin for the twins & Auren,
+                // linda for Lira). The locked character still gets its own voice in
+                // Pass 1; this only withholds those voices from the Pass 2 guesser.
+                const reserved = new Set();
+                for (const c of ((this.registry && this.registry.characters) || [])) {
+                    if (c.locked && c.voice && c.voice.voiceId) {
+                        reserved.add((c.voice.provider || 'speechify') + '||' + c.voice.voiceId);
+                    }
+                }
+
                 // Pass 0 — RECONCILE. A seat survives only if its voice is
                 // available right now. This is what makes the cast self-healing:
                 // a deleted voice, a removed key or an exhausted provider no
@@ -2638,6 +2661,21 @@ async loadDynamicVoices(providerId) {
                     const k = this.castKey(sp);
                     const e = this.castMap[k];
                     if (e && e.voiceId && !liveIds.has(idOf(e))) {
+                        this.castReseated.push({ speaker: sp, from: idOf(e) });
+                        delete this.castMap[k];
+                    }
+                }
+
+                // Pass 0.5 — a saved seat that disagrees with a LOCKED canon voice
+                // is dropped, so a stale browser seat (the twins on evie/rory, Auren
+                // on archie) is cleared on load and re-seated to canon in Pass 1.
+                for (const sp of speakers) {
+                    const k = this.castKey(sp);
+                    const ch = this.registryLookup(sp);
+                    const want = ch && ch.locked && ch.voice && ch.voice.voiceId
+                        ? (ch.voice.provider || 'speechify') + '||' + ch.voice.voiceId : null;
+                    const e = this.castMap[k];
+                    if (want && e && e.voiceId && idOf(e) !== want) {
                         this.castReseated.push({ speaker: sp, from: idOf(e) });
                         delete this.castMap[k];
                     }
@@ -2679,8 +2717,24 @@ async loadDynamicVoices(providerId) {
                     }
                 }
                 // Pass 2 — score-match the rest against whatever is live and left.
+                // A child is never auto-guessed onto a voice: with no locked
+                // catalogue child voice of its own, it reads in the Narrator voice
+                // (Pip and Merra, until a child voice is locked by ear). Reserved
+                // canon voices are withheld from the match for everyone else.
+                const narratorSeat = () => {
+                    const s = this.castMap[this.castKey(this.NARRATOR)];
+                    if (s && s.voiceId) return { provider: s.provider, voiceId: s.voiceId };
+                    const nr = this.registryLookup(this.NARRATOR);
+                    if (nr && nr.voice && nr.voice.voiceId) return { provider: nr.voice.provider || 'speechify', voiceId: nr.voice.voiceId };
+                    return null;
+                };
                 for (const { k, attrs } of pending) {
-                    const pick = this.scoreMatch(attrs, pool, used);
+                    if ((attrs.age || '') === 'child') {
+                        const nar = narratorSeat();
+                        if (nar) this.castMap[k] = nar;
+                        continue;
+                    }
+                    const pick = this.scoreMatch(attrs, pool, used, reserved);
                     if (pick) { this.castMap[k] = { provider: pick.provider, voiceId: pick.voiceId }; used.add(pick.provider + '||' + pick.voiceId); }
                 }
                 this.saveCastMap();
@@ -2693,7 +2747,7 @@ async loadDynamicVoices(providerId) {
                     const e = this.castMap[this.castKey(sp)];
                     if (e && e.provider) byProv[e.provider] = (byProv[e.provider] || 0) + 1;
                 }
-                const SHORT = { elevenlabs: '11L', speechify: 'SPX', azure: 'AZ', openai: 'OAI' };
+                const SHORT = { elevenlabs: '11L', speechify: 'SPX', polly: 'POLLY', azure: 'AZ', openai: 'OAI' };
                 const seats = Object.entries(byProv)
                     .sort((a, b) => b[1] - a[1])
                     .map(([p, n]) => n + '×' + (SHORT[p] || p)).join(' + ');
