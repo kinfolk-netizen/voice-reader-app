@@ -11,6 +11,11 @@
   # No build command needed (static site)
   command = ""
 
+  # Credit saver (2026-10-06): on production, skip the deploy when a commit touches
+  # nothing that ships (docs, CLAUDE.md, devtest). Exit 0 = skip, exit 1 = build.
+  # Deploy Previews and branch deploys always build (they're free).
+  ignore = "if [ \"$CONTEXT\" != \"production\" ]; then exit 1; fi; git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- public/ api/ netlify.toml package.json"
+
 # Function settings
 [functions]
   # Node.js runtime
