@@ -29,6 +29,9 @@
     "url": "https://github.com/kinfolk-netizen/voice-reader-app/issues"
   },
   "homepage": "https://github.com/kinfolk-netizen/voice-reader-app#readme",
+  "dependencies": {
+    "@aws-sdk/client-polly": "^3.600.0"
+  },
   "devDependencies": {
     "netlify-cli": "^17.0.0"
   },
