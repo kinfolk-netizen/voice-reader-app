@@ -4,11 +4,13 @@
 // browser. Fake fetch stands in for /.netlify/functions/tts-proxy.
 import fs from 'fs';
 
-const src = fs.readFileSync('public/index.html', 'utf-8').split('\n');
+// split on \r?\n so a CRLF (Windows) checkout of index.html doesn't leave a
+// trailing \r that would break the closing-brace anchors below.
+const src = fs.readFileSync('public/index.html', 'utf-8').split(/\r?\n/);
 const slice = (a, b) => src.slice(a - 1, b).join('\n');   // 1-indexed inclusive
 
-const liveBlock = slice(2286, 2397);          // state + probe + liveness + understudy
-const seatBlock = slice(2610, 2706);          // autoCastSpeakers + castSeatingReport
+const liveBlock = slice(2289, 2400);          // state + probe + liveness + understudy
+const seatBlock = slice(2622, 2760);          // autoCastSpeakers + castSeatingReport
 const failStart = src.findIndex(l => l.includes('failoverChunk(provider, chunk, status, data) {')) + 1;
 let failEnd = failStart;
 while (!/^            \},$/.test(src[failEnd - 1])) failEnd++;
@@ -70,11 +72,19 @@ const EL = [
 const registryJson = JSON.parse(fs.readFileSync('public/cast-registry.json', 'utf-8'));
 const SPX = [...new Set([
   'douglas', 'lorne', 'mason', 'alec', 'oliver', 'collin', 'hugh_32', 'george', 'kara',
-  ...registryJson.characters.filter(c => c.voice.provider === 'speechify').map(c => c.voice.voiceId),
+  ...registryJson.characters.filter(c => c.voice && c.voice.provider === 'speechify').map(c => c.voice.voiceId),
 ])];
+// Polly neural voices the account returns. Justin/Ivy/Kevin are Amazon's child
+// voices (the twins & Auren seat on them); the rest are adult. Appended last so
+// score-match order for the EL/SPX panel tests is unchanged.
+const POLLY = [
+  ['Ivy', 'child', 'female', 'en-US'], ['Justin', 'child', 'male', 'en-US'], ['Kevin', 'child', 'male', 'en-US'],
+  ['Joanna', 'adult', 'female', 'en-US'], ['Matthew', 'adult', 'male', 'en-US'], ['Brian', 'adult', 'male', 'en-GB'],
+];
 const fullPool = [
   ...EL.map(([id, name]) => ({ value: 'elevenlabs||' + id, label: name, name, gender: 'male', age: 'adult', locale: 'en-US', provider: 'elevenlabs', voiceId: id })),
   ...SPX.map(id => ({ value: 'speechify||' + id, label: id, name: id, gender: 'male', age: 'adult', locale: 'en-US', provider: 'speechify', voiceId: id })),
+  ...POLLY.map(([id, age, gender, locale]) => ({ value: 'polly||' + id, label: id, name: id, gender, age, locale, provider: 'polly', voiceId: id })),
 ];
 
 const PANEL = ['THE KEEPER', 'THE CONDUCTOR', 'DJ SCORES', 'GIDEON', 'COLE', 'AMOS',
@@ -155,7 +165,10 @@ reset({});
 const saga = ['NARRATOR', 'JUNIA', "KA'EL", 'MAREN'];
 rep = await app.autoCastSpeakers(saga);
 check('Narrator -> john-rhys-davies', app.castMap.NARRATOR.voiceId === 'john-rhys-davies');
-check("Ka'el -> rory (apostrophe key survives)", app.castMap["KA'EL"].voiceId === 'rory');
+check("Junia -> polly/Ivy (v1.9 twins recast)",
+  app.castMap.JUNIA.provider === 'polly' && app.castMap.JUNIA.voiceId === 'Ivy');
+check("Ka'el -> polly/Justin (apostrophe key survives)",
+  app.castMap["KA'EL"].provider === 'polly' && app.castMap["KA'EL"].voiceId === 'Justin');
 check('Maren still gets her panel bench voice', app.castMap.MAREN.voiceId === 'cgSgspJ2msm6clMCkdW9');
 
 // ---- 7. unknown speaker gets score-matched, never left blank ----------

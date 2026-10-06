@@ -2,14 +2,21 @@ import json, re
 
 d = json.load(open('public/cast-registry.json', encoding='utf-8'))
 ids, dups = {}, []
+voiceless = []
 for c in d['characters']:
-    v = c['voice']; k = v['provider'] + '||' + v['voiceId']
+    v = c.get('voice')
+    if not v:
+        # a voiceless row (age "child") reads in the Narrator voice (Pip, Merra)
+        voiceless.append(c['name'])
+        continue
+    k = v['provider'] + '||' + v['voiceId']
     if k in ids:
         dups.append((c['name'], ids[k], k))
     ids[k] = c['name']
 print('registry version:', d.get('version'))
 print('registry characters:', len(d['characters']))
 print('registry collisions:', dups or 'none')
+print('voiceless (read as Narrator):', voiceless or 'none')
 
 h = open('public/index.html', encoding='utf-8').read()
 b = re.search(r'PANEL_BENCH: \{([\s\S]*?)\n\s+\},', h).group(1)
@@ -20,9 +27,9 @@ print('bench EL dupes:', [x for x in set(el) if el.count(x) > 1] or 'none')
 print('bench SPX dupes:', [x for x in set(sp) if sp.count(x) > 1] or 'none')
 
 saga = {c['voice']['provider'] + '||' + c['voice']['voiceId']: c['name']
-        for c in d['characters'] if c.get('region') != 'panel'}
+        for c in d['characters'] if c.get('region') != 'panel' and c.get('voice')}
 panel = {c['voice']['provider'] + '||' + c['voice']['voiceId']: c['name']
-         for c in d['characters'] if c.get('region') == 'panel'}
+         for c in d['characters'] if c.get('region') == 'panel' and c.get('voice')}
 cross = []
 for n, e, s in pairs:
     for k in ('elevenlabs||' + e, 'speechify||' + s):
