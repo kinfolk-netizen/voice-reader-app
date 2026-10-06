@@ -4,6 +4,8 @@ Do jobs top to bottom. One job = one branch = one PR. Mark a job DONE here (with
 ---
 
 ## JOB 1 — Polly provider + the twins recast  ·  branch `feature/polly-twins`  ·  STATUS: READY
+**Branch off `feature/claude-code-workflow`** (not Kin-GitHub) so the workflow setup and this job
+ship in ONE merge = one production deploy.
 Background: an earlier Netlify Agent Runner built Polly (registry 1.7) but that work never reached
 GitHub, so build it fresh here. Env vars are ALREADY set in Netlify:
 `AWS_POLLY_ACCESS_KEY_ID`, `AWS_POLLY_SECRET_ACCESS_KEY`, `AWS_POLLY_REGION` (us-east-1).
