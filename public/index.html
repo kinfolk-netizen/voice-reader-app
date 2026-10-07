@@ -1128,7 +1128,8 @@
                 elevenlabs: [],
                 speechify: [],
                 polly: [],
-                acapela: []
+                acapela: [],
+                azure: []
             },
             voiceSelections: {
                 local: '',
@@ -1136,14 +1137,16 @@
                 elevenlabs: 'Rachel',
                 speechify: 'john-rhys-davies',
                 polly: 'Joanna',
-                acapela: 'Rosie'
+                acapela: 'Rosie',
+                azure: 'en-GB-MaisieNeural'
             },
             providerModels: {
                 openai: 'tts-1',
                 elevenlabs: 'eleven_multilingual_v2',
                 speechify: 'simba-english',
                 polly: 'neural',
-                acapela: 'mp3'
+                acapela: 'mp3',
+                azure: 'neural'
             },
             cloudEngine: null,
             // Dramatized Reader: speaker -> Speechify voice id (persisted)
@@ -2633,9 +2636,9 @@ async loadDynamicVoices(providerId) {
                 const AS_PROVIDERS = ['acapela', 'speechify', 'elevenlabs', 'polly', 'azure'];
                 // A voice answers to Y by display name (first word of name/label,
                 // "Will - Relaxed Optimist" -> WILL) or id stem ("Harry22k_.." -> HARRY,
-                // "edmund_32" -> EDMUND). Only child/teen/young voices are eligible.
+                // "edmund_32" -> EDMUND, "en-GB-MaisieNeural" -> MAISIE). Only child/teen/young voices are eligible.
                 const firstWord = s => this.castKey(String(s || '').trim().split(/[\s\-–—·(,]+/)[0]);
-                const stem = id => String(id || '').replace(/\d.*$/, '').replace(/_.*$/, '');
+                const stem = id => String(id || '').replace(/^[a-z]{2,3}-[A-Z]{2}-(.+?)Neural$/, '$1').replace(/\d.*$/, '').replace(/_.*$/, '');
                 const answersTo = (v, want) => AS_PROVIDERS.includes(v.provider) && ['child', 'teen', 'young'].includes(v.age)
                     && (firstWord(v.name || v.label) === want || this.castKey(stem(v.voiceId)) === want);
 

@@ -9,8 +9,8 @@ import fs from 'fs';
 const src = fs.readFileSync('public/index.html', 'utf-8').split(/\r?\n/);
 const slice = (a, b) => src.slice(a - 1, b).join('\n');   // 1-indexed inclusive
 
-const liveBlock = slice(2292, 2403);          // state + probe + liveness + understudy
-const seatBlock = slice(2625, 2815);        // autoCastSpeakers + castSeatingReport
+const liveBlock = slice(2295, 2406);          // state + probe + liveness + understudy
+const seatBlock = slice(2628, 2818);       // autoCastSpeakers + castSeatingReport
 const failStart = src.findIndex(l => l.includes('failoverChunk(provider, chunk, status, data) {')) + 1;
 let failEnd = failStart;
 while (!/^            \},$/.test(src[failEnd - 1])) failEnd++;
@@ -303,6 +303,32 @@ reset({});
 app.allVoices = [...fullPool, ...ACA2];   // no young Will on the account
 rep = await app.autoCastSpeakers(['NARRATOR', 'AUREN AS WILL']);
 check('only adult Acapela Will exists -> AUREN AS WILL reads as Narrator', seatId('AUREN AS WILL') === NARR, seatId('AUREN AS WILL'));
+
+// ---- 12. Azure: "MERRA AS MAISIE" / "MERRA AS ANA" -----------------------
+console.log('\n12. "MERRA AS MAISIE" / "MERRA AS ANA" — Azure child voices by ShortName');
+// Maisie carries a display name; Ana has none, so she must match on the
+// ShortName stem (en-US-AnaNeural -> ANA). Jenny is adult and never eligible.
+const AZ = [
+  { voiceId: 'en-GB-MaisieNeural', name: 'Maisie', age: 'child', gender: 'female', locale: 'en-GB' },
+  { voiceId: 'en-US-AnaNeural', name: undefined, age: 'child', gender: 'female', locale: 'en-US' },
+  { voiceId: 'en-US-JennyNeural', name: 'Jenny', age: 'adult', gender: 'female', locale: 'en-US' },
+].map(v => ({ ...v, value: 'azure||' + v.voiceId, label: (v.name || v.voiceId) + ' (Azure)', provider: 'azure' }));
+const azCast = ['NARRATOR', 'MERRA AS MAISIE', 'MERRA AS ANA', 'MERRA AS JENNY'];
+reset({});
+app.allVoices = [...fullPool, ...ACA, ...AZ];
+rep = await app.autoCastSpeakers(azCast);
+check('MERRA AS MAISIE -> azure/en-GB-MaisieNeural', seatId('MERRA AS MAISIE') === 'azure||en-GB-MaisieNeural', seatId('MERRA AS MAISIE'));
+check('MERRA AS ANA -> azure/en-US-AnaNeural (ShortName stem match)', seatId('MERRA AS ANA') === 'azure||en-US-AnaNeural', seatId('MERRA AS ANA'));
+check('MERRA AS JENNY (adult Azure voice) -> Narrator', seatId('MERRA AS JENNY') === NARR, seatId('MERRA AS JENNY'));
+check('azure probed and shown as AZ in the seating line', rep.seats.includes('AZ') && 'azure' in app.providerLive, rep.seats);
+check('correct Azure AS seats not churned on reload', (await app.autoCastSpeakers(azCast)).reseated === 0);
+
+reset({ azure: 'key' });
+app.allVoices = [...fullPool, ...ACA, ...AZ];
+rep = await app.autoCastSpeakers(azCast);
+check('Azure dark: MERRA AS MAISIE -> Narrator', seatId('MERRA AS MAISIE') === NARR, seatId('MERRA AS MAISIE'));
+check('Azure dark: MERRA AS ANA -> Narrator', seatId('MERRA AS ANA') === NARR, seatId('MERRA AS ANA'));
+check('Azure dark reported in the status line', rep.dark.join().includes('AZ'), rep.dark.join());
 
 console.log('\n' + (fails ? fails + ' FAILURE(S)' : 'all checks passed'));
 process.exit(fails ? 1 : 0);

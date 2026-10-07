@@ -278,6 +278,11 @@ exports.handler = async (event, context) => {
         response = await fetch(plainEndpoint, { method: 'POST', headers: elHeaders, body: elBody });
       }
     } else if (providerId === 'azure') {
+      // Azure Speech, in the Polly pattern. AZURE_SPEECH_KEY / _REGION come from
+      // Netlify env vars and never reach the browser. Plain text is wrapped in
+      // <speak><voice> (XML-escaped, locale taken from the voice ShortName);
+      // text that is already SSML is passed through untouched. Raw mp3 bytes
+      // come back and flow through the shared response handling below.
       if (!apiEndpoint) {
         return {
           statusCode: 401,
@@ -285,17 +290,15 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({ success: false, error: 'AZURE_SPEECH_REGION not configured' })
         };
       }
-      const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
-      const ssml = `<speak version='1.0' xml:lang='en-US'><voice name='${voice}'>${esc(text)}</voice></speak>`;
       response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Ocp-Apim-Subscription-Key': apiKey,
           'Content-Type': 'application/ssml+xml',
           'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
-          'User-Agent': 'WitnessReader'
+          'User-Agent': 'witness-reader'
         },
-        body: ssml
+        body: toAzureSSML(text, voice)
       });
     } else if (providerId === 'speechify') {
       // Phase A: Speechify has no pronunciation dictionary, so we substitute
@@ -544,6 +547,20 @@ function toPollySSML(text) {
   return '<speak>' + esc(t) + '</speak>';
 }
 exports._toPollySSML = toPollySSML;
+
+// Azure SSML: <speak> needs version + xml:lang and the text must sit inside a
+// <voice name>. Locale comes from the ShortName prefix (en-GB-MaisieNeural ->
+// en-GB). Text that is already SSML passes through untouched.
+function toAzureSSML(text, voiceId) {
+  const t = String(text == null ? '' : text);
+  if (/^\s*<speak[\s>]/i.test(t)) return t;
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+  const v = String(voiceId || 'en-US-AnaNeural');
+  const m = v.match(/^([a-z]{2,3}-[A-Z]{2})-/);
+  const locale = m ? m[1] : 'en-US';
+  return `<speak version='1.0' xml:lang='${locale}'><voice name='${esc(v)}'>${esc(t)}</voice></speak>`;
+}
+exports._toAzureSSML = toAzureSSML;
 
 // Collect an AWS SDK v3 AudioStream into a Buffer. Newer SDKs expose
 // transformToByteArray(); fall back to async iteration otherwise.

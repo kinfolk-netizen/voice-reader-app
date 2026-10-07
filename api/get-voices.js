@@ -43,6 +43,29 @@ const ACAPELA_FALLBACK = Object.keys(ACAPELA_KIDS).map(k => {
   return acapelaVoiceEntry(nm, nm);
 });
 
+// Azure Speech. Microsoft's two English child voices are tagged age 'child';
+// every other voice is adult. Only en-GB / en-US are served. "(Azure)" in every
+// label keeps e.g. Ana distinct from voices of the same name elsewhere.
+const AZURE_KIDS = new Set(['en-GB-MaisieNeural', 'en-US-AnaNeural']);
+const AZURE_ACCENTS = { 'en-GB': 'British', 'en-US': 'American' };
+function azureVoiceEntry(id, name, gender, locale) {
+  const age = AZURE_KIDS.has(id) ? 'child' : 'adult';
+  const g = String(gender || '').toLowerCase();
+  const nm = name || String(id).replace(/^[a-z]{2,3}-[A-Z]{2}-/, '').replace(/Neural$/, '');
+  return {
+    id,
+    label: nm + ' (Azure) — ' + [age + ' ' + (g || 'voice'), AZURE_ACCENTS[locale] || locale].filter(Boolean).join(' · '),
+    name: nm,
+    gender: g,
+    age,
+    locale
+  };
+}
+const AZURE_FALLBACK = [
+  azureVoiceEntry('en-GB-MaisieNeural', 'Maisie', 'female', 'en-GB'),
+  azureVoiceEntry('en-US-AnaNeural', 'Ana', 'female', 'en-US')
+];
+
 exports.handler = async (event, context) => {
   // Handle CORS
   const headers = {
@@ -96,14 +119,12 @@ exports.handler = async (event, context) => {
       azure: {
         providerId: 'azure',
         providerName: 'Azure Speech',
-        supportsBoundaries: true,
+        supportsBoundaries: false, // mp3 synthesis only; reader estimates highlighting
         tier: 'premium',
-        voices: [
-          { id: 'en-US-JennyNeural', label: 'Jenny (US)', gender: 'female', accent: 'US' },
-          { id: 'en-US-GuyNeural', label: 'Guy (US)', gender: 'male', accent: 'US' },
-          { id: 'en-GB-SoniaNeural', label: 'Sonia (UK)', gender: 'female', accent: 'UK' },
-          { id: 'en-AU-NatashaNeural', label: 'Natasha (AU)', gender: 'female', accent: 'AU' }
-        ]
+        // Static fallback: Microsoft's child voices (Maisie, Ana). Served when the
+        // key/region are missing or voices/list fails; replaced by the live
+        // en-GB / en-US list otherwise.
+        voices: AZURE_FALLBACK
       },
       elevenlabs: {
         providerId: 'elevenlabs',
@@ -235,26 +256,9 @@ exports.handler = async (event, context) => {
           });
           if (response.ok) {
             const list = await response.json();
-            const AZ_ACCENTS = { 'en-US': 'American', 'en-GB': 'British', 'en-AU': 'Australian', 'en-IE': 'Irish', 'en-ZA': 'South African', 'en-IN': 'Indian', 'en-CA': 'Canadian', 'en-NG': 'Nigerian' };
-            const AZ_CHILD = new Set(['en-US-AnaNeural']);
             const mapped = (Array.isArray(list) ? list : [])
-              .filter(v => (v.Locale || '').toLowerCase().startsWith('en'))
-              .map(v => {
-                const locale = v.Locale;
-                const gender = (v.Gender || '').toLowerCase();
-                const age = AZ_CHILD.has(v.ShortName) ? 'teen' : 'adult';
-                const name = v.DisplayName || v.LocalName || v.ShortName;
-                const accent = AZ_ACCENTS[locale] || locale;
-                return {
-                  id: v.ShortName,
-                  label: name + ' — ' + [age + ' ' + (gender || 'voice'), accent].join(' · '),
-                  name: name,
-                  gender: gender,
-                  age: age,
-                  locale: locale,
-                  models: []
-                };
-              });
+              .filter(v => v.ShortName && (v.Locale === 'en-GB' || v.Locale === 'en-US'))
+              .map(v => azureVoiceEntry(v.ShortName, v.DisplayName, v.Gender, v.Locale));
             if (mapped.length) provider.voices = mapped;
           }
         } catch (error) {

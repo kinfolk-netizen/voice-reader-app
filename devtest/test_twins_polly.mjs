@@ -11,8 +11,8 @@ const src = fs.readFileSync('public/index.html', 'utf-8').split(/\r?\n/);
 const slice = (a, b) => src.slice(a - 1, b).join('\n');   // 1-indexed inclusive
 
 // Same ranges as test_cast_seating_v234.mjs (keep both in sync if index moves).
-const liveBlock = slice(2292, 2403);          // state + probe + liveness + understudy
-const seatBlock = slice(2625, 2815);        // autoCastSpeakers + castSeatingReport
+const liveBlock = slice(2295, 2406);          // state + probe + liveness + understudy
+const seatBlock = slice(2628, 2818);       // autoCastSpeakers + castSeatingReport
 
 // scoreMatch and failoverChunk extracted by signature, so they survive edits above.
 const methodBlock = (sig) => {

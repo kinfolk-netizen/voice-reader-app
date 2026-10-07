@@ -53,9 +53,16 @@ GitHub, so build it fresh here. Env vars are ALREADY set in Netlify:
 `api/get-voices.js` (account list via `/api/account/`, static kids fallback), `ACA` in the probe / status
 line / Casting Room, and `X AS Y` audition tags (e.g. `PIP AS HARRY`) seat on the named Acapela child
 voice or else the Narrator. Tests: `devtest/test_acapela_proxy.js` + section 10 of the seating harness.
+**Azure added (2026-10-07, same branch)** for more Merra candidates: Microsoft's child voices **Maisie**
+(`en-GB-MaisieNeural`, British) and **Ana** (`en-US-AnaNeural`). `api/tts-proxy.js` sends SSML
+(`<speak><voice name>`, locale from the ShortName) to `{region}.tts.speech.microsoft.com`, mp3 back;
+`api/get-voices.js` serves the live en-GB/en-US list (Maisie/Ana tagged child, all else adult) or a
+Maisie + Ana fallback; `AZ` in the probe/status line. `MERRA AS MAISIE` / `MERRA AS ANA` seat on Azure
+(matched by display name or ShortName stem). Tests: `devtest/test_azure_proxy.js` + section 12 of the
+seating harness. Needs Netlify env vars `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION`.
 Still open: live check once the env vars exist (API details marked `TODO(verify live)`), then lock Merra
 and Auren by ear. No registry seats changed in this job.
-**Merra:** Acapela UK girls (Rosie, Amelia, Chloe, Amy-Northern). **Auren (15, teen boy):** needs a
+**Merra:** Acapela UK girls (Rosie, Amelia, Chloe, Amy-Northern); Azure Maisie (UK) / Ana (US). **Auren (15, teen boy):** needs a
 teen-boy voice; candidates still to be researched (Acapela, Azure or others). Pip is now LOCKED on polly/Ivy.
 Blocked until Jonathan signs up at https://www.acapela-cloud.com/signup/ and adds Netlify env vars
 `ACAPELA_EMAIL` and `ACAPELA_PASSWORD` (dedicated password).
@@ -77,5 +84,4 @@ Blocked until Jonathan signs up at https://www.acapela-cloud.com/signup/ and add
 ## PARKED
 - `feature/sts-proxy` (Jonathan's local commit 74802fa, ElevenLabs speech-to-speech proxy, July 25):
   never pushed. Ask Jonathan before including it anywhere.
-- Azure (Maisie/Ana): parked until the Microsoft login is sorted.
 - Voice shaping (pitch/formant) from the Recorded Lines & Voice Shaping spec: only if Acapela fails.
