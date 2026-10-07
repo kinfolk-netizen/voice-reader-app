@@ -98,6 +98,11 @@ exports.handler = async (event, context) => {
         // the matching secret is validated inside the Polly branch (SDK v3).
         apiKey = process.env.AWS_POLLY_ACCESS_KEY_ID;
         break;
+      case 'acapela':
+        // Acapela login email gates the shared "not configured" check below;
+        // the password is validated inside the Acapela branch.
+        apiKey = process.env.ACAPELA_EMAIL;
+        break;
       case 'local':
         // Local provider doesn't need API key
         return {
@@ -175,6 +180,43 @@ exports.handler = async (event, context) => {
       }));
       const audioBuffer = await streamToBuffer(out.AudioStream);
       audioBase64 = audioBuffer.toString('base64');
+    } else if (providerId === 'acapela') {
+      // Acapela Cloud, in the Polly pattern. Login-based auth (ACAPELA_EMAIL /
+      // ACAPELA_PASSWORD from Netlify env vars, never the browser); the token is
+      // cached in module scope and re-minted once on a 401. Text over the
+      // 3000-char stream limit is split at sentence boundaries and the mp3
+      // pieces are concatenated (mp3 frames join cleanly).
+      if (!process.env.ACAPELA_PASSWORD) {
+        return {
+          statusCode: 401,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ success: false, error: 'ACAPELA_PASSWORD not configured' })
+        };
+      }
+      const pieces = [];
+      try {
+        const acaVoice = await acapelaResolveVoice(voice);
+        for (const part of acapelaChunks(acapelaPlainText(text))) {
+          const r = await acapelaSynth(acaVoice, part, options);
+          if (!r.ok) {
+            return {
+              statusCode: r.status,
+              headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+              body: JSON.stringify({ success: false, error: `Provider error: ${r.statusText || r.status}`, details: r.details })
+            };
+          }
+          pieces.push(r.buffer);
+        }
+      } catch (err) {
+        if (err.status !== 401) throw err;
+        // login refused -> 401 so the reader marks Acapela dark ("key rejected")
+        return {
+          statusCode: 401,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ success: false, error: err.message })
+        };
+      }
+      audioBase64 = Buffer.concat(pieces).toString('base64');
     } else if (providerId === 'openai') {
       response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -236,6 +278,11 @@ exports.handler = async (event, context) => {
         response = await fetch(plainEndpoint, { method: 'POST', headers: elHeaders, body: elBody });
       }
     } else if (providerId === 'azure') {
+      // Azure Speech, in the Polly pattern. AZURE_SPEECH_KEY / _REGION come from
+      // Netlify env vars and never reach the browser. Plain text is wrapped in
+      // <speak><voice> (XML-escaped, locale taken from the voice ShortName);
+      // text that is already SSML is passed through untouched. Raw mp3 bytes
+      // come back and flow through the shared response handling below.
       if (!apiEndpoint) {
         return {
           statusCode: 401,
@@ -243,17 +290,15 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({ success: false, error: 'AZURE_SPEECH_REGION not configured' })
         };
       }
-      const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
-      const ssml = `<speak version='1.0' xml:lang='en-US'><voice name='${voice}'>${esc(text)}</voice></speak>`;
       response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
           'Ocp-Apim-Subscription-Key': apiKey,
           'Content-Type': 'application/ssml+xml',
           'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
-          'User-Agent': 'WitnessReader'
+          'User-Agent': 'witness-reader'
         },
-        body: ssml
+        body: toAzureSSML(text, voice)
       });
     } else if (providerId === 'speechify') {
       // Phase A: Speechify has no pronunciation dictionary, so we substitute
@@ -345,9 +390,9 @@ exports.handler = async (event, context) => {
       }
     }
 
-    // Shared response handling for the fetch-based providers. Polly set
-    // audioBase64 directly via the SDK above and skips this entire block.
-    if (providerId !== 'polly') {
+    // Shared response handling for the fetch-based providers. Polly (SDK) and
+    // Acapela (login + chunking) set audioBase64 directly above and skip it.
+    if (providerId !== 'polly' && providerId !== 'acapela') {
     // Check response
     if (!response.ok) {
       const errorText = await response.text();
@@ -439,15 +484,16 @@ exports.handler = async (event, context) => {
       const audioBuffer = await response.arrayBuffer();
       audioBase64 = Buffer.from(audioBuffer).toString('base64');
     }
-    } // end non-polly shared response handling
+    } // end non-polly/acapela shared response handling
 
     // Calculate cost (speechify: ~$10 per 1M chars at Starter overage rates;
-    // polly neural: ~$16 per 1M chars)
+    // polly neural: ~$16 per 1M chars; acapela: credit-based, rough estimate)
     const costPerChar =
       providerId === 'openai' ? 0.000015 :
       providerId === 'speechify' ? 0.00001 :
       providerId === 'azure' ? 0.000016 :
       providerId === 'polly' ? 0.000016 :
+      providerId === 'acapela' ? 0.00002 :
       0.00003;
     const estimatedCost = text.length * costPerChar;
 
@@ -502,6 +548,20 @@ function toPollySSML(text) {
 }
 exports._toPollySSML = toPollySSML;
 
+// Azure SSML: <speak> needs version + xml:lang and the text must sit inside a
+// <voice name>. Locale comes from the ShortName prefix (en-GB-MaisieNeural ->
+// en-GB). Text that is already SSML passes through untouched.
+function toAzureSSML(text, voiceId) {
+  const t = String(text == null ? '' : text);
+  if (/^\s*<speak[\s>]/i.test(t)) return t;
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+  const v = String(voiceId || 'en-US-AnaNeural');
+  const m = v.match(/^([a-z]{2,3}-[A-Z]{2})-/);
+  const locale = m ? m[1] : 'en-US';
+  return `<speak version='1.0' xml:lang='${locale}'><voice name='${esc(v)}'>${esc(t)}</voice></speak>`;
+}
+exports._toAzureSSML = toAzureSSML;
+
 // Collect an AWS SDK v3 AudioStream into a Buffer. Newer SDKs expose
 // transformToByteArray(); fall back to async iteration otherwise.
 async function streamToBuffer(stream) {
@@ -516,6 +576,132 @@ async function streamToBuffer(stream) {
   return Buffer.concat(chunks);
 }
 exports._streamToBuffer = streamToBuffer;
+
+// ============================================================================
+// JOB 2 — Acapela Cloud adapter helpers
+// Docs: https://www.acapela-cloud.com/docs_api/ (read 2026-10-07)
+// ============================================================================
+
+const ACAPELA_BASE = 'https://www.acapela-cloud.com';
+const ACAPELA_MAX_CHARS = 3000;   // documented per-request limit in stream mode
+let _acapelaToken = null;         // module scope: survives warm invocations
+
+// POST /api/login/ {email, password} -> {token}. Docs: the token never expires
+// (only /api/logout/ deletes it), so one login serves every warm invocation.
+async function acapelaLogin() {
+  const r = await fetch(ACAPELA_BASE + '/api/login/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: process.env.ACAPELA_EMAIL, password: process.env.ACAPELA_PASSWORD })
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok || !data.token) {
+    const err = new Error('Acapela login rejected (HTTP ' + r.status + ')');
+    err.status = 401;
+    throw err;
+  }
+  _acapelaToken = data.token;
+  return _acapelaToken;
+}
+
+// fetch with 'Authorization: Token <token>'; on a 401 the cached token is
+// dropped and we log in again ONCE, then retry.
+async function acapelaFetch(path, opts) {
+  const go = async (token) => fetch(ACAPELA_BASE + path, Object.assign({}, opts, {
+    headers: Object.assign({}, (opts && opts.headers) || {}, { 'Authorization': 'Token ' + token })
+  }));
+  let r = await go(_acapelaToken || await acapelaLogin());
+  if (r.status === 401) {
+    _acapelaToken = null;
+    r = await go(await acapelaLogin());
+  }
+  return r;
+}
+
+// One synthesis request. output=file returns the whole mp3 as raw bytes.
+// TODO(verify live): the docs' examples pass these as GET query params; POST is
+// documented as allowed but the body encoding isn't shown. Form-urlencoded is
+// used because Django/DRF (which this API appears to be) parses it for POST.
+async function acapelaSynth(voice, text, options) {
+  const params = new URLSearchParams({ voice: voice, text: text, output: 'file', type: 'mp3' });
+  if (options && options.speed) params.set('speed', String(options.speed));   // 30–300, default 100
+  const r = await acapelaFetch('/api/command/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString()
+  });
+  if (!r.ok) {
+    return { ok: false, status: r.status, statusText: r.statusText, details: await r.text().catch(() => '') };
+  }
+  // A JSON body on a 200 means an error/events payload, not audio.
+  const ct = (r.headers && r.headers.get && r.headers.get('content-type')) || '';
+  if (ct.includes('application/json')) {
+    return { ok: false, status: 502, statusText: 'Acapela returned JSON, not audio', details: await r.text().catch(() => '') };
+  }
+  return { ok: true, buffer: Buffer.from(await r.arrayBuffer()) };
+}
+
+// GET /api/account/ -> the voices this account can use. Shape per docs: an
+// object with a `voices` array; entries may be id strings or objects
+// (name/gender/language/locale). Normalised to [{id, name, gender, locale}].
+async function acapelaAccountVoices() {
+  const r = await acapelaFetch('/api/account/', { method: 'GET' });
+  if (!r.ok) throw new Error('Acapela account HTTP ' + r.status);
+  const data = await r.json();
+  const list = Array.isArray(data && data.voices) ? data.voices : [];
+  return list.map(v => {
+    if (typeof v === 'string') return { id: v, name: acapelaStem(v), gender: '', locale: '' };
+    const id = v.id || v.voice || v.name || '';
+    return { id, name: acapelaStem(v.name || id), gender: (v.gender || '').toLowerCase(), locale: v.locale || v.language || '' };
+  }).filter(v => v.id);
+}
+
+// "Rosie22k_NT" -> "Rosie" (Acapela ids are Name + samplerate + _quality).
+function acapelaStem(id) {
+  return String(id || '').replace(/\d.*$/, '').replace(/_.*$/, '');
+}
+
+// The fallback voice list (get-voices) uses bare names like "Rosie" because the
+// exact account ids aren't known until the account is live. A bare name is
+// resolved against /api/account/; a full id (has a digit/underscore) is used as-is.
+async function acapelaResolveVoice(voice) {
+  const v = String(voice || '');
+  if (/[\d_]/.test(v)) return v;
+  try {
+    const hit = (await acapelaAccountVoices()).find(x => x.name.toLowerCase() === v.toLowerCase());
+    if (hit) return hit.id;
+  } catch (e) { /* fall through: send the bare name, Acapela will 400 if wrong */ }
+  return v;
+}
+
+// Acapela reads plain text; strip a wrapping <speak> and any SSML tags.
+function acapelaPlainText(text) {
+  return String(text == null ? '' : text).replace(/<[^>]+>/g, '');
+}
+
+// Split at sentence boundaries (then spaces) so no piece exceeds 3000 chars.
+function acapelaChunks(text, max) {
+  max = max || ACAPELA_MAX_CHARS;
+  const out = [];
+  let rest = text;
+  while (rest.length > max) {
+    const window = rest.slice(0, max);
+    let cut = Math.max(window.lastIndexOf('. '), window.lastIndexOf('! '), window.lastIndexOf('? '));
+    if (cut > 0) cut += 1; else cut = window.lastIndexOf(' ');
+    if (cut <= 0) cut = max;
+    out.push(rest.slice(0, cut).trim());
+    rest = rest.slice(cut).trim();
+  }
+  if (rest.length) out.push(rest);
+  return out;
+}
+
+exports._acapelaLogin = acapelaLogin;
+exports._acapelaFetch = acapelaFetch;
+exports._acapelaAccountVoices = acapelaAccountVoices;
+exports._acapelaStem = acapelaStem;
+exports._acapelaChunks = acapelaChunks;
+exports._acapelaResetToken = () => { _acapelaToken = null; };
 
 // v2.20: ElevenLabs character alignment -> word-level speech marks.
 // Groups characters into words at whitespace; each word yields
