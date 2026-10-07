@@ -30,11 +30,13 @@ const LEXICON = require('../public/score/saga-lexicon.json');
 // non-en-GB azure voices; Maisie (en-GB) keeps it. If a name still comes out wrong
 // by ear on a provider, give that entry a `respell` (Kawel / Joonia / Oren) plus
 // `respellOn: ['polly']` (that provider respells instead of phoneme) — note it here.
-// None needed yet: Polly uses the IPA phoneme for all four names.
+// In use: Ka'el on Polly respells 'Kaw-el' (picked by ear 2026-10-07 from V1-V5
+// clips); Azure keeps the phoneme.
 const PRONUNCIATION_ENABLED = true;
 const PRONUNCIATION = [
   // Kevin/Justin said 'kale', Maisie 'Kay-el', Ana 'Kyle'. Speechify says it right.
-  { name: "Ka'el", ipa: 'ˈkɔː.ɛl',     providers: ['polly', 'azure'] },
+  // Polly (Kevin/Justin/Ivy): respelling 'Kaw-el', chosen by ear over the phoneme.
+  { name: "Ka'el", ipa: 'ˈkɔː.ɛl',     providers: ['polly', 'azure'], respell: 'Kaw-el', respellOn: ['polly'] },
   // Kevin said 'Aaron'.
   { name: 'Auren', ipa: 'ˈɔː.rən',     providers: ['polly', 'azure'] },
   // Kevin said 'yoonia'.
