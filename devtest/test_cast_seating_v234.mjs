@@ -10,7 +10,7 @@ const src = fs.readFileSync('public/index.html', 'utf-8').split(/\r?\n/);
 const slice = (a, b) => src.slice(a - 1, b).join('\n');   // 1-indexed inclusive
 
 const liveBlock = slice(2292, 2403);          // state + probe + liveness + understudy
-const seatBlock = slice(2625, 2793);        // autoCastSpeakers + castSeatingReport
+const seatBlock = slice(2625, 2815);        // autoCastSpeakers + castSeatingReport
 const failStart = src.findIndex(l => l.includes('failoverChunk(provider, chunk, status, data) {')) + 1;
 let failEnd = failStart;
 while (!/^            \},$/.test(src[failEnd - 1])) failEnd++;
@@ -252,6 +252,57 @@ app.castMap = { 'PIP AS HARRY': { provider: 'polly', voiceId: 'Matthew' } };   /
 rep = await app.autoCastSpeakers(auditionCast);
 check('stale adult seat on an AS tag is replaced by the named voice', seatId('PIP AS HARRY') === 'acapela||Harry22k_NT', seatId('PIP AS HARRY'));
 check('correct AS seat is not churned on the next load', (await app.autoCastSpeakers(auditionCast)).reseated === 0);
+
+// ---- 11. "X AS Y" across all providers, age-preferred by X ----------------
+console.log('\n11. "AUREN AS ARCHIE" etc. — named voice on any provider, teen X prefers young');
+// Speechify young voices (ids as the account returns them), an ElevenLabs young
+// voice whose display name is the first word of its label, an Acapela child
+// ARCHIE that only a child X should take, and an adult Acapela WILL that no AS
+// tag may ever take.
+const SPX_YOUNG = [['archie', 'Archie'], ['edmund_32', 'Edmund'], ['chase', 'Chase'],
+  ['jacob', 'Jacob'], ['james', 'James'], ['joe', 'Joe'], ['cleon', 'Cleon'], ['linda', 'Linda']]
+  .map(([id, name]) => ({ value: 'speechify||' + id, label: name + ' · SPX', name, gender: 'male', age: 'young', locale: 'en-US', provider: 'speechify', voiceId: id }));
+const EL_WILL = { value: 'elevenlabs||bIHbv24MWmeRgasZH58o', label: 'Will - Relaxed Optimist · 11L', name: 'Will - Relaxed Optimist',
+  gender: 'male', age: 'young', locale: 'en-US', provider: 'elevenlabs', voiceId: 'bIHbv24MWmeRgasZH58o' };
+const ACA2 = [
+  { voiceId: 'Archie22k_NT', name: 'Archie', age: 'child', gender: 'male', locale: 'en-GB' },
+  { voiceId: 'Will22k_NT', name: 'Will', age: 'adult', gender: 'male', locale: 'en-US' },
+].map(v => ({ ...v, value: 'acapela||' + v.voiceId, label: v.name + ' (Acapela)', provider: 'acapela' }));
+const aurenTags = {
+  'AUREN AS ARCHIE': 'speechify||archie', 'AUREN AS EDMUND': 'speechify||edmund_32',
+  'AUREN AS CHASE': 'speechify||chase', 'AUREN AS JACOB': 'speechify||jacob',
+  'AUREN AS JAMES': 'speechify||james', 'AUREN AS JOE': 'speechify||joe',
+  'AUREN AS WILL': 'elevenlabs||bIHbv24MWmeRgasZH58o',
+};
+const asCast = ['NARRATOR', ...Object.keys(aurenTags), 'PIP AS ARCHIE', 'MERRA AS WILL', 'PIP AS KEVIN', 'AUREN AS JUSTIN',
+  'AUREN AS CLEON', 'MERRA AS LINDA'];
+
+reset({});
+app.allVoices = [...fullPool, ...SPX_YOUNG, EL_WILL, ...ACA2];
+rep = await app.autoCastSpeakers(asCast);
+for (const [tag, want] of Object.entries(aurenTags)) check(tag + ' -> ' + want, seatId(tag) === want, seatId(tag));
+check('PIP AS ARCHIE (child X) -> acapela child Archie', seatId('PIP AS ARCHIE') === 'acapela||Archie22k_NT', seatId('PIP AS ARCHIE'));
+check('MERRA AS WILL -> elevenlabs young Will, never the adult Acapela Will', seatId('MERRA AS WILL') === 'elevenlabs||bIHbv24MWmeRgasZH58o', seatId('MERRA AS WILL'));
+check('PIP AS KEVIN (reserved canon) -> Narrator', seatId('PIP AS KEVIN') === NARR, seatId('PIP AS KEVIN'));
+check('AUREN AS JUSTIN (reserved canon) -> Narrator', seatId('AUREN AS JUSTIN') === NARR, seatId('AUREN AS JUSTIN'));
+check("AUREN AS CLEON (Malakai's registry voice) -> Narrator", seatId('AUREN AS CLEON') === NARR, seatId('AUREN AS CLEON'));
+check("MERRA AS LINDA (Lira's locked voice) -> Narrator", seatId('MERRA AS LINDA') === NARR, seatId('MERRA AS LINDA'));
+check('no AS tag seated on adult Acapela Will', !asCast.some(s => seatId(s) === 'acapela||Will22k_NT'));
+check('correct cross-provider AS seats not churned on reload', (await app.autoCastSpeakers(asCast)).reseated === 0);
+
+reset({ speechify: 'key' });
+app.allVoices = [...fullPool, ...SPX_YOUNG, EL_WILL, ...ACA2];
+// Narrator is on Speechify too, so with Speechify dark the fallback is "no seat"
+rep = await app.autoCastSpeakers(asCast);
+check('Speechify dark: AUREN AS ARCHIE falls to acapela child Archie (only live match)',
+  seatId('AUREN AS ARCHIE') === 'acapela||Archie22k_NT', seatId('AUREN AS ARCHIE'));
+check('Speechify dark: AUREN AS EDMUND reads in the (re-seated) Narrator voice',
+  seatId('AUREN AS EDMUND') === seatId('NARRATOR') && app.castMap.NARRATOR.provider !== 'speechify', seatId('AUREN AS EDMUND'));
+
+reset({});
+app.allVoices = [...fullPool, ...ACA2];   // no young Will on the account
+rep = await app.autoCastSpeakers(['NARRATOR', 'AUREN AS WILL']);
+check('only adult Acapela Will exists -> AUREN AS WILL reads as Narrator', seatId('AUREN AS WILL') === NARR, seatId('AUREN AS WILL'));
 
 console.log('\n' + (fails ? fails + ' FAILURE(S)' : 'all checks passed'));
 process.exit(fails ? 1 : 0);

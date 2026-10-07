@@ -2626,15 +2626,25 @@ async loadDynamicVoices(providerId) {
                 await this.loadRegistry();
                 if (!this.allVoices || !this.allVoices.length) await this.loadAllVoices();
 
-                // Audition tags "PIP AS HARRY" / "MERRA AS ROSIE": the speaker reads
-                // in the NAMED Acapela voice. Returns the voice name or null.
-                const asVoiceName = (sp) => { const m = /^(.+?) AS (.+)$/.exec(this.castKey(sp)); return m ? m[2].trim() : null; };
+                // Audition tags "PIP AS HARRY" / "AUREN AS ARCHIE": the speaker reads
+                // in the NAMED voice on any provider. Returns the voice name or null.
+                const asParts = (sp) => /^(.+?) AS (.+)$/.exec(this.castKey(sp));
+                const asVoiceName = (sp) => { const m = asParts(sp); return m ? m[2].trim() : null; };
+                const AS_PROVIDERS = ['acapela', 'speechify', 'elevenlabs', 'polly', 'azure'];
+                // A voice answers to Y by display name (first word of name/label,
+                // "Will - Relaxed Optimist" -> WILL) or id stem ("Harry22k_.." -> HARRY,
+                // "edmund_32" -> EDMUND). Only child/teen/young voices are eligible.
+                const firstWord = s => this.castKey(String(s || '').trim().split(/[\s\-–—·(,]+/)[0]);
+                const stem = id => String(id || '').replace(/\d.*$/, '').replace(/_.*$/, '');
+                const answersTo = (v, want) => AS_PROVIDERS.includes(v.provider) && ['child', 'teen', 'young'].includes(v.age)
+                    && (firstWord(v.name || v.label) === want || this.castKey(stem(v.voiceId)) === want);
 
                 // Probe only the providers this script could actually need.
                 const wanted = new Set();
                 for (const sp of speakers) {
                     const k = this.castKey(sp);
-                    if (asVoiceName(sp)) wanted.add('acapela');
+                    const asName = asVoiceName(sp);
+                    if (asName) for (const v of (this.allVoices || [])) if (answersTo(v, asName)) wanted.add(v.provider);
                     const bench = this.PANEL_BENCH[k];
                     if (bench) for (const p of Object.keys(bench)) wanted.add(p);
                     const ch = this.registryLookup(sp);
@@ -2648,14 +2658,20 @@ async loadDynamicVoices(providerId) {
                 const pool = this.livePool();
                 const liveIds = new Set(pool.map(v => v.provider + '||' + v.voiceId));
                 const idOf = (e) => (e.provider || 'speechify') + '||' + e.voiceId;
-                // An "X AS Y" tag seats only on a LIVE Acapela child/teen/young
-                // voice named Y (name, or id stem "Harry22k_.." -> HARRY); never adult.
+                // An "X AS Y" tag seats only on a LIVE child/teen/young voice named Y,
+                // never adult/senior and never a reserved canon voice. When several
+                // providers share the name, X's age decides: a teen X (Auren) prefers
+                // young/teen voices, a child X (Pip, Merra) prefers child voices;
+                // ties go to provider order acapela > speechify > elevenlabs > polly > azure.
                 const asVoice = (sp) => {
                     const want = asVoiceName(sp);
                     if (!want) return null;
-                    const stem = id => String(id || '').replace(/\d.*$/, '').replace(/_.*$/, '');
-                    return pool.find(v => v.provider === 'acapela' && ['child', 'teen', 'young'].includes(v.age)
-                        && (this.castKey(v.name) === want || this.castKey(stem(v.voiceId)) === want)) || null;
+                    const x = this.registryLookup(asParts(sp)[1].trim());
+                    const teenX = !!x && ['teen', 'young'].includes(x.age);
+                    const ageRank = v => (v.age === 'child') === teenX ? 1 : 0;
+                    const hits = pool.filter(v => answersTo(v, want) && !asReserved.has(v.provider + '||' + v.voiceId));
+                    hits.sort((a, b) => (ageRank(a) - ageRank(b)) || (AS_PROVIDERS.indexOf(a.provider) - AS_PROVIDERS.indexOf(b.provider)));
+                    return hits[0] || null;
                 };
                 const narratorSeat = () => {
                     const s = this.castMap[this.castKey(this.NARRATOR)];
@@ -2674,6 +2690,12 @@ async loadDynamicVoices(providerId) {
                     if (c.locked && c.voice && c.voice.voiceId) {
                         reserved.add((c.voice.provider || 'speechify') + '||' + c.voice.voiceId);
                     }
+                }
+                // An AS tag is stricter still: no registry canon voice at all,
+                // locked or not (cleon stays Malakai's).
+                const asReserved = new Set(reserved);
+                for (const c of ((this.registry && this.registry.characters) || [])) {
+                    if (c.voice && c.voice.voiceId) asReserved.add((c.voice.provider || 'speechify') + '||' + c.voice.voiceId);
                 }
 
                 // Pass 0 — RECONCILE. A seat survives only if its voice is
