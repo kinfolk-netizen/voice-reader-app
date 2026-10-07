@@ -2606,7 +2606,7 @@ async loadDynamicVoices(providerId) {
                 const isChild = (attrs.age || '') === 'child';
                 let best = null, bestScore = -1e9;
                 for (const v of pool) {
-                    // Reserved canon voices (e.g. Justin/Ivy/Kevin) are never
+                    // Reserved canon voices (e.g. Justin/Kevin/Ana/Maisie) are never
                     // score-matched to anyone but their locked character.
                     if (reserved && reserved.has(v.provider + '||' + v.voiceId)) continue;
                     // Child safety: a child is never score-matched onto an adult or
@@ -2672,7 +2672,9 @@ async loadDynamicVoices(providerId) {
                     const x = this.registryLookup(asParts(sp)[1].trim());
                     const teenX = !!x && ['teen', 'young'].includes(x.age);
                     const ageRank = v => (v.age === 'child') === teenX ? 1 : 0;
-                    const hits = pool.filter(v => answersTo(v, want) && !asReserved.has(v.provider + '||' + v.voiceId));
+                    // X may still audition on its OWN canon voice (MERRA AS MAISIE).
+                    const own = x && x.voice && x.voice.voiceId ? idOf(x.voice) : null;
+                    const hits = pool.filter(v => answersTo(v, want) && (!asReserved.has(v.provider + '||' + v.voiceId) || v.provider + '||' + v.voiceId === own));
                     hits.sort((a, b) => (ageRank(a) - ageRank(b)) || (AS_PROVIDERS.indexOf(a.provider) - AS_PROVIDERS.indexOf(b.provider)));
                     return hits[0] || null;
                 };
@@ -2685,8 +2687,8 @@ async loadDynamicVoices(providerId) {
                 };
 
                 // Locked canon voices are reserved — never handed to another
-                // character by score-match (Kevin/Justin/Ivy for the twins & Pip,
-                // linda for Lira). The locked character still gets its own voice in
+                // character by score-match (Kevin/Justin for the twins, Ana/Maisie
+                // for Pip/Merra, joe for Auren, linda for Lira). The locked character still gets its own voice in
                 // Pass 1; this only withholds those voices from the Pass 2 guesser.
                 const reserved = new Set();
                 for (const c of ((this.registry && this.registry.characters) || [])) {
@@ -2726,7 +2728,7 @@ async loadDynamicVoices(providerId) {
                     const want = ch && ch.locked && ch.voice && ch.voice.voiceId
                         ? (ch.voice.provider || 'speechify') + '||' + ch.voice.voiceId : null;
                     const e = this.castMap[k];
-                    const squatter = e && e.voiceId && reserved.has(idOf(e)) && idOf(e) !== want;
+                    const squatter = !asVoiceName(sp) && e && e.voiceId && reserved.has(idOf(e)) && idOf(e) !== want;
                     // an "X AS Y" seat must be its named voice (or Narrator if Y is unavailable)
                     let asStale = false;
                     if (asVoiceName(sp) && e && e.voiceId) {
@@ -2781,10 +2783,11 @@ async loadDynamicVoices(providerId) {
                     }
                 }
                 // Pass 2 — score-match the rest against whatever is live and left.
-                // A child is never auto-guessed onto a voice: with no locked
-                // catalogue child voice of its own, it reads in the Narrator voice
-                // (Pip and Merra, until a child voice is locked by ear). Reserved
-                // canon voices are withheld from the match for everyone else.
+                // A child is never auto-guessed onto a voice: when its locked
+                // voice is dark (Pip/Merra with Azure down) it reads in the
+                // Narrator voice. A teen (Auren with Speechify down) takes only a
+                // live teen/young voice, else the Narrator. Reserved canon voices
+                // are withheld from the match for everyone else.
                 // An "X AS Y" tag whose named voice isn't live lands here as a child.
                 for (const { k, attrs } of pending) {
                     if ((attrs.age || '') === 'child') {
@@ -2792,8 +2795,10 @@ async loadDynamicVoices(providerId) {
                         if (nar) this.castMap[k] = nar;
                         continue;
                     }
-                    const pick = this.scoreMatch(attrs, pool, used, reserved);
+                    const teen = (attrs.age || '') === 'teen';
+                    const pick = this.scoreMatch(attrs, teen ? pool.filter(v => ['teen', 'young'].includes(v.age)) : pool, used, reserved);
                     if (pick) { this.castMap[k] = { provider: pick.provider, voiceId: pick.voiceId }; used.add(pick.provider + '||' + pick.voiceId); }
+                    else if (teen) { const nar = narratorSeat(); if (nar) this.castMap[k] = nar; }
                 }
                 this.saveCastMap();
                 return this.castSeatingReport(speakers);

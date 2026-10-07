@@ -43,13 +43,14 @@ The plan has 1,000 credits/month. So:
 |---|---|---|---|
 | Ka'el | 12 | polly / Kevin | LOCKED (recast by ear 2026-10-07) |
 | Junia | 12 | polly / Justin | LOCKED (recast by ear 2026-10-07) |
-| Auren | 15 | unseated — no registry voice; score-matched to a live non-reserved voice | not locked; aliases AUREN, THE WATCHER (→ Auren, not the elder Watcher) |
+| Auren | 15 | speechify / joe | LOCKED (by ear 2026-10-07); aliases AUREN, THE WATCHER (→ Auren, not the elder Watcher). Speechify dark → a live non-reserved teen/young voice, else Narrator |
 | Lira | 10 | speechify / linda | LOCKED |
-| Pip | 6 | polly / Ivy | LOCKED (2026-10-07; locked seat wins over gender, intended) |
-| Merra | 8 | open — Narrator until a voice is locked by ear (Acapela candidates: Rosie, Amelia, Chloe, Amy) | British preferred |
+| Pip | 6 | azure / en-US-AnaNeural (Ana) | LOCKED (by ear 2026-10-07; locked seat wins over gender, intended). Azure dark → Narrator |
+| Merra | 8 | azure / en-GB-MaisieNeural (Maisie) | LOCKED (by ear 2026-10-07). Azure dark → Narrator |
 | Malakai | young | speechify / cleon | registry seat (PR #8), not locked |
-Speechify's evie/rory are gone for good (rights withdrawn). Remove them everywhere.
-Justin, Ivy and Kevin are reserved (derived from the locked rows), plus linda; never score-match them to anyone else.
+Registry `1.12-kids-locked`. Speechify's evie/rory are gone for good (rights withdrawn). Remove them everywhere.
+Reserved (derived from the locked rows): Justin, Kevin, linda, Ana, Maisie, joe — never score-match them to anyone else.
+polly/Ivy is no longer anyone's voice; it is back in the pool. Acapela stays wired as a provider but seats no one.
 
 ## Work queue
 See `docs/QUEUE.md`. Do the top unfinished job, then report: files changed, test results,

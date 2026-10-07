@@ -10,7 +10,7 @@ const src = fs.readFileSync('public/index.html', 'utf-8').split(/\r?\n/);
 const slice = (a, b) => src.slice(a - 1, b).join('\n');   // 1-indexed inclusive
 
 const liveBlock = slice(2295, 2406);          // state + probe + liveness + understudy
-const seatBlock = slice(2628, 2818);       // autoCastSpeakers + castSeatingReport
+const seatBlock = slice(2628, 2823);       // autoCastSpeakers + castSeatingReport
 const failStart = src.findIndex(l => l.includes('failoverChunk(provider, chunk, status, data) {')) + 1;
 let failEnd = failStart;
 while (!/^            \},$/.test(src[failEnd - 1])) failEnd++;
@@ -82,10 +82,19 @@ const POLLY = [
   ['Ivy', 'child', 'female', 'en-US'], ['Justin', 'child', 'male', 'en-US'], ['Kevin', 'child', 'male', 'en-US'],
   ['Joanna', 'adult', 'female', 'en-US'], ['Matthew', 'adult', 'male', 'en-US'], ['Brian', 'adult', 'male', 'en-GB'],
 ];
+// Azure child voices (Pip on Ana, Merra on Maisie since 1.12) plus one adult.
+// Maisie carries a display name; Ana has none, so AS tags must match her on
+// the ShortName stem (en-US-AnaNeural -> ANA). Appended last, like Polly.
+const AZ = [
+  { voiceId: 'en-GB-MaisieNeural', name: 'Maisie', age: 'child', gender: 'female', locale: 'en-GB' },
+  { voiceId: 'en-US-AnaNeural', name: undefined, age: 'child', gender: 'female', locale: 'en-US' },
+  { voiceId: 'en-US-JennyNeural', name: 'Jenny', age: 'adult', gender: 'female', locale: 'en-US' },
+].map(v => ({ ...v, value: 'azure||' + v.voiceId, label: (v.name || v.voiceId) + ' (Azure)', provider: 'azure' }));
 const fullPool = [
   ...EL.map(([id, name]) => ({ value: 'elevenlabs||' + id, label: name, name, gender: 'male', age: 'adult', locale: 'en-US', provider: 'elevenlabs', voiceId: id })),
   ...SPX.map(id => ({ value: 'speechify||' + id, label: id, name: id, gender: 'male', age: 'adult', locale: 'en-US', provider: 'speechify', voiceId: id })),
   ...POLLY.map(([id, age, gender, locale]) => ({ value: 'polly||' + id, label: id, name: id, gender, age, locale, provider: 'polly', voiceId: id })),
+  ...AZ,
 ];
 
 const PANEL = ['THE KEEPER', 'THE CONDUCTOR', 'DJ SCORES', 'GIDEON', 'COLE', 'AMOS',
@@ -170,14 +179,12 @@ check("Junia -> polly/Justin (v1.10 recast by ear)",
   app.castMap.JUNIA.provider === 'polly' && app.castMap.JUNIA.voiceId === 'Justin');
 check("Ka'el -> polly/Kevin (apostrophe key survives)",
   app.castMap["KA'EL"].provider === 'polly' && app.castMap["KA'EL"].voiceId === 'Kevin');
-check('Pip -> polly/Ivy', app.castMap.PIP.provider === 'polly' && app.castMap.PIP.voiceId === 'Ivy');
-check('Merra -> Narrator voice', app.castMap.MERRA.voiceId === 'john-rhys-davies');
-const aurenSeat = app.castMap.AUREN || {};
-check('Auren score-matched off Justin/Ivy/Kevin/linda and not a child voice',
-  !!aurenSeat.voiceId && !['Justin', 'Ivy', 'Kevin', 'linda'].includes(aurenSeat.voiceId)
-  && (fullPool.find(v => v.provider === aurenSeat.provider && v.voiceId === aurenSeat.voiceId) || {}).age !== 'child',
-  JSON.stringify(aurenSeat));
+check('Pip -> azure/en-US-AnaNeural (1.12 locked by ear)', app.castMap.PIP.provider === 'azure' && app.castMap.PIP.voiceId === 'en-US-AnaNeural');
+check('Merra -> azure/en-GB-MaisieNeural (1.12 locked by ear)', app.castMap.MERRA.provider === 'azure' && app.castMap.MERRA.voiceId === 'en-GB-MaisieNeural');
+check('Auren -> speechify/joe (1.12 locked by ear)', app.castMap.AUREN.provider === 'speechify' && app.castMap.AUREN.voiceId === 'joe');
 check('THE WATCHER resolves to the Auren row', (app.registryLookup('THE WATCHER') || {}).name === 'Auren');
+check('THE WATCHER -> speechify/joe', app.castMap['THE WATCHER'].provider === 'speechify' && app.castMap['THE WATCHER'].voiceId === 'joe');
+check('nobody seated on polly/Ivy (back in the pool)', !saga.some(s => app.castMap[s].voiceId === 'Ivy'));
 check('Maren still gets her panel bench voice', app.castMap.MAREN.voiceId === 'cgSgspJ2msm6clMCkdW9');
 
 // ---- 7. unknown speaker gets score-matched, never left blank ----------
@@ -304,31 +311,57 @@ app.allVoices = [...fullPool, ...ACA2];   // no young Will on the account
 rep = await app.autoCastSpeakers(['NARRATOR', 'AUREN AS WILL']);
 check('only adult Acapela Will exists -> AUREN AS WILL reads as Narrator', seatId('AUREN AS WILL') === NARR, seatId('AUREN AS WILL'));
 
+// Speechify dark: locked Auren on joe falls to a live non-reserved teen/young
+// voice, else the (re-seated) Narrator — never an adult voice.
+reset({ speechify: 'key' });
+app.allVoices = [...fullPool, ...SPX_YOUNG, EL_WILL];
+rep = await app.autoCastSpeakers(['NARRATOR', 'AUREN']);
+check('Speechify dark: Auren -> live young elevenlabs Will', seatId('AUREN') === 'elevenlabs||bIHbv24MWmeRgasZH58o', seatId('AUREN'));
+reset({ speechify: 'key' });
+rep = await app.autoCastSpeakers(['NARRATOR', 'AUREN']);
+check('Speechify dark, no live teen/young voice: Auren -> re-seated Narrator',
+  seatId('AUREN') === seatId('NARRATOR') && app.castMap.NARRATOR.provider !== 'speechify', seatId('AUREN'));
+
 // ---- 12. Azure: "MERRA AS MAISIE" / "MERRA AS ANA" -----------------------
-console.log('\n12. "MERRA AS MAISIE" / "MERRA AS ANA" — Azure child voices by ShortName');
-// Maisie carries a display name; Ana has none, so she must match on the
-// ShortName stem (en-US-AnaNeural -> ANA). Jenny is adult and never eligible.
-const AZ = [
-  { voiceId: 'en-GB-MaisieNeural', name: 'Maisie', age: 'child', gender: 'female', locale: 'en-GB' },
-  { voiceId: 'en-US-AnaNeural', name: undefined, age: 'child', gender: 'female', locale: 'en-US' },
-  { voiceId: 'en-US-JennyNeural', name: 'Jenny', age: 'adult', gender: 'female', locale: 'en-US' },
-].map(v => ({ ...v, value: 'azure||' + v.voiceId, label: (v.name || v.voiceId) + ' (Azure)', provider: 'azure' }));
-const azCast = ['NARRATOR', 'MERRA AS MAISIE', 'MERRA AS ANA', 'MERRA AS JENNY'];
+console.log('\n12. "MERRA AS MAISIE" / "PIP AS ANA" — Azure child voices by ShortName');
+// Since 1.12 Maisie/Ana are Merra's/Pip's locked voices: an AS tag may take
+// its OWN canon voice, never another character's. Jenny is adult, never eligible.
+const azCast = ['NARRATOR', 'MERRA AS MAISIE', 'PIP AS ANA', 'MERRA AS ANA', 'MERRA AS JENNY'];
 reset({});
-app.allVoices = [...fullPool, ...ACA, ...AZ];
+app.allVoices = [...fullPool, ...ACA];
 rep = await app.autoCastSpeakers(azCast);
-check('MERRA AS MAISIE -> azure/en-GB-MaisieNeural', seatId('MERRA AS MAISIE') === 'azure||en-GB-MaisieNeural', seatId('MERRA AS MAISIE'));
-check('MERRA AS ANA -> azure/en-US-AnaNeural (ShortName stem match)', seatId('MERRA AS ANA') === 'azure||en-US-AnaNeural', seatId('MERRA AS ANA'));
+check('MERRA AS MAISIE -> azure/en-GB-MaisieNeural (her own voice)', seatId('MERRA AS MAISIE') === 'azure||en-GB-MaisieNeural', seatId('MERRA AS MAISIE'));
+check('PIP AS ANA -> azure/en-US-AnaNeural (ShortName stem match, his own voice)', seatId('PIP AS ANA') === 'azure||en-US-AnaNeural', seatId('PIP AS ANA'));
+check("MERRA AS ANA (Pip's locked voice) -> Narrator", seatId('MERRA AS ANA') === NARR, seatId('MERRA AS ANA'));
 check('MERRA AS JENNY (adult Azure voice) -> Narrator', seatId('MERRA AS JENNY') === NARR, seatId('MERRA AS JENNY'));
 check('azure probed and shown as AZ in the seating line', rep.seats.includes('AZ') && 'azure' in app.providerLive, rep.seats);
 check('correct Azure AS seats not churned on reload', (await app.autoCastSpeakers(azCast)).reseated === 0);
 
 reset({ azure: 'key' });
-app.allVoices = [...fullPool, ...ACA, ...AZ];
-rep = await app.autoCastSpeakers(azCast);
+app.allVoices = [...fullPool, ...ACA];
+rep = await app.autoCastSpeakers([...azCast, 'PIP', 'MERRA']);
 check('Azure dark: MERRA AS MAISIE -> Narrator', seatId('MERRA AS MAISIE') === NARR, seatId('MERRA AS MAISIE'));
-check('Azure dark: MERRA AS ANA -> Narrator', seatId('MERRA AS ANA') === NARR, seatId('MERRA AS ANA'));
+check('Azure dark: PIP AS ANA -> Narrator', seatId('PIP AS ANA') === NARR, seatId('PIP AS ANA'));
+check('Azure dark: Pip (child) -> Narrator', seatId('PIP') === NARR, seatId('PIP'));
+check('Azure dark: Merra (child) -> Narrator', seatId('MERRA') === NARR, seatId('MERRA'));
 check('Azure dark reported in the status line', rep.dark.join().includes('AZ'), rep.dark.join());
+
+// ---- 13. stale pre-1.12 seats are cleared on load -------------------------
+console.log('\n13. stale 1.10 seats (Pip on Ivy, Merra on Narrator, Auren on archie) re-seat to 1.12 canon');
+reset({});
+app.castMap = {
+  PIP: { provider: 'polly', voiceId: 'Ivy' },
+  MERRA: { provider: 'speechify', voiceId: 'john-rhys-davies' },
+  AUREN: { provider: 'speechify', voiceId: 'archie' },
+  'THE WATCHER': { provider: 'polly', voiceId: 'Matthew' },
+};
+app.allVoices = [...fullPool, ...SPX_YOUNG];
+rep = await app.autoCastSpeakers(['NARRATOR', 'PIP', 'MERRA', 'AUREN', 'THE WATCHER']);
+check('Pip cleared off Ivy -> azure/Ana', seatId('PIP') === 'azure||en-US-AnaNeural', seatId('PIP'));
+check('Merra cleared off Narrator -> azure/Maisie', seatId('MERRA') === 'azure||en-GB-MaisieNeural', seatId('MERRA'));
+check('Auren cleared off archie -> speechify/joe', seatId('AUREN') === 'speechify||joe', seatId('AUREN'));
+check('THE WATCHER cleared off Matthew -> speechify/joe', seatId('THE WATCHER') === 'speechify||joe', seatId('THE WATCHER'));
+check('all four re-seats counted', rep.reseated === 4, 'reseated=' + rep.reseated);
 
 console.log('\n' + (fails ? fails + ' FAILURE(S)' : 'all checks passed'));
 process.exit(fails ? 1 : 0);

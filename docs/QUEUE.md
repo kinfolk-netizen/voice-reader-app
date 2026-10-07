@@ -60,10 +60,16 @@ voice or else the Narrator. Tests: `devtest/test_acapela_proxy.js` + section 10 
 Maisie + Ana fallback; `AZ` in the probe/status line. `MERRA AS MAISIE` / `MERRA AS ANA` seat on Azure
 (matched by display name or ShortName stem). Tests: `devtest/test_azure_proxy.js` + section 12 of the
 seating harness. Needs Netlify env vars `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION`.
-Still open: live check once the env vars exist (API details marked `TODO(verify live)`), then lock Merra
-and Auren by ear. No registry seats changed in this job.
-**Merra:** Acapela UK girls (Rosie, Amelia, Chloe, Amy-Northern); Azure Maisie (UK) / Ana (US). **Auren (15, teen boy):** needs a
-teen-boy voice; candidates still to be researched (Acapela, Azure or others). Pip is now LOCKED on polly/Ivy.
+**Locked 2026-10-07 by ear** (Jonathan, on the PR #9 Deploy Preview) → registry `1.12-kids-locked`:
+- Pip → azure/`en-US-AnaNeural` (Ana), LOCKED (locked seat wins over gender, intended).
+- Merra → azure/`en-GB-MaisieNeural` (Maisie), LOCKED.
+- Auren → speechify/`joe`, LOCKED. Aliases AUREN / THE WATCHER kept (THE WATCHER → Auren, not the elder Watcher).
+- polly/Ivy is no longer anyone's voice and returns to the pool (not reserved).
+- Reserved now: Justin, Kevin, linda, Ana, Maisie, joe. Stale saved seats (Pip on Ivy, Merra on Narrator,
+  Auren on anything but joe) are cleared on load.
+- Dark Azure → Pip and Merra read as Narrator. Dark Speechify → Auren takes a live non-reserved teen/young
+  voice, else Narrator (never adult). An `X AS Y` tag may use X's own locked voice (`MERRA AS MAISIE`).
+- **Acapela kept as a provider, no seats.** Email to Acapela pending.
 Blocked until Jonathan signs up at https://www.acapela-cloud.com/signup/ and adds Netlify env vars
 `ACAPELA_EMAIL` and `ACAPELA_PASSWORD` (dedicated password).
 - Adapter in the Polly pattern. Acapela auth is login-based: `POST /api/login/` (email + password) returns
@@ -73,7 +79,8 @@ Blocked until Jonathan signs up at https://www.acapela-cloud.com/signup/ and add
 - Add to the liveness probe and the Casting Room voice list.
 - Candidates to expose: UK boys Harry, Arthur, Caleb (also Archie-Scottish, Liam-Australian);
   UK girls Rosie, Amelia, Chloe (also Amy-Northern); US fallbacks Emilio, Ella.
-- Registry: Merra stays voiceless (Narrator) and Auren stays score-matched until Jonathan locks them by ear.
+- Registry: ~~Merra stays voiceless (Narrator) and Auren stays score-matched until Jonathan locks them by ear.~~
+  Done — locked 2026-10-07 (above).
 - Audition script: `2026-10-03_Audition_Pip_Merra_The_Casting_Call_Dramatized_v1.0.txt`
   (Jonathan HQ → 10_VOICE_READER). Its tags look like `PIP AS HARRY` / `MERRA AS ROSIE`; make sure the
   Casting Room lets each of those tags be seated on its named voice.
