@@ -75,14 +75,15 @@ const po = (id, gender, age, locale) => ({ value: 'polly||' + id, label: id, nam
 const az = (id, gender, age, locale) => ({ value: 'azure||' + id, label: id, name: id, gender, age, locale, provider: 'azure', voiceId: id });
 const POOL = [
   sp('john-rhys-davies', 'male', 'senior', 'en-GB'),
-  sp('linda', 'female', 'child', 'en-US'),     // Lira (locked, reserved)
+  sp('linda', 'female', 'child', 'en-US'),     // back in the pool since 1.13
+  sp('jaime', 'male', 'adult', 'en-GB'),       // The Man (locked, reserved, 1.13)
   sp('alfonso', 'male', 'senior', 'en-GB'),    // the Ch1 elder "Watcher"
   sp('benjamin', 'male', 'adult', 'en-GB'),
   sp('helen', 'female', 'adult', 'en-GB'),
   sp('michael', 'male', 'adult', 'en-GB'),
   sp('archie', 'male', 'adult', 'en-GB'),
   sp('joe', 'male', 'young', 'en-US'),         // Auren (locked, reserved)
-  po('Ivy', 'female', 'child', 'en-US'),       // back in the pool since 1.12
+  po('Ivy', 'female', 'child', 'en-US'),       // Lira (locked, reserved, 1.13)
   po('Justin', 'male', 'child', 'en-US'),      // Junia (locked, reserved)
   po('Kevin', 'male', 'child', 'en-US'),       // Ka'el (locked, reserved)
   po('Joanna', 'female', 'adult', 'en-US'),
@@ -122,8 +123,8 @@ const check = (label, cond, extra) => {
 const NAR = 'john-rhys-davies';
 const seat = (k) => app.castMap[app.castKey(k)] || {};
 
-// 1.12 reserved set = the locked rows' voices. Ivy is back in the pool.
-const RESERVED = new Set(['Justin', 'Kevin', 'linda', 'en-US-AnaNeural', 'en-GB-MaisieNeural', 'joe']);
+// 1.13 reserved set = the locked rows' voices. linda is back in the pool.
+const RESERVED = new Set(['Justin', 'Kevin', 'Ivy', 'en-US-AnaNeural', 'en-GB-MaisieNeural', 'joe', 'jaime']);
 const is = (k, prov, id) => seat(k).provider === prov && seat(k).voiceId === id;
 // Auren off his locked joe: a live non-reserved teen/young voice, never child/adult.
 const aurenFallbackOK = (s) => {
@@ -222,6 +223,23 @@ reset({});
 const rep9 = await app.autoCastSpeakers(['NARRATOR', "KA'EL", 'JUNIA', 'PIP', 'AUREN']);
 check('report shows ×POLLY', /\d×POLLY/.test(rep9.seats), rep9.seats);
 check('report shows ×AZ', /\d×AZ/.test(rep9.seats), rep9.seats);
+
+// ---- 10. 1.13: Lira on Ivy, The Man on jaime, strangers kept off both ---
+console.log('\n10. LIRA -> polly Ivy; THE MAN -> speechify jaime; a stranger never takes either');
+reset({});
+await app.autoCastSpeakers(['NARRATOR', 'LIRA', 'THE MAN', 'A CHILD STRANGER', 'AN ADULT STRANGER']);
+check('Lira -> polly/Ivy (locked)', is('LIRA', 'polly', 'Ivy'), JSON.stringify(seat('LIRA')));
+check('The Man -> speechify/jaime (locked)', is('THE MAN', 'speechify', 'jaime'), JSON.stringify(seat('THE MAN')));
+for (const k of ['A CHILD STRANGER', 'AN ADULT STRANGER']) {
+  check(k + ' not on Ivy or jaime', !['Ivy', 'jaime'].includes(seat(k).voiceId), JSON.stringify(seat(k)));
+}
+reset({});
+app.castMap = { LIRA: { provider: 'speechify', voiceId: 'linda' } };   // 1.12 canon
+await app.autoCastSpeakers(['NARRATOR', 'LIRA']);
+check('stale Lira on linda re-seats to polly/Ivy', is('LIRA', 'polly', 'Ivy'), JSON.stringify(seat('LIRA')));
+reset({ polly: 'quota' });
+await app.autoCastSpeakers(['NARRATOR', 'LIRA']);
+check('dark Polly: Lira (child) -> Narrator voice', seat('LIRA').voiceId === NAR, JSON.stringify(seat('LIRA')));
 
 console.log('\n' + (fails ? fails + ' FAILURE(S)' : 'all checks passed'));
 process.exit(fails ? 1 : 0);

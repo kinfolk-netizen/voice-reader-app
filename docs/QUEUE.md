@@ -88,6 +88,26 @@ Blocked until Jonathan signs up at https://www.acapela-cloud.com/signup/ and add
 
 ---
 
+## JOB 3 — Name pronunciation + Lira/The Man  ·  branch `feature/pronunciation-the-man`  ·  STATUS: IN REVIEW
+From the 2026-10-07 roll call (Jonathan, by ear).
+- **Pronunciation at the transmit layer, per provider**, server-side in `api/tts-proxy.js` (table +
+  `PRONUNCIATION_ENABLED` at the top). Only the text SENT to the provider changes — displayed text,
+  manuscript, cache keys (hash the original text) and highlighting are untouched. Full table and the
+  per-provider method: `docs/PRONUNCIATION.md`.
+  - Polly + Azure: SSML `<phoneme alphabet='ipa'>` for Ka'el, Auren, Junia, Silas.
+  - Speechify: has no `<phoneme>`, so Silas only is respelled `Sylus` (same length → word marks stay 1:1).
+    Ka'el is already right on Speechify and is left alone.
+  - ElevenLabs untouched (it has its own `.pls` lexicon).
+- **Registry → `1.13-lira-ivy-the-man`:** Lira → polly/Ivy, LOCKED (linda back to the pool).
+  New row **The Man** (alias `THE MAN`) → speechify/jaime, LOCKED, adult male en-GB.
+  Reserved now: Justin, Kevin, Ivy, Ana, Maisie, joe, jaime. No collisions with other rows or PANEL_BENCH.
+- Tests: `devtest/test_pronunciation.js` (new), seating harness + `test_twins_polly.mjs` + `check_cast_v234.py` updated.
+- **Jonathan:** listen on the Deploy Preview — Ka'el / Junia on Kevin/Justin, Ka'el on Maisie and Ana,
+  Auren on Polly/Azure, Silas from the Narrator, Lira on Ivy, The Man on jaime. If Polly ignores a phoneme,
+  switch that name to a respelling (Kawel / Joonia / Oren) per `docs/PRONUNCIATION.md`.
+
+---
+
 ## PARKED
 - `feature/sts-proxy` (Jonathan's local commit 74802fa, ElevenLabs speech-to-speech proxy, July 25):
   never pushed. Ask Jonathan before including it anywhere.

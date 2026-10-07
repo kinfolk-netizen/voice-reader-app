@@ -36,6 +36,8 @@ The plan has 1,000 credits/month. So:
 ## Tests
 - `node devtest/test_cast_seating_v234.mjs` — offline seating/failover harness (stubbed network).
 - `python devtest/check_cast_v234.py` — registry integrity + voice-collision check.
+- `node devtest/test_pronunciation.js` — per-provider name pronunciation (SSML phoneme / respelling).
+- Also: `test_twins_polly.mjs`, `test_polly_proxy.js`, `test_azure_proxy.js`, `test_acapela_proxy.js`.
 - Add new tests to `devtest/` for anything you build.
 
 ## Cast (canon — never drift ages)
@@ -44,13 +46,15 @@ The plan has 1,000 credits/month. So:
 | Ka'el | 12 | polly / Kevin | LOCKED (recast by ear 2026-10-07) |
 | Junia | 12 | polly / Justin | LOCKED (recast by ear 2026-10-07) |
 | Auren | 15 | speechify / joe | LOCKED (by ear 2026-10-07); aliases AUREN, THE WATCHER (→ Auren, not the elder Watcher). Speechify dark → a live non-reserved teen/young voice, else Narrator |
-| Lira | 10 | speechify / linda | LOCKED |
+| Lira | 10 | polly / Ivy | LOCKED (1.13). Polly dark → Narrator |
 | Pip | 6 | azure / en-US-AnaNeural (Ana) | LOCKED (by ear 2026-10-07; locked seat wins over gender, intended). Azure dark → Narrator |
 | Merra | 8 | azure / en-GB-MaisieNeural (Maisie) | LOCKED (by ear 2026-10-07). Azure dark → Narrator |
+| The Man | adult | speechify / jaime | LOCKED (1.13); alias THE MAN; male, en-GB |
 | Malakai | young | speechify / cleon | registry seat (PR #8), not locked |
-Registry `1.12-kids-locked`. Speechify's evie/rory are gone for good (rights withdrawn). Remove them everywhere.
-Reserved (derived from the locked rows): Justin, Kevin, linda, Ana, Maisie, joe — never score-match them to anyone else.
-polly/Ivy is no longer anyone's voice; it is back in the pool. Acapela stays wired as a provider but seats no one.
+Registry `1.13-lira-ivy-the-man`. Speechify's evie/rory are gone for good (rights withdrawn). Remove them everywhere.
+Reserved (derived from the locked rows): Justin, Kevin, Ivy, Ana, Maisie, joe, jaime — never score-match them to anyone else.
+speechify/linda is no longer anyone's voice; it is back in the pool. Acapela stays wired as a provider but seats no one.
+Name pronunciation (Ka'el, Auren, Junia, Silas) is fixed per provider at the transmit layer — see `docs/PRONUNCIATION.md`.
 
 ## Work queue
 See `docs/QUEUE.md`. Do the top unfinished job, then report: files changed, test results,
