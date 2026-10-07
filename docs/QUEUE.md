@@ -33,9 +33,20 @@ GitHub, so build it fresh here. Env vars are ALREADY set in Netlify:
 6. Push, give Jonathan the PR link. He listens on the Deploy Preview with
    `2026-10-03_Audition_Twins_on_Polly_Dramatized_v1.0.txt` (Jonathan HQ → 10_VOICE_READER). Merge on his yes.
 
+**Recast 2026-10-07 by ear** (Jonathan, after listening on the PR #7 Deploy Preview) → registry `1.10-polly-recast`:
+- Ka'el → polly/Kevin, LOCKED. Junia → polly/Justin, LOCKED (Justin sounds like Junia).
+- Pip → polly/Ivy, LOCKED (Ivy sounds youngest; the locked seat wins over gender, which is intended).
+- Auren → no voice, NOT locked; score-matched to a live non-reserved voice until Job 2 finds one.
+  Aliases AUREN / THE WATCHER kept (THE WATCHER → Auren, not the elder Watcher).
+- Merra stays voiceless (Narrator).
+- Reserved stays Justin, Ivy, Kevin + linda. Pass 0.5 now also drops a saved seat on a reserved
+  voice by anyone but its locked owner (e.g. Auren still saved on Kevin from 1.9).
+
 ---
 
-## JOB 2 — Acapela provider (Pip and Merra)  ·  branch `feature/acapela-kids`  ·  STATUS: WAITING ON JONATHAN
+## JOB 2 — Acapela provider (Merra) + a voice for Auren  ·  branch `feature/acapela-kids`  ·  STATUS: WAITING ON JONATHAN
+**Merra:** Acapela UK girls (Rosie, Amelia, Chloe, Amy-Northern). **Auren (15, teen boy):** needs a
+teen-boy voice; candidates still to be researched (Acapela, Azure or others). Pip is now LOCKED on polly/Ivy.
 Blocked until Jonathan signs up at https://www.acapela-cloud.com/signup/ and adds Netlify env vars
 `ACAPELA_EMAIL` and `ACAPELA_PASSWORD` (dedicated password).
 - Adapter in the Polly pattern. Acapela auth is login-based: `POST /api/login/` (email + password) returns
@@ -45,7 +56,7 @@ Blocked until Jonathan signs up at https://www.acapela-cloud.com/signup/ and add
 - Add to the liveness probe and the Casting Room voice list.
 - Candidates to expose: UK boys Harry, Arthur, Caleb (also Archie-Scottish, Liam-Australian);
   UK girls Rosie, Amelia, Chloe (also Amy-Northern); US fallbacks Emilio, Ella.
-- Registry: Pip and Merra stay voiceless (Narrator) until Jonathan locks them by ear.
+- Registry: Merra stays voiceless (Narrator) and Auren stays score-matched until Jonathan locks them by ear.
 - Audition script: `2026-10-03_Audition_Pip_Merra_The_Casting_Call_Dramatized_v1.0.txt`
   (Jonathan HQ → 10_VOICE_READER). Its tags look like `PIP AS HARRY` / `MERRA AS ROSIE`; make sure the
   Casting Room lets each of those tags be seated on its named voice.

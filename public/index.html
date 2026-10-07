@@ -2642,7 +2642,7 @@ async loadDynamicVoices(providerId) {
                 const idOf = (e) => (e.provider || 'speechify') + '||' + e.voiceId;
 
                 // Locked canon voices are reserved — never handed to another
-                // character by score-match (Justin/Ivy/Kevin for the twins & Auren,
+                // character by score-match (Kevin/Justin/Ivy for the twins & Pip,
                 // linda for Lira). The locked character still gets its own voice in
                 // Pass 1; this only withholds those voices from the Pass 2 guesser.
                 const reserved = new Set();
@@ -2669,13 +2669,16 @@ async loadDynamicVoices(providerId) {
                 // Pass 0.5 — a saved seat that disagrees with a LOCKED canon voice
                 // is dropped, so a stale browser seat (the twins on evie/rory, Auren
                 // on archie) is cleared on load and re-seated to canon in Pass 1.
+                // Likewise a saved seat on a RESERVED voice by anyone but its locked
+                // owner (Auren still on Kevin after the 1.10 recast) is dropped.
                 for (const sp of speakers) {
                     const k = this.castKey(sp);
                     const ch = this.registryLookup(sp);
                     const want = ch && ch.locked && ch.voice && ch.voice.voiceId
                         ? (ch.voice.provider || 'speechify') + '||' + ch.voice.voiceId : null;
                     const e = this.castMap[k];
-                    if (want && e && e.voiceId && idOf(e) !== want) {
+                    const squatter = e && e.voiceId && reserved.has(idOf(e)) && idOf(e) !== want;
+                    if ((want && e && e.voiceId && idOf(e) !== want) || squatter) {
                         this.castReseated.push({ speaker: sp, from: idOf(e) });
                         delete this.castMap[k];
                     }

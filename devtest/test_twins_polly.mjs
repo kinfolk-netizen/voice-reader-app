@@ -1,4 +1,4 @@
-// JOB 1 — Polly twins recast, child-safety, reservation, stale-seat clearing.
+// JOB 1 — Polly twins recast (v1.10, by ear),child-safety, reservation, stale-seat clearing.
 // Like test_cast_seating_v234.mjs this pulls the REAL methods out of
 // public/index.html, but it does NOT stub scoreMatch — the live reservation and
 // child-safety guards are exercised against the real matcher. Fake fetch stands
@@ -12,7 +12,7 @@ const slice = (a, b) => src.slice(a - 1, b).join('\n');   // 1-indexed inclusive
 
 // Same ranges as test_cast_seating_v234.mjs (keep both in sync if index moves).
 const liveBlock = slice(2289, 2400);          // state + probe + liveness + understudy
-const seatBlock = slice(2622, 2760);          // autoCastSpeakers + castSeatingReport
+const seatBlock = slice(2622, 2763);         // autoCastSpeakers + castSeatingReport
 
 // scoreMatch and failoverChunk extracted by signature, so they survive edits above.
 const methodBlock = (sig) => {
@@ -78,10 +78,10 @@ const POOL = [
   sp('benjamin', 'male', 'adult', 'en-GB'),
   sp('helen', 'female', 'adult', 'en-GB'),
   sp('michael', 'male', 'adult', 'en-GB'),
-  sp('archie', 'male', 'adult', 'en-GB'),      // returns to the pool; a stale Auren seat
-  po('Ivy', 'female', 'child', 'en-US'),
-  po('Justin', 'male', 'child', 'en-US'),
-  po('Kevin', 'male', 'child', 'en-US'),
+  sp('archie', 'male', 'adult', 'en-GB'),
+  po('Ivy', 'female', 'child', 'en-US'),       // Pip (locked, reserved)
+  po('Justin', 'male', 'child', 'en-US'),      // Junia (locked, reserved)
+  po('Kevin', 'male', 'child', 'en-US'),       // Ka'el (locked, reserved)
   po('Joanna', 'female', 'adult', 'en-US'),
   po('Matthew', 'male', 'adult', 'en-US'),
   po('Brian', 'male', 'adult', 'en-GB'),
@@ -115,64 +115,78 @@ const check = (label, cond, extra) => {
 const NAR = 'john-rhys-davies';
 const seat = (k) => app.castMap[app.castKey(k)] || {};
 
-// ---- 1. twins + Auren seat on their locked Polly voices ---------------
-console.log('\n1. KA\'EL / JUNIA / AUREN -> polly Justin / Ivy / Kevin');
+// Auren (teen, unlocked, voiceless) is score-matched: never a reserved or child voice.
+const RESERVED = new Set(['Justin', 'Ivy', 'Kevin', 'linda']);
+const aurenOK = (s) => {
+  const v = POOL.find(p => p.provider === s.provider && p.voiceId === s.voiceId);
+  return !!v && !RESERVED.has(v.voiceId) && v.age !== 'child';
+};
+
+// ---- 1. v1.10 recast: twins + Pip seat on their locked Polly voices ---
+console.log('\n1. KA\'EL / JUNIA / PIP -> polly Kevin / Justin / Ivy; AUREN score-matched');
 reset({});
-await app.autoCastSpeakers(['NARRATOR', "KA'EL", 'JUNIA', 'AUREN']);
-check("Ka'el -> polly/Justin", seat("KA'EL").provider === 'polly' && seat("KA'EL").voiceId === 'Justin', JSON.stringify(seat("KA'EL")));
-check('Junia -> polly/Ivy', seat('JUNIA').provider === 'polly' && seat('JUNIA').voiceId === 'Ivy', JSON.stringify(seat('JUNIA')));
-check('Auren -> polly/Kevin', seat('AUREN').provider === 'polly' && seat('AUREN').voiceId === 'Kevin', JSON.stringify(seat('AUREN')));
+await app.autoCastSpeakers(['NARRATOR', "KA'EL", 'JUNIA', 'PIP', 'AUREN']);
+check("Ka'el -> polly/Kevin", seat("KA'EL").provider === 'polly' && seat("KA'EL").voiceId === 'Kevin', JSON.stringify(seat("KA'EL")));
+check('Junia -> polly/Justin', seat('JUNIA').provider === 'polly' && seat('JUNIA').voiceId === 'Justin', JSON.stringify(seat('JUNIA')));
+check('Pip -> polly/Ivy (locked seat wins over gender)', seat('PIP').provider === 'polly' && seat('PIP').voiceId === 'Ivy', JSON.stringify(seat('PIP')));
+check('Auren score-matched onto a live non-reserved, non-child voice', aurenOK(seat('AUREN')), JSON.stringify(seat('AUREN')));
 
 // ---- 2. THE WATCHER resolves to Auren, not the Ch1 elder --------------
-console.log('\n2. THE WATCHER -> Auren (polly/Kevin); the elder WATCHER stays on alfonso');
+console.log('\n2. THE WATCHER -> Auren\'s row; the elder WATCHER stays on alfonso');
 reset({});
 await app.autoCastSpeakers(['NARRATOR', 'THE WATCHER', 'WATCHER']);
-check('THE WATCHER -> polly/Kevin (Auren)', seat('THE WATCHER').provider === 'polly' && seat('THE WATCHER').voiceId === 'Kevin', JSON.stringify(seat('THE WATCHER')));
+check('THE WATCHER looks up the Auren row', (app.registryLookup('THE WATCHER') || {}).name === 'Auren');
+check('THE WATCHER on a live non-reserved, non-child voice', aurenOK(seat('THE WATCHER')), JSON.stringify(seat('THE WATCHER')));
+check("THE WATCHER not on the elder's alfonso", seat('THE WATCHER').voiceId !== 'alfonso', JSON.stringify(seat('THE WATCHER')));
 check('elder WATCHER -> speechify/alfonso', seat('WATCHER').provider === 'speechify' && seat('WATCHER').voiceId === 'alfonso', JSON.stringify(seat('WATCHER')));
 
-// ---- 3. Pip & Merra read as Narrator, never an adult voice ------------
-console.log('\n3. PIP & MERRA (voiceless children) read as Narrator');
+// ---- 3. Merra reads as Narrator, never an adult voice -----------------
+console.log('\n3. MERRA (voiceless child) reads as Narrator');
 reset({});
-await app.autoCastSpeakers(['NARRATOR', 'PIP', 'MERRA']);
-check('Pip -> Narrator voice', seat('PIP').provider === 'speechify' && seat('PIP').voiceId === NAR, JSON.stringify(seat('PIP')));
+await app.autoCastSpeakers(['NARRATOR', 'MERRA']);
 check('Merra -> Narrator voice', seat('MERRA').provider === 'speechify' && seat('MERRA').voiceId === NAR, JSON.stringify(seat('MERRA')));
 const notAdultChild = (s) => { const v = POOL.find(p => p.provider === s.provider && p.voiceId === s.voiceId); return !v || (v.age !== 'adult'); };
-check('Pip never on an adult voice', notAdultChild(seat('PIP')));
 check('Merra never on an adult voice', notAdultChild(seat('MERRA')));
 
 // ---- 4. reserved voices are never score-matched to a stranger ---------
 console.log('\n4. a stranger is score-matched, but never onto Justin / Ivy / Kevin / linda');
 reset({});
 await app.autoCastSpeakers(['NARRATOR', 'A CHILD STRANGER', 'AN ADULT STRANGER']);
-const reservedIds = new Set(['Justin', 'Ivy', 'Kevin', 'linda']);
 check('adult stranger seated somewhere', !!seat('AN ADULT STRANGER').voiceId);
-check('adult stranger not on a reserved voice', !reservedIds.has(seat('AN ADULT STRANGER').voiceId), JSON.stringify(seat('AN ADULT STRANGER')));
+check('adult stranger not on a reserved voice', !RESERVED.has(seat('AN ADULT STRANGER').voiceId), JSON.stringify(seat('AN ADULT STRANGER')));
 
-// ---- 5. stale saved seats (evie/rory/archie) are cleared on load ------
-console.log('\n5. stale seats on the twins (rory) and Auren (archie) are re-seated to canon');
+// ---- 5. stale 1.9 seats are cleared on load ---------------------------
+console.log('\n5. stale 1.9 seats (twins on Justin/Ivy, Auren on Kevin, Pip on Narrator) re-seat to 1.10 canon');
 reset({});
 app.castMap = {
-  "KA'EL": { provider: 'speechify', voiceId: 'rory' },   // gone for good — not in the pool
-  AUREN: { provider: 'speechify', voiceId: 'archie' },   // archie is live again, but not Auren's
+  "KA'EL": { provider: 'polly', voiceId: 'Justin' },    // 1.9 canon, now Junia's
+  JUNIA: { provider: 'polly', voiceId: 'Ivy' },         // 1.9 canon, now Pip's
+  AUREN: { provider: 'polly', voiceId: 'Kevin' },       // 1.9 canon, now Ka'el's (Auren is unlocked)
+  PIP: { provider: 'speechify', voiceId: NAR },         // read as Narrator under 1.9
 };
-const rep5 = await app.autoCastSpeakers(['NARRATOR', "KA'EL", 'AUREN']);
-check("Ka'el cleared off rory -> polly/Justin", seat("KA'EL").voiceId === 'Justin', JSON.stringify(seat("KA'EL")));
-check('Auren cleared off archie -> polly/Kevin', seat('AUREN').voiceId === 'Kevin', JSON.stringify(seat('AUREN')));
-check('both re-seats counted in the report', rep5.reseated === 2, 'reseated=' + rep5.reseated);
+const rep5 = await app.autoCastSpeakers(['NARRATOR', "KA'EL", 'JUNIA', 'PIP', 'AUREN']);
+check("Ka'el cleared off Justin -> polly/Kevin", seat("KA'EL").voiceId === 'Kevin', JSON.stringify(seat("KA'EL")));
+check('Junia cleared off Ivy -> polly/Justin', seat('JUNIA').voiceId === 'Justin', JSON.stringify(seat('JUNIA')));
+check('Pip cleared off Narrator -> polly/Ivy', seat('PIP').voiceId === 'Ivy', JSON.stringify(seat('PIP')));
+check('Auren cleared off reserved Kevin -> live non-reserved voice', aurenOK(seat('AUREN')), JSON.stringify(seat('AUREN')));
+check('all four re-seats counted in the report', rep5.reseated === 4, 'reseated=' + rep5.reseated);
+const ids5 = ["KA'EL", 'JUNIA', 'PIP', 'AUREN'].map(k => seat(k).provider + '||' + seat(k).voiceId);
+check('no two of them share a voice', new Set(ids5).size === 4, ids5.join(', '));
 
-// ---- 6. dark Polly: the twins fall to Narrator, Auren to a backup -----
+// ---- 6. dark Polly: the Polly children fall to Narrator ---------------
 console.log('\n6. Polly out of credit at load — one hop off the dead provider');
 reset({ polly: 'quota' });
-const rep6 = await app.autoCastSpeakers(['NARRATOR', 'JUNIA', "KA'EL", 'AUREN']);
+const rep6 = await app.autoCastSpeakers(['NARRATOR', 'JUNIA', "KA'EL", 'PIP', 'AUREN']);
 check('Junia (child) -> Narrator voice', seat('JUNIA').voiceId === NAR, JSON.stringify(seat('JUNIA')));
 check("Ka'el (child) -> Narrator voice", seat("KA'EL").voiceId === NAR, JSON.stringify(seat("KA'EL")));
-check('Auren (teen) off dead Polly onto a live voice', seat('AUREN').provider !== 'polly' && !!seat('AUREN').voiceId, JSON.stringify(seat('AUREN')));
+check('Pip (child) -> Narrator voice', seat('PIP').voiceId === NAR, JSON.stringify(seat('PIP')));
+check('Auren (teen) on a live non-Polly voice', seat('AUREN').provider !== 'polly' && aurenOK(seat('AUREN')), JSON.stringify(seat('AUREN')));
 check('report marks Polly out of credit', rep6.dark.join().includes('POLLY') && rep6.dark.join().includes('out of credit'), rep6.dark.join());
 
 // ---- 7. status line counts Polly seats --------------------------------
 console.log('\n7. the seating report counts Polly seats for the status line');
 reset({});
-const rep7 = await app.autoCastSpeakers(['NARRATOR', "KA'EL", 'JUNIA', 'AUREN']);
+const rep7 = await app.autoCastSpeakers(['NARRATOR', "KA'EL", 'JUNIA', 'PIP', 'AUREN']);
 check('report shows ×POLLY', /\d×POLLY/.test(rep7.seats), rep7.seats);
 
 console.log('\n' + (fails ? fails + ' FAILURE(S)' : 'all checks passed'));

@@ -41,14 +41,14 @@ The plan has 1,000 credits/month. So:
 ## Cast (canon — never drift ages)
 | Character | Age | Voice | Status |
 |---|---|---|---|
-| Ka'el | 12 | polly / Justin | LOCKED (2026-10-03) |
-| Junia | 12 | polly / Ivy | LOCKED (2026-10-03) |
-| Auren | 15 | polly / Kevin | LOCKED (aliases AUREN, THE WATCHER) |
+| Ka'el | 12 | polly / Kevin | LOCKED (recast by ear 2026-10-07) |
+| Junia | 12 | polly / Justin | LOCKED (recast by ear 2026-10-07) |
+| Auren | 15 | open — score-matched to a live non-reserved voice | not locked; aliases AUREN, THE WATCHER (→ Auren, not the elder Watcher) |
 | Lira | 10 | speechify / linda | LOCKED |
-| Pip | 6 | open — Narrator until Acapela is wired | British preferred |
-| Merra | 8 | open — Narrator until Acapela is wired | British preferred |
+| Pip | 6 | polly / Ivy | LOCKED (2026-10-07; locked seat wins over gender, intended) |
+| Merra | 8 | open — Narrator until a voice is found (Acapela) | British preferred |
 Speechify's evie/rory are gone for good (rights withdrawn). Remove them everywhere.
-Justin, Ivy and Kevin are reserved; never score-match them to anyone else.
+Justin, Ivy and Kevin are reserved (derived from the locked rows), plus linda; never score-match them to anyone else.
 
 ## Work queue
 See `docs/QUEUE.md`. Do the top unfinished job, then report: files changed, test results,

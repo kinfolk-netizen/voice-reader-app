@@ -1,5 +1,5 @@
 {
-  "version": "1.9-twins-polly",
+  "version": "1.10-polly-recast",
   "regions": {
     "eirenos": { "label": "Eirenos native", "accent": "en-GB" },
     "foreign": { "label": "Foreigner (twins' homeland)", "accent": "en-US" },
@@ -8,11 +8,11 @@
   "ageScale": ["child", "teen", "young", "adult", "senior"],
   "characters": [
     { "name": "Narrator", "aliases": ["NARRATOR"], "region": "eirenos", "gender": "male", "age": "senior", "accent": "en-GB", "voice": { "provider": "speechify", "voiceId": "john-rhys-davies" } },
-    { "name": "Junia", "aliases": [], "region": "foreign", "gender": "female", "age": "child", "accent": "en-US", "locked": true, "voice": { "provider": "polly", "voiceId": "Ivy" } },
-    { "name": "Ka'el", "aliases": ["Kael", "KA’EL", "KAEL"], "region": "foreign", "gender": "male", "age": "child", "accent": "en-US", "locked": true, "voice": { "provider": "polly", "voiceId": "Justin" } },
-    { "name": "Auren", "aliases": ["AUREN", "THE WATCHER", "The Watcher"], "region": "foreign", "gender": "male", "age": "teen", "accent": "en-US", "locked": true, "voice": { "provider": "polly", "voiceId": "Kevin" } },
+    { "name": "Junia", "aliases": [], "region": "foreign", "gender": "female", "age": "child", "accent": "en-US", "locked": true, "voice": { "provider": "polly", "voiceId": "Justin" } },
+    { "name": "Ka'el", "aliases": ["Kael", "KA’EL", "KAEL"], "region": "foreign", "gender": "male", "age": "child", "accent": "en-US", "locked": true, "voice": { "provider": "polly", "voiceId": "Kevin" } },
+    { "name": "Auren", "aliases": ["AUREN", "THE WATCHER", "The Watcher"], "region": "foreign", "gender": "male", "age": "teen", "accent": "en-US", "voice": null },
     { "name": "Lira", "aliases": [], "region": "foreign", "gender": "female", "age": "child", "accent": "en-US", "locked": true, "voice": { "provider": "speechify", "voiceId": "linda" } },
-    { "name": "Pip", "aliases": [], "region": "eirenos", "gender": "male", "age": "child", "accent": "en-GB", "voice": null },
+    { "name": "Pip", "aliases": [], "region": "eirenos", "gender": "male", "age": "child", "accent": "en-GB", "locked": true, "voice": { "provider": "polly", "voiceId": "Ivy" } },
     { "name": "Merra", "aliases": [], "region": "eirenos", "gender": "female", "age": "child", "accent": "en-GB", "voice": null },
     { "name": "Mother", "aliases": [], "region": "foreign", "gender": "female", "age": "adult", "accent": "en-US", "voice": { "provider": "speechify", "voiceId": "imogen_32" } },
     { "name": "Viell", "aliases": [], "region": "eirenos", "gender": "male", "age": "senior", "accent": "en-GB", "voice": { "provider": "elevenlabs", "voiceId": "onwK4e9ZLuTAKqWW03F9" } },
