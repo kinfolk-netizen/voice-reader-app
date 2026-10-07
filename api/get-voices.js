@@ -6,6 +6,43 @@
  * Document ID: VR-API-Get-Voices-241210-1447
  */
 
+// JOB 2 — Acapela children's voices. Known kids' names are tagged age 'child'
+// (Acapela sells them as children's voices); anything else the account returns
+// is treated as adult so the child-safety guard never seats a child on it.
+const ACAPELA_KIDS = {
+  harry:  { gender: 'male',   locale: 'en-GB', accent: 'British' },
+  arthur: { gender: 'male',   locale: 'en-GB', accent: 'British' },
+  caleb:  { gender: 'male',   locale: 'en-GB', accent: 'British' },
+  archie: { gender: 'male',   locale: 'en-GB', accent: 'Scottish' },
+  liam:   { gender: 'male',   locale: 'en-AU', accent: 'Australian' },
+  rosie:  { gender: 'female', locale: 'en-GB', accent: 'British' },
+  amelia: { gender: 'female', locale: 'en-GB', accent: 'British' },
+  chloe:  { gender: 'female', locale: 'en-GB', accent: 'British' },
+  amy:    { gender: 'female', locale: 'en-GB', accent: 'Northern English' },
+  emilio: { gender: 'male',   locale: 'en-US', accent: 'American' },
+  ella:   { gender: 'female', locale: 'en-US', accent: 'American' }
+};
+function acapelaVoiceEntry(id, name, gender, locale) {
+  const nm = name || id;
+  const kid = ACAPELA_KIDS[String(nm).toLowerCase()];
+  const age = kid ? 'child' : 'adult';
+  const g = (kid && kid.gender) || gender || '';
+  const loc = (kid && kid.locale) || locale || '';
+  const accent = (kid && kid.accent) || loc;
+  return {
+    id,
+    label: nm + ' (Acapela) — ' + [age + ' ' + (g || 'voice'), accent].filter(Boolean).join(' · '),
+    name: nm,
+    gender: g,
+    age,
+    locale: loc
+  };
+}
+const ACAPELA_FALLBACK = Object.keys(ACAPELA_KIDS).map(k => {
+  const nm = k.charAt(0).toUpperCase() + k.slice(1);
+  return acapelaVoiceEntry(nm, nm);
+});
+
 exports.handler = async (event, context) => {
   // Handle CORS
   const headers = {
@@ -110,6 +147,18 @@ exports.handler = async (event, context) => {
           { id: 'Brian',    label: 'Brian — adult male · British',       name: 'Brian',    gender: 'male',   age: 'adult', locale: 'en-GB' },
           { id: 'Arthur',   label: 'Arthur — adult male · British',      name: 'Arthur',   gender: 'male',   age: 'adult', locale: 'en-GB' }
         ]
+      },
+      acapela: {
+        providerId: 'acapela',
+        providerName: 'Acapela',
+        supportsBoundaries: false, // mp3 synthesis only; reader estimates highlighting
+        tier: 'premium',
+        // Static fallback: Acapela's catalogue children's voices. Served when the
+        // account creds are missing or /api/account/ fails; replaced by the live
+        // account list otherwise. Ids are bare names — the proxy resolves them to
+        // the account's full ids (e.g. "Rosie22k_..."). "(Acapela)" in every label
+        // keeps Archie distinct from Speechify's archie.
+        voices: ACAPELA_FALLBACK
       }
     };
 
@@ -264,6 +313,20 @@ exports.handler = async (event, context) => {
           }
         } catch (error) {
           console.log('Could not fetch Speechify voices:', error.message);
+        }
+      }
+
+      // For Acapela, list the account's own voices (login server-side, token never
+      // leaves the function). Any failure keeps the static fallback list.
+      if (providerId === 'acapela' && process.env.ACAPELA_EMAIL && process.env.ACAPELA_PASSWORD) {
+        try {
+          const { _acapelaAccountVoices } = require('./tts-proxy.js');
+          const mapped = (await _acapelaAccountVoices())
+            .filter(v => !v.locale || /^en/i.test(v.locale))
+            .map(v => acapelaVoiceEntry(v.id, v.name, v.gender, v.locale));
+          if (mapped.length) provider.voices = mapped;
+        } catch (error) {
+          console.log('Could not fetch Acapela voices:', error.message);
         }
       }
 

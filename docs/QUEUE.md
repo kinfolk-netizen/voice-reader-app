@@ -3,7 +3,10 @@ Do jobs top to bottom. One job = one branch = one PR. Mark a job DONE here (with
 
 ---
 
-## JOB 1 — Polly provider + the twins recast  ·  branch `feature/polly-twins`  ·  STATUS: READY
+## JOB 1 — Polly provider + the twins recast  ·  branch `feature/polly-twins`  ·  STATUS: DONE
+**DONE 2026-10-07** — merged as PR #7 (https://github.com/kinfolk-netizen/voice-reader-app/pull/7) and
+PR #8 (https://github.com/kinfolk-netizen/voice-reader-app/pull/8, deploy fix + Auren/cleon), recast by ear
+(registry `1.10-polly-recast`, below).
 **Branch off `feature/claude-code-workflow`** (not Kin-GitHub) so the workflow setup and this job
 ship in ONE merge = one production deploy.
 Background: an earlier Netlify Agent Runner built Polly (registry 1.7) but that work never reached
@@ -44,7 +47,14 @@ GitHub, so build it fresh here. Env vars are ALREADY set in Netlify:
 
 ---
 
-## JOB 2 — Acapela provider (Merra) + a voice for Auren  ·  branch `feature/acapela-kids`  ·  STATUS: WAITING ON JONATHAN
+## JOB 2 — Acapela provider (Merra) + a voice for Auren  ·  branch `feature/acapela-kids`  ·  STATUS: IN PROGRESS
+**In progress on `feature/acapela-kids` (2026-10-07).** Built: Acapela adapter in `api/tts-proxy.js`
+(login → cached token → re-login once on 401; `/api/command/` mp3, >3000 chars chunked), `acapela` in
+`api/get-voices.js` (account list via `/api/account/`, static kids fallback), `ACA` in the probe / status
+line / Casting Room, and `X AS Y` audition tags (e.g. `PIP AS HARRY`) seat on the named Acapela child
+voice or else the Narrator. Tests: `devtest/test_acapela_proxy.js` + section 10 of the seating harness.
+Still open: live check once the env vars exist (API details marked `TODO(verify live)`), then lock Merra
+and Auren by ear. No registry seats changed in this job.
 **Merra:** Acapela UK girls (Rosie, Amelia, Chloe, Amy-Northern). **Auren (15, teen boy):** needs a
 teen-boy voice; candidates still to be researched (Acapela, Azure or others). Pip is now LOCKED on polly/Ivy.
 Blocked until Jonathan signs up at https://www.acapela-cloud.com/signup/ and adds Netlify env vars

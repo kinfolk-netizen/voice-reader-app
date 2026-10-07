@@ -9,8 +9,8 @@ import fs from 'fs';
 const src = fs.readFileSync('public/index.html', 'utf-8').split(/\r?\n/);
 const slice = (a, b) => src.slice(a - 1, b).join('\n');   // 1-indexed inclusive
 
-const liveBlock = slice(2289, 2400);          // state + probe + liveness + understudy
-const seatBlock = slice(2622, 2763);         // autoCastSpeakers + castSeatingReport
+const liveBlock = slice(2292, 2403);          // state + probe + liveness + understudy
+const seatBlock = slice(2625, 2793);        // autoCastSpeakers + castSeatingReport
 const failStart = src.findIndex(l => l.includes('failoverChunk(provider, chunk, status, data) {')) + 1;
 let failEnd = failStart;
 while (!/^            \},$/.test(src[failEnd - 1])) failEnd++;
@@ -215,6 +215,43 @@ await app.autoCastSpeakers(PANEL);
 check('probes on first load', first > 0, first + ' request(s)');
 check('sessionStorage suppresses the second round', calls === first, calls + ' total');
 globalThis.fetch = realFetch;
+
+// ---- 10. JOB 2: audition tags "X AS Y" seat on the named Acapela voice ----
+console.log('\n10. "PIP AS HARRY" / "MERRA AS ROSIE" — named Acapela voice, never adult');
+// Acapela pool: full account ids (stem-matched) plus one adult voice that must
+// never take a child's audition tag.
+const ACA = [
+  { voiceId: 'Harry22k_NT', name: 'Harry', age: 'child', gender: 'male', locale: 'en-GB' },
+  { voiceId: 'Rosie22k_NT', name: undefined, age: 'child', gender: 'female', locale: 'en-GB' },
+  { voiceId: 'Ryan22k_NT', name: 'Ryan', age: 'adult', gender: 'male', locale: 'en-GB' },
+].map(v => ({ ...v, value: 'acapela||' + v.voiceId, label: (v.name || v.voiceId) + ' (Acapela)', provider: 'acapela' }));
+const auditionCast = ['NARRATOR', 'PIP AS HARRY', 'MERRA AS ROSIE', 'MERRA AS RYAN', 'PIP AS NOBODY'];
+const NARR = 'speechify||john-rhys-davies';
+const seatId = s => { const e = app.castMap[s] || {}; return e.provider + '||' + e.voiceId; };
+
+reset({});
+app.allVoices = [...fullPool, ...ACA];
+rep = await app.autoCastSpeakers(auditionCast);
+check('PIP AS HARRY -> acapela/Harry22k_NT', seatId('PIP AS HARRY') === 'acapela||Harry22k_NT', seatId('PIP AS HARRY'));
+check('MERRA AS ROSIE -> acapela/Rosie22k_NT (id-stem match)', seatId('MERRA AS ROSIE') === 'acapela||Rosie22k_NT', seatId('MERRA AS ROSIE'));
+check('MERRA AS RYAN (adult voice) -> Narrator, never adult', seatId('MERRA AS RYAN') === NARR, seatId('MERRA AS RYAN'));
+check('PIP AS NOBODY (no such voice) -> Narrator', seatId('PIP AS NOBODY') === NARR, seatId('PIP AS NOBODY'));
+check('acapela probed and shown as ACA in the seating line', rep.seats.includes('ACA') && 'acapela' in app.providerLive, rep.seats);
+check('Pip/Merra registry seats untouched', !('PIP' in app.castMap) && !('MERRA' in app.castMap));
+
+reset({ acapela: 'key' });
+app.allVoices = [...fullPool, ...ACA];
+rep = await app.autoCastSpeakers(auditionCast);
+check('Acapela dark: PIP AS HARRY -> Narrator', seatId('PIP AS HARRY') === NARR, seatId('PIP AS HARRY'));
+check('Acapela dark: MERRA AS ROSIE -> Narrator', seatId('MERRA AS ROSIE') === NARR, seatId('MERRA AS ROSIE'));
+check('Acapela dark reported in the status line', rep.dark.join().includes('ACA'), rep.dark.join());
+
+reset({});
+app.allVoices = [...fullPool, ...ACA];
+app.castMap = { 'PIP AS HARRY': { provider: 'polly', voiceId: 'Matthew' } };   // stale adult seat
+rep = await app.autoCastSpeakers(auditionCast);
+check('stale adult seat on an AS tag is replaced by the named voice', seatId('PIP AS HARRY') === 'acapela||Harry22k_NT', seatId('PIP AS HARRY'));
+check('correct AS seat is not churned on the next load', (await app.autoCastSpeakers(auditionCast)).reseated === 0);
 
 console.log('\n' + (fails ? fails + ' FAILURE(S)' : 'all checks passed'));
 process.exit(fails ? 1 : 0);
