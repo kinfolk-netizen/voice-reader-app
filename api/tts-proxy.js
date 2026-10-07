@@ -93,6 +93,11 @@ exports.handler = async (event, context) => {
         apiKey = process.env.SPEECHIFY_API_KEY;
         apiEndpoint = 'https://api.speechify.ai/v1/audio/speech';
         break;
+      case 'polly':
+        // AWS access key id gates the shared "key not configured" check below;
+        // the matching secret is validated inside the Polly branch (SDK v3).
+        apiKey = process.env.AWS_POLLY_ACCESS_KEY_ID;
+        break;
       case 'local':
         // Local provider doesn't need API key
         return {
@@ -137,8 +142,40 @@ exports.handler = async (event, context) => {
 
     // Make request to TTS provider
     let response;
-    
-    if (providerId === 'openai') {
+    let audioBase64;          // set by every provider branch (or the shared JSON/bytes path)
+    let speechMarks = null;   // real word timings when a provider returns them
+
+    if (providerId === 'polly') {
+      // Amazon Polly via AWS SDK v3. Credentials come from Netlify env vars
+      // (AWS_POLLY_ACCESS_KEY_ID / _SECRET_ACCESS_KEY / _REGION) and never reach
+      // the browser. Neural engine, mp3. Plain text is wrapped in <speak> (XML-
+      // escaped); text that is already SSML is passed through untouched. This is
+      // the clean slot the next adapters (Acapela, Azure) mirror.
+      if (!process.env.AWS_POLLY_SECRET_ACCESS_KEY) {
+        return {
+          statusCode: 401,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          body: JSON.stringify({ success: false, error: 'AWS_POLLY_SECRET_ACCESS_KEY not configured' })
+        };
+      }
+      const { PollyClient, SynthesizeSpeechCommand } = require('@aws-sdk/client-polly');
+      const client = new PollyClient({
+        region: process.env.AWS_POLLY_REGION || 'us-east-1',
+        credentials: {
+          accessKeyId: process.env.AWS_POLLY_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_POLLY_SECRET_ACCESS_KEY
+        }
+      });
+      const out = await client.send(new SynthesizeSpeechCommand({
+        OutputFormat: 'mp3',
+        Text: toPollySSML(text),
+        TextType: 'ssml',
+        VoiceId: voice,
+        Engine: options.engine || 'neural'
+      }));
+      const audioBuffer = await streamToBuffer(out.AudioStream);
+      audioBase64 = audioBuffer.toString('base64');
+    } else if (providerId === 'openai') {
       response = await fetch(apiEndpoint, {
         method: 'POST',
         headers: {
@@ -308,6 +345,9 @@ exports.handler = async (event, context) => {
       }
     }
 
+    // Shared response handling for the fetch-based providers. Polly set
+    // audioBase64 directly via the SDK above and skips this entire block.
+    if (providerId !== 'polly') {
     // Check response
     if (!response.ok) {
       const errorText = await response.text();
@@ -328,8 +368,6 @@ exports.handler = async (event, context) => {
     // Get audio data.
     // Speechify returns JSON ({ audio_data: <base64>, speech_marks: {...} });
     // OpenAI / ElevenLabs return raw audio bytes.
-    let audioBase64;
-    let speechMarks = null;
     const contentType = response.headers.get('content-type') || '';
     if (providerId === 'speechify' || contentType.includes('application/json')) {
       const json = await response.json();
@@ -401,12 +439,15 @@ exports.handler = async (event, context) => {
       const audioBuffer = await response.arrayBuffer();
       audioBase64 = Buffer.from(audioBuffer).toString('base64');
     }
+    } // end non-polly shared response handling
 
-    // Calculate cost (speechify: ~$10 per 1M chars at Starter overage rates)
+    // Calculate cost (speechify: ~$10 per 1M chars at Starter overage rates;
+    // polly neural: ~$16 per 1M chars)
     const costPerChar =
       providerId === 'openai' ? 0.000015 :
       providerId === 'speechify' ? 0.00001 :
       providerId === 'azure' ? 0.000016 :
+      providerId === 'polly' ? 0.000016 :
       0.00003;
     const estimatedCost = text.length * costPerChar;
 
@@ -445,6 +486,36 @@ exports.handler = async (event, context) => {
     };
   }
 };
+
+// ============================================================================
+// JOB 1 — Amazon Polly adapter helpers
+// ============================================================================
+
+// Wrap plain text in <speak> (XML-escaped) so Polly always receives SSML. Text
+// that is ALREADY SSML (starts with a <speak> tag) is passed through untouched,
+// so dramatized lines that carry their own <break>/<prosody> keep working.
+function toPollySSML(text) {
+  const t = String(text == null ? '' : text);
+  if (/^\s*<speak[\s>]/i.test(t)) return t;
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+  return '<speak>' + esc(t) + '</speak>';
+}
+exports._toPollySSML = toPollySSML;
+
+// Collect an AWS SDK v3 AudioStream into a Buffer. Newer SDKs expose
+// transformToByteArray(); fall back to async iteration otherwise.
+async function streamToBuffer(stream) {
+  if (!stream) return Buffer.alloc(0);
+  if (typeof stream.transformToByteArray === 'function') {
+    return Buffer.from(await stream.transformToByteArray());
+  }
+  const chunks = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+}
+exports._streamToBuffer = streamToBuffer;
 
 // v2.20: ElevenLabs character alignment -> word-level speech marks.
 // Groups characters into words at whitespace; each word yields

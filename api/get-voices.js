@@ -81,6 +81,35 @@ exports.handler = async (event, context) => {
         supportsBoundaries: true, // real word timings via speech marks
         tier: 'premium',
         voices: [] // Fetched dynamically with API key
+      },
+      polly: {
+        providerId: 'polly',
+        providerName: 'Amazon Polly',
+        supportsBoundaries: false, // mp3 synthesis only; reader estimates highlighting
+        tier: 'premium',
+        // en-US / en-GB neural catalogue. Amazon tags Ivy, Justin and Kevin as
+        // child voices (that is why the twins and Auren are cast on them); the
+        // rest are adult. Catalogue is stable, so it is served without an API
+        // call (DescribeVoices would need the AWS credentials).
+        voices: [
+          { id: 'Ivy',      label: 'Ivy — child female · American',     name: 'Ivy',      gender: 'female', age: 'child', locale: 'en-US' },
+          { id: 'Justin',   label: 'Justin — child male · American',     name: 'Justin',   gender: 'male',   age: 'child', locale: 'en-US' },
+          { id: 'Kevin',    label: 'Kevin — child male · American',      name: 'Kevin',    gender: 'male',   age: 'child', locale: 'en-US' },
+          { id: 'Joanna',   label: 'Joanna — adult female · American',   name: 'Joanna',   gender: 'female', age: 'adult', locale: 'en-US' },
+          { id: 'Kendra',   label: 'Kendra — adult female · American',   name: 'Kendra',   gender: 'female', age: 'adult', locale: 'en-US' },
+          { id: 'Kimberly', label: 'Kimberly — adult female · American', name: 'Kimberly', gender: 'female', age: 'adult', locale: 'en-US' },
+          { id: 'Salli',    label: 'Salli — adult female · American',    name: 'Salli',    gender: 'female', age: 'adult', locale: 'en-US' },
+          { id: 'Ruth',     label: 'Ruth — adult female · American',     name: 'Ruth',     gender: 'female', age: 'adult', locale: 'en-US' },
+          { id: 'Danielle', label: 'Danielle — adult female · American', name: 'Danielle', gender: 'female', age: 'adult', locale: 'en-US' },
+          { id: 'Joey',     label: 'Joey — adult male · American',       name: 'Joey',     gender: 'male',   age: 'adult', locale: 'en-US' },
+          { id: 'Matthew',  label: 'Matthew — adult male · American',    name: 'Matthew',  gender: 'male',   age: 'adult', locale: 'en-US' },
+          { id: 'Stephen',  label: 'Stephen — adult male · American',    name: 'Stephen',  gender: 'male',   age: 'adult', locale: 'en-US' },
+          { id: 'Gregory',  label: 'Gregory — adult male · American',    name: 'Gregory',  gender: 'male',   age: 'adult', locale: 'en-US' },
+          { id: 'Amy',      label: 'Amy — adult female · British',       name: 'Amy',      gender: 'female', age: 'adult', locale: 'en-GB' },
+          { id: 'Emma',     label: 'Emma — adult female · British',      name: 'Emma',     gender: 'female', age: 'adult', locale: 'en-GB' },
+          { id: 'Brian',    label: 'Brian — adult male · British',       name: 'Brian',    gender: 'male',   age: 'adult', locale: 'en-GB' },
+          { id: 'Arthur',   label: 'Arthur — adult male · British',      name: 'Arthur',   gender: 'male',   age: 'adult', locale: 'en-GB' }
+        ]
       }
     };
 
