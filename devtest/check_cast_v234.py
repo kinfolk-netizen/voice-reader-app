@@ -19,7 +19,7 @@ print('registry characters:', len(d['characters']))
 print('registry collisions:', dups or 'none')
 print('voiceless (Narrator if child, else score-matched):', voiceless or 'none')
 
-# v1.12 canon (Pip / Merra / Auren locked by ear 2026-10-07)
+# v1.13 canon (Pip / Merra / Auren locked by ear 2026-10-07; Lira -> Ivy, The Man added)
 row = {c['name']: c for c in d['characters']}
 def seat(n):
     v = row[n].get('voice')
@@ -28,10 +28,14 @@ canon_fail = []
 def expect(label, cond):
     print(('  ok    ' if cond else '  FAIL  ') + label)
     if not cond: canon_fail.append(label)
-expect("version 1.12-kids-locked", d.get('version') == '1.12-kids-locked')
+expect("version 1.13-lira-ivy-the-man", d.get('version') == '1.13-lira-ivy-the-man')
 expect("Ka'el -> polly/Kevin, locked", seat("Ka'el") == ('polly', 'Kevin') and row["Ka'el"].get('locked'))
 expect("Junia -> polly/Justin, locked", seat('Junia') == ('polly', 'Justin') and row['Junia'].get('locked'))
-expect("Lira -> speechify/linda, locked", seat('Lira') == ('speechify', 'linda') and row['Lira'].get('locked'))
+expect("Lira -> polly/Ivy, locked, child", seat('Lira') == ('polly', 'Ivy') and row['Lira'].get('locked') and row['Lira']['age'] == 'child')
+expect("The Man -> speechify/jaime, locked, adult male en-GB, alias THE MAN",
+       seat('The Man') == ('speechify', 'jaime') and row['The Man'].get('locked')
+       and (row['The Man']['age'], row['The Man']['gender'], row['The Man']['accent']) == ('adult', 'male', 'en-GB')
+       and row['The Man']['aliases'] == ['THE MAN'])
 expect("Pip -> azure/en-US-AnaNeural, locked, child", seat('Pip') == ('azure', 'en-US-AnaNeural') and row['Pip'].get('locked') and row['Pip']['age'] == 'child')
 expect("Merra -> azure/en-GB-MaisieNeural, locked, child", seat('Merra') == ('azure', 'en-GB-MaisieNeural') and row['Merra'].get('locked') and row['Merra']['age'] == 'child')
 expect("Auren -> speechify/joe, locked, teen", seat('Auren') == ('speechify', 'joe') and row['Auren'].get('locked') and row['Auren']['age'] == 'teen')
@@ -39,9 +43,11 @@ expect("Malakai -> speechify/cleon", seat('Malakai') == ('speechify', 'cleon'))
 expect("Auren keeps aliases AUREN / THE WATCHER", {'AUREN', 'THE WATCHER'} <= set(row['Auren']['aliases']))
 expect("elder Watcher row has no THE WATCHER alias", not any(a.upper() == 'THE WATCHER' for a in row['Watcher']['aliases']))
 reserved = {c['voice']['voiceId'] for c in d['characters'] if c.get('locked') and c.get('voice')}
-expect("reserved set = Justin, Kevin, linda, Ana, Maisie, joe",
-       reserved == {'Justin', 'Kevin', 'linda', 'en-US-AnaNeural', 'en-GB-MaisieNeural', 'joe'})
-expect("polly/Ivy is nobody's voice (back in the pool)", not any(c.get('voice') and c['voice']['voiceId'] == 'Ivy' for c in d['characters']))
+expect("reserved set = Justin, Kevin, Ivy, Ana, Maisie, joe, jaime",
+       reserved == {'Justin', 'Kevin', 'Ivy', 'en-US-AnaNeural', 'en-GB-MaisieNeural', 'joe', 'jaime'})
+expect("speechify/linda is nobody's voice (back in the pool)", not any(c.get('voice') and c['voice']['voiceId'] == 'linda' for c in d['characters']))
+expect("polly/Ivy is Lira's alone", [c['name'] for c in d['characters'] if c.get('voice') and c['voice']['voiceId'] == 'Ivy'] == ['Lira'])
+expect("jaime is The Man's alone", [c['name'] for c in d['characters'] if c.get('voice') and c['voice']['voiceId'] == 'jaime'] == ['The Man'])
 expect("no evie/rory anywhere", not any(c.get('voice') and c['voice']['voiceId'] in ('evie', 'rory') for c in d['characters']))
 
 h = open('public/index.html', encoding='utf-8').read()

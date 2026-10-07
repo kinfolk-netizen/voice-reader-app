@@ -1,5 +1,5 @@
 {
-  "version": "1.12-kids-locked",
+  "version": "1.13-lira-ivy-the-man",
   "regions": {
     "eirenos": { "label": "Eirenos native", "accent": "en-GB" },
     "foreign": { "label": "Foreigner (twins' homeland)", "accent": "en-US" },
@@ -11,9 +11,10 @@
     { "name": "Junia", "aliases": [], "region": "foreign", "gender": "female", "age": "child", "accent": "en-US", "locked": true, "voice": { "provider": "polly", "voiceId": "Justin" } },
     { "name": "Ka'el", "aliases": ["Kael", "KA’EL", "KAEL"], "region": "foreign", "gender": "male", "age": "child", "accent": "en-US", "locked": true, "voice": { "provider": "polly", "voiceId": "Kevin" } },
     { "name": "Auren", "aliases": ["AUREN", "THE WATCHER", "The Watcher"], "region": "foreign", "gender": "male", "age": "teen", "accent": "en-US", "locked": true, "voice": { "provider": "speechify", "voiceId": "joe" } },
-    { "name": "Lira", "aliases": [], "region": "foreign", "gender": "female", "age": "child", "accent": "en-US", "locked": true, "voice": { "provider": "speechify", "voiceId": "linda" } },
+    { "name": "Lira", "aliases": [], "region": "foreign", "gender": "female", "age": "child", "accent": "en-US", "locked": true, "voice": { "provider": "polly", "voiceId": "Ivy" } },
     { "name": "Pip", "aliases": [], "region": "eirenos", "gender": "male", "age": "child", "accent": "en-GB", "locked": true, "voice": { "provider": "azure", "voiceId": "en-US-AnaNeural" } },
     { "name": "Merra", "aliases": [], "region": "eirenos", "gender": "female", "age": "child", "accent": "en-GB", "locked": true, "voice": { "provider": "azure", "voiceId": "en-GB-MaisieNeural" } },
+    { "name": "The Man", "aliases": ["THE MAN"], "region": "eirenos", "gender": "male", "age": "adult", "accent": "en-GB", "locked": true, "voice": { "provider": "speechify", "voiceId": "jaime" } },
     { "name": "Mother", "aliases": [], "region": "foreign", "gender": "female", "age": "adult", "accent": "en-US", "voice": { "provider": "speechify", "voiceId": "imogen_32" } },
     { "name": "Viell", "aliases": [], "region": "eirenos", "gender": "male", "age": "senior", "accent": "en-GB", "voice": { "provider": "elevenlabs", "voiceId": "onwK4e9ZLuTAKqWW03F9" } },
     { "name": "Father Silas", "aliases": ["KEEPER ELDER", "Keeper Elder"], "region": "eirenos", "gender": "male", "age": "senior", "accent": "en-GB", "voice": { "provider": "elevenlabs", "voiceId": "JBFqnCBsd6RMkjVDRZzb" } },

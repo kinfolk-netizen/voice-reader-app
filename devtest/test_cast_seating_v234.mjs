@@ -172,7 +172,7 @@ check('nothing re-seated', rep.reseated === 0);
 // ---- 6. saga characters still get their registry voices ---------------
 console.log('\n6. a saga script — registry voices, no bench interference');
 reset({});
-const saga = ['NARRATOR', 'JUNIA', "KA'EL", 'PIP', 'MERRA', 'AUREN', 'THE WATCHER', 'MAREN'];
+const saga = ['NARRATOR', 'JUNIA', "KA'EL", 'PIP', 'MERRA', 'AUREN', 'THE WATCHER', 'LIRA', 'THE MAN', 'MAREN'];
 rep = await app.autoCastSpeakers(saga);
 check('Narrator -> john-rhys-davies', app.castMap.NARRATOR.voiceId === 'john-rhys-davies');
 check("Junia -> polly/Justin (v1.10 recast by ear)",
@@ -184,7 +184,11 @@ check('Merra -> azure/en-GB-MaisieNeural (1.12 locked by ear)', app.castMap.MERR
 check('Auren -> speechify/joe (1.12 locked by ear)', app.castMap.AUREN.provider === 'speechify' && app.castMap.AUREN.voiceId === 'joe');
 check('THE WATCHER resolves to the Auren row', (app.registryLookup('THE WATCHER') || {}).name === 'Auren');
 check('THE WATCHER -> speechify/joe', app.castMap['THE WATCHER'].provider === 'speechify' && app.castMap['THE WATCHER'].voiceId === 'joe');
-check('nobody seated on polly/Ivy (back in the pool)', !saga.some(s => app.castMap[s].voiceId === 'Ivy'));
+check('Lira -> polly/Ivy (1.13 locked)', app.castMap.LIRA.provider === 'polly' && app.castMap.LIRA.voiceId === 'Ivy');
+check('The Man -> speechify/jaime (1.13 locked)', app.castMap['THE MAN'].provider === 'speechify' && app.castMap['THE MAN'].voiceId === 'jaime');
+check('only Lira on Ivy, only The Man on jaime',
+  saga.filter(s => app.castMap[s].voiceId === 'Ivy').join() === 'LIRA' && saga.filter(s => app.castMap[s].voiceId === 'jaime').join() === 'THE MAN');
+check('nobody seated on speechify/linda (back in the pool)', !saga.some(s => app.castMap[s].voiceId === 'linda'));
 check('Maren still gets her panel bench voice', app.castMap.MAREN.voiceId === 'cgSgspJ2msm6clMCkdW9');
 
 // ---- 7. unknown speaker gets score-matched, never left blank ----------
@@ -282,7 +286,7 @@ const aurenTags = {
   'AUREN AS WILL': 'elevenlabs||bIHbv24MWmeRgasZH58o',
 };
 const asCast = ['NARRATOR', ...Object.keys(aurenTags), 'PIP AS ARCHIE', 'MERRA AS WILL', 'PIP AS KEVIN', 'AUREN AS JUSTIN',
-  'AUREN AS CLEON', 'MERRA AS LINDA'];
+  'AUREN AS CLEON', 'MERRA AS IVY', 'MERRA AS LINDA'];
 
 reset({});
 app.allVoices = [...fullPool, ...SPX_YOUNG, EL_WILL, ...ACA2];
@@ -293,7 +297,8 @@ check('MERRA AS WILL -> elevenlabs young Will, never the adult Acapela Will', se
 check('PIP AS KEVIN (reserved canon) -> Narrator', seatId('PIP AS KEVIN') === NARR, seatId('PIP AS KEVIN'));
 check('AUREN AS JUSTIN (reserved canon) -> Narrator', seatId('AUREN AS JUSTIN') === NARR, seatId('AUREN AS JUSTIN'));
 check("AUREN AS CLEON (Malakai's registry voice) -> Narrator", seatId('AUREN AS CLEON') === NARR, seatId('AUREN AS CLEON'));
-check("MERRA AS LINDA (Lira's locked voice) -> Narrator", seatId('MERRA AS LINDA') === NARR, seatId('MERRA AS LINDA'));
+check("MERRA AS IVY (Lira's locked voice since 1.13) -> Narrator", seatId('MERRA AS IVY') === NARR, seatId('MERRA AS IVY'));
+check('MERRA AS LINDA (back in the pool since 1.13) -> speechify/linda', seatId('MERRA AS LINDA') === 'speechify||linda', seatId('MERRA AS LINDA'));
 check('no AS tag seated on adult Acapela Will', !asCast.some(s => seatId(s) === 'acapela||Will22k_NT'));
 check('correct cross-provider AS seats not churned on reload', (await app.autoCastSpeakers(asCast)).reseated === 0);
 

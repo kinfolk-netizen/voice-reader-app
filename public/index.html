@@ -2688,7 +2688,7 @@ async loadDynamicVoices(providerId) {
 
                 // Locked canon voices are reserved — never handed to another
                 // character by score-match (Kevin/Justin for the twins, Ana/Maisie
-                // for Pip/Merra, joe for Auren, linda for Lira). The locked character still gets its own voice in
+                // for Pip/Merra, joe for Auren, Ivy for Lira, jaime for The Man). The locked character still gets its own voice in
                 // Pass 1; this only withholds those voices from the Pass 2 guesser.
                 const reserved = new Set();
                 for (const c of ((this.registry && this.registry.characters) || [])) {

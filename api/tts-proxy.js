@@ -13,6 +13,40 @@
 // Both degrade gracefully to today's behavior when unconfigured.
 const LEXICON = require('../public/score/saga-lexicon.json');
 
+// Job 3 (2026-10-07 roll call): PRONUNCIATION at the transmit layer, per provider.
+// Applied here, server-side, to the text SENT to the provider only — the displayed
+// text, manuscript, dramatized copies, cache keys (hashed client-side on the
+// original text) and highlighting never see it. Edit this table to tune by ear.
+//   providers: where the fix applies. polly/azure get SSML
+//     <phoneme alphabet='ipa' ph='…'>Name</phoneme> (after XML-escaping, inside
+//     <speak>). speechify has no <phoneme> (docs: only break / prosody rate / sub
+//     are applied), so it gets `respell` — same length as the name, so Speechify's
+//     word marks still index the original text 1:1. ElevenLabs is never touched.
+// Matching: longest-first, whole word, case-insensitive, ' or ’ apostrophes,
+// possessives keep the 's outside the phoneme (Ka'el's).
+// Polly neural honours <phoneme> (AWS "Supported SSML tags": phoneme = neural yes),
+// so Polly gets IPA. Its en-US phoneme set (Kevin/Justin/Ivy) has no length mark,
+// and nor does Azure's en-US set (Ana), so 'ː' is stripped for polly and for
+// non-en-GB azure voices; Maisie (en-GB) keeps it. If a name still comes out wrong
+// by ear on a provider, give that entry a `respell` (Kawel / Joonia / Oren) plus
+// `respellOn: ['polly']` (that provider respells instead of phoneme) — note it here.
+// In use: Ka'el on Polly respells 'Kaw-el' (picked by ear 2026-10-07 from V1-V5
+// clips); Azure keeps the phoneme.
+const PRONUNCIATION_ENABLED = true;
+const PRONUNCIATION = [
+  // Kevin/Justin said 'kale', Maisie 'Kay-el', Ana 'Kyle'. Speechify says it right.
+  // Polly (Kevin/Justin/Ivy): respelling 'Kaw-el', chosen by ear over the phoneme.
+  { name: "Ka'el", ipa: 'ˈkɔː.ɛl',     providers: ['polly', 'azure'], respell: 'Kaw-el', respellOn: ['polly'] },
+  // Kevin said 'Aaron'.
+  { name: 'Auren', ipa: 'ˈɔː.rən',     providers: ['polly', 'azure'] },
+  // Kevin said 'yoonia'.
+  { name: 'Junia', ipa: 'ˈdʒuː.ni.ə',  providers: ['polly', 'azure'] },
+  // Narrator john-rhys-davies said 'Sealis'.
+  { name: 'Silas', ipa: 'ˈsaɪ.ləs',    providers: ['speechify', 'polly', 'azure'], respell: 'Sylus' }
+];
+const PHONEME_PROVIDERS = ['polly', 'azure'];
+const RESPELL_PROVIDERS = ['speechify'];
+
 exports.handler = async (event, context) => {
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
@@ -340,6 +374,9 @@ exports.handler = async (event, context) => {
           withinLineBreaks = true;
         }
       }
+      // Job 3: per-provider pronunciation (same-length respellings, so the marks
+      // above/below need no remap). Applied last, to whatever is actually sent.
+      speechifyInput = pronounce(speechifyInput, 'speechify');
       // Speechify hard limit: 2000 chars per request (frontend chunks well below this)
       if (speechifyInput.length > 2000) {
         return {
@@ -540,27 +577,97 @@ exports.handler = async (event, context) => {
 // Wrap plain text in <speak> (XML-escaped) so Polly always receives SSML. Text
 // that is ALREADY SSML (starts with a <speak> tag) is passed through untouched,
 // so dramatized lines that carry their own <break>/<prosody> keep working.
+// Job 3: the PRONUNCIATION table is then applied to the SSML's text nodes.
 function toPollySSML(text) {
   const t = String(text == null ? '' : text);
-  if (/^\s*<speak[\s>]/i.test(t)) return t;
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
-  return '<speak>' + esc(t) + '</speak>';
+  const ssml = /^\s*<speak[\s>]/i.test(t) ? t : '<speak>' + esc(t) + '</speak>';
+  return pronounce(ssml, 'polly');
 }
 exports._toPollySSML = toPollySSML;
 
 // Azure SSML: <speak> needs version + xml:lang and the text must sit inside a
 // <voice name>. Locale comes from the ShortName prefix (en-GB-MaisieNeural ->
-// en-GB). Text that is already SSML passes through untouched.
+// en-GB). Text that is already SSML passes through untouched (Job 3: apart from
+// the PRONUNCIATION table, applied to its text nodes).
 function toAzureSSML(text, voiceId) {
   const t = String(text == null ? '' : text);
-  if (/^\s*<speak[\s>]/i.test(t)) return t;
+  if (/^\s*<speak[\s>]/i.test(t)) {
+    const lang = t.match(/xml:lang\s*=\s*['"]([^'"]+)['"]/i);
+    return pronounce(t, 'azure', lang ? lang[1] : String(voiceId || ''));
+  }
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
   const v = String(voiceId || 'en-US-AnaNeural');
   const m = v.match(/^([a-z]{2,3}-[A-Z]{2})-/);
   const locale = m ? m[1] : 'en-US';
-  return `<speak version='1.0' xml:lang='${locale}'><voice name='${esc(v)}'>${esc(t)}</voice></speak>`;
+  return `<speak version='1.0' xml:lang='${locale}'><voice name='${esc(v)}'>${pronounce(esc(t), 'azure', locale)}</voice></speak>`;
 }
 exports._toAzureSSML = toAzureSSML;
+
+// ============================================================================
+// JOB 3 — pronunciation at the transmit layer (table at the top of this file)
+// ============================================================================
+
+// Name -> regex source matching it raw or XML-escaped: ' and ’ apostrophes, plus
+// &apos; / &#39; once escaped. Letter-only boundaries, so "Ka'el's" matches
+// "Ka'el" (the 's stays outside) and "Silasa" doesn't match "Silas".
+function _pronSource(name) {
+  return name.split(/['’]/)
+    .map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join("(?:'|’|&apos;|&#39;|&#x27;)");
+}
+let _pronRe = null;
+function pronRe() {
+  if (_pronRe) return _pronRe;
+  const entries = PRONUNCIATION.slice().sort((a, b) => b.name.length - a.name.length);
+  _pronRe = {
+    re: new RegExp('(?<![A-Za-z])(' + entries.map(e => _pronSource(e.name)).join('|') + ')(?![A-Za-z])', 'gi'),
+    find: (hit) => {
+      const k = hit.replace(/&apos;|&#39;|&#x27;|’/gi, "'").toLowerCase();
+      return entries.find(e => e.name.replace(/’/g, "'").toLowerCase() === k) || null;
+    }
+  };
+  return _pronRe;
+}
+
+// Apply the PRONUNCIATION table for one provider.
+//   polly/azure: `s` is SSML (already escaped, inside <speak>); only text nodes are
+//     touched, and text already inside a <phoneme> or <sub> is left alone, so a
+//     second pass (or a line that carries its own phoneme) never double-wraps.
+//   speechify: plain or SSML; names are swapped for their same-length respelling.
+//   anything else (elevenlabs, openai, acapela): returned unchanged.
+// `locale` (azure only) keeps the IPA length mark for en-GB voices; see the table.
+function pronounce(s, provider, locale) {
+  const str = String(s == null ? '' : s);
+  if (!PRONUNCIATION_ENABLED) return str;
+  const phon = PHONEME_PROVIDERS.includes(provider);
+  const resp = RESPELL_PROVIDERS.includes(provider);
+  if (!phon && !resp) return str;
+  const { re, find } = pronRe();
+  let depth = 0;   // >0 while inside <phoneme>/<sub>
+  return str.split(/(<[^>]*>)/).map(part => {
+    if (part.startsWith('<')) {
+      if (/^<\s*(phoneme|sub)\b/i.test(part) && !/\/\s*>$/.test(part)) depth++;
+      else if (/^<\s*\/\s*(phoneme|sub)\s*>$/i.test(part)) depth = Math.max(0, depth - 1);
+      return part;
+    }
+    if (depth) return part;
+    return part.replace(re, (hit) => {
+      const e = find(hit);
+      if (!e || !e.providers.includes(provider)) return hit;
+      if (phon && !(e.respellOn || []).includes(provider)) {
+        const keepLength = provider === 'azure' && /^en-GB/i.test(String(locale || ''));
+        const ph = keepLength ? e.ipa : e.ipa.replace(/ː/g, '');
+        return `<phoneme alphabet='ipa' ph='${ph}'>${hit}</phoneme>`;
+      }
+      // on Speechify a respelling must keep the name's length so its marks stay aligned
+      if (!e.respell || (resp && e.respell.length !== hit.length)) return hit;
+      return hit === hit.toUpperCase() ? e.respell.toUpperCase() : e.respell;
+    });
+  }).join('');
+}
+exports._pronounce = pronounce;
+exports._PRONUNCIATION = PRONUNCIATION;
 
 // Collect an AWS SDK v3 AudioStream into a Buffer. Newer SDKs expose
 // transformToByteArray(); fall back to async iteration otherwise.
