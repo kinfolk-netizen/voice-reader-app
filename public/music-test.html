@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music + Voice Test</title>
+<style>
+  :root { --bg:#14161b; --card:#1e2128; --ink:#e9e6df; --mute:#9aa0aa; --acc:#d9a441; --bad:#e0645c; --ok:#6cc08b; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--ink); font:16px/1.45 -apple-system, system-ui, sans-serif; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  p.lead { color:var(--mute); margin:0 0 16px; font-size:14px; }
+  .card { background:var(--card); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .card h2 { font-size:15px; margin:0 0 10px; color:var(--acc); }
+  button { font:inherit; padding:10px 14px; border-radius:10px; border:0; background:#2d323c; color:var(--ink); margin:4px 6px 4px 0; }
+  button.main { background:var(--acc); color:#1a1a1a; font-weight:600; }
+  label { display:block; margin:6px 0; }
+  input[type=range] { width:100%; }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .small { font-size:13px; color:var(--mute); }
+  #log { font:12px/1.4 ui-monospace, Menlo, monospace; white-space:pre-wrap; max-height:260px; overflow:auto; background:#0e1014; padding:8px; border-radius:8px; }
+  .bad { color:var(--bad); } .ok { color:var(--ok); }
+  ol { padding-left:20px; margin:6px 0; } li { margin:4px 0; }
+</style>
+</head>
+<body>
+<h1>Music + Voice Test</h1>
+<p class="lead">A test page for Witness Reader. It checks one thing: does the reading voice stop your music on this iPhone?</p>
+
+<div class="card">
+  <h2>How to test (about 3 minutes)</h2>
+  <ol>
+    <li>Tap <b>Pick a music file</b> and choose an MP3 or M4A from Files.</li>
+    <li>Tap <b>Play music</b>. Move the music slider to about 30%.</li>
+    <li>Tap <b>Cloud voice</b> (the Polly voice the reader uses). Does the music keep playing under it?</li>
+    <li>Tap <b>Device voice</b> (the iPhone's own voice). Same question.</li>
+    <li>Lock the phone for 20 seconds. Does the music keep going?</li>
+    <li>Tap <b>Copy results</b> and paste them to Claude.</li>
+  </ol>
+  <p class="small">If the music stops, try again with the other <b>Music engine</b>, then the other <b>Audio mode</b>.</p>
+</div>
+
+<div class="card">
+  <h2>Music</h2>
+  <input type="file" id="file" accept="audio/*" style="display:none">
+  <button class="main" id="pick">Pick a music file</button>
+  <div class="small" id="fname">No file yet.</div>
+  <div class="row">
+    <button id="mplay">Play music</button>
+    <button id="mpause">Pause music</button>
+  </div>
+  <label>Music volume: <span id="mvolv">30%</span>
+    <input type="range" id="mvol" min="0" max="100" value="30"></label>
+  <label class="small">Music engine:
+    <select id="engine">
+      <option value="element">A: audio player + volume node (lock-screen controls)</option>
+      <option value="buffer">B: Web Audio only (fallback)</option>
+    </select></label>
+  <label class="small">Audio mode:
+    <select id="mode">
+      <option value="playback">playback (keeps playing when locked)</option>
+      <option value="ambient">ambient (the reader's current "mix" box)</option>
+      <option value="auto">auto (iPhone default)</option>
+    </select></label>
+</div>
+
+<div class="card">
+  <h2>Voice</h2>
+  <div class="row">
+    <button class="main" id="vcloud">Cloud voice</button>
+    <button id="vdevice">Device voice</button>
+  </div>
+  <p class="small">The cloud voice plays a short line from Polly through the site's own voice service, the same way the reader does. Keep the iPhone volume buttons for the voice; the slider above is for the music.</p>
+</div>
+
+<div class="card">
+  <h2>What happened</h2>
+  <div id="log"></div>
+  <button class="main" id="copy">Copy results</button>
+  <button id="clear">Clear</button>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const T0 = Date.now();
+  const lines = [];
+  function log(msg, cls) {
+    const t = ((Date.now() - T0) / 1000).toFixed(1).padStart(6) + 's  ';
+    lines.push(t + msg);
+    const d = document.createElement('div');
+    d.textContent = t + msg; if (cls) d.className = cls;
+    $('log').appendChild(d); $('log').scrollTop = 1e9;
+  }
+
+  let ctx = null, gain = null, file = null;
+  let el = null, elNode = null;            // engine A
+  let buf = null, src = null, bufStartedAt = 0, bufOffset = 0, bufPlaying = false; // engine B
+  let userPaused = false, voiceBusy = false;
+  const engine = () => $('engine').value;
+
+  function ensureCtx() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      ctx = new AC();
+      gain = ctx.createGain();
+      gain.gain.value = $('mvol').value / 100;
+      gain.connect(ctx.destination);
+      ctx.onstatechange = () => log('Web Audio is now: ' + ctx.state, ctx.state === 'running' ? 'ok' : 'bad');
+    }
+    if (ctx.state !== 'running') ctx.resume().catch(e => log('resume failed: ' + e.message, 'bad'));
+  }
+
+  function setMode() {
+    const m = $('mode').value;
+    if ('audioSession' in navigator) {
+      try { navigator.audioSession.type = m; log('Audio mode set to "' + navigator.audioSession.type + '"'); }
+      catch (e) { log('Audio mode failed: ' + e.message, 'bad'); }
+    } else log('This browser has no audio mode setting (navigator.audioSession missing)');
+  }
+
+  function musicPlaying() {
+    if (engine() === 'element') return !!(el && !el.paused);
+    return bufPlaying && ctx && ctx.state === 'running';
+  }
+  function musicPos() {
+    if (engine() === 'element') return el ? el.currentTime : 0;
+    return ctx ? ctx.currentTime : 0;
+  }
+
+  $('pick').onclick = () => { ensureCtx(); $('file').click(); };
+  $('file').onchange = async e => {
+    file = e.target.files[0]; if (!file) return;
+    $('fname').textContent = file.name + ' (' + (file.size / 1048576).toFixed(1) + ' MB)';
+    log('Picked: ' + file.name);
+    stopMusic(); buf = null;
+    if (el) { el.src = URL.createObjectURL(file); }
+  };
+
+  function buildElement() {
+    if (el) return;
+    el = new Audio(); el.loop = true; el.preload = 'auto';
+    el.setAttribute('playsinline', '');
+    if (file) el.src = URL.createObjectURL(file);
+    elNode = ctx.createMediaElementSource(el);
+    elNode.connect(gain);
+    el.addEventListener('play', () => log('Music: playing', 'ok'));
+    el.addEventListener('pause', () => {
+      if (userPaused) log('Music: paused (by you)');
+      else log('MUSIC PAUSED - not by you' + (voiceBusy ? ' (while the voice was speaking)' : ''), 'bad');
+    });
+    el.addEventListener('ended', () => log('Music: ended'));
+    el.addEventListener('stalled', () => log('Music: stalled', 'bad'));
+  }
+
+  function setMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({ title: file ? file.name.replace(/\.[^.]+$/, '') : 'Music', artist: 'Witness Reader music test' });
+      navigator.mediaSession.setActionHandler('play', () => playMusic());
+      navigator.mediaSession.setActionHandler('pause', () => pauseMusic());
+    } catch (e) {}
+  }
+
+  async function playMusic() {
+    if (!file) { log('Pick a music file first.', 'bad'); return; }
+    ensureCtx(); userPaused = false;
+    if (engine() === 'element') {
+      buildElement();
+      try { await el.play(); setMediaSession(); } catch (e) { log('Play failed: ' + e.message, 'bad'); }
+    } else {
+      if (!buf) {
+        log('Decoding the file for Web Audio...');
+        try { buf = await ctx.decodeAudioData(await file.arrayBuffer()); }
+        catch (e) { log('Could not decode: ' + e.message, 'bad'); return; }
+      }
+      src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; src.connect(gain);
+      src.start(0, bufOffset % buf.duration); bufStartedAt = ctx.currentTime - bufOffset; bufPlaying = true;
+      log('Music (Web Audio only): playing', 'ok');
+    }
+  }
+  function pauseMusic() {
+    userPaused = true;
+    if (el && !el.paused) el.pause();
+    if (src && bufPlaying) { try { src.stop(); } catch (e) {} bufOffset = ctx.currentTime - bufStartedAt; bufPlaying = false; log('Music (Web Audio only): paused (by you)'); }
+  }
+  function stopMusic() { pauseMusic(); bufOffset = 0; }
+
+  $('mplay').onclick = () => playMusic();
+  $('mpause').onclick = () => pauseMusic();
+  $('mvol').oninput = () => {
+    const v = $('mvol').value; $('mvolv').textContent = v + '%';
+    if (gain) gain.gain.setTargetAtTime(v / 100, ctx.currentTime, 0.05);
+  };
+  $('mvol').onchange = () => log('Music volume ' + $('mvol').value + '%');
+  $('engine').onchange = () => { stopMusic(); log('Music engine: ' + ($('engine').value === 'element' ? 'A (audio player + volume node)' : 'B (Web Audio only)')); };
+  $('mode').onchange = () => setMode();
+
+  function checkDuring(label) {
+    setTimeout(() => log(label + ', 1.5s in: music ' + (musicPlaying() ? 'still playing' : 'NOT playing'), musicPlaying() ? 'ok' : 'bad'), 1500);
+  }
+  function checkAfter(label) {
+    setTimeout(() => {
+      voiceBusy = false;
+      log(label + ' finished: music ' + (musicPlaying() ? 'still playing' : 'NOT playing'), musicPlaying() ? 'ok' : 'bad');
+    }, 600);
+  }
+
+  // Cloud voice: the same proxy and the same plain <audio> playback the reader uses.
+  const LINE = 'The lamps along the river came on one by one, and Ka’el stopped to listen.';
+  let cloudURL = null;
+  async function fetchCloud() {
+    for (const voice of ['Joanna', 'Kevin']) {
+      try {
+        const r = await fetch('/.netlify/functions/tts-proxy', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ providerId: 'polly', text: LINE, voice: voice, options: {} })
+        });
+        const data = await r.json();
+        if (data && data.success && data.audio) {
+          const bin = atob(data.audio); const u8 = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+          log('Cloud voice ready (Polly ' + voice + ')');
+          return URL.createObjectURL(new Blob([u8], { type: 'audio/mpeg' }));
+        }
+        log('Polly ' + voice + ' said no: ' + ((data && data.error) || r.status), 'bad');
+      } catch (e) { log('Cloud voice error: ' + e.message, 'bad'); }
+    }
+    return null;
+  }
+  $('vcloud').onclick = async () => {
+    ensureCtx();
+    log('Cloud voice: start (music ' + (musicPlaying() ? 'playing' : 'not playing') + ')');
+    if (!cloudURL) { log('Fetching the cloud voice...'); cloudURL = await fetchCloud(); }
+    if (!cloudURL) return;
+    const v = new Audio(cloudURL); v.setAttribute('playsinline', '');
+    voiceBusy = true;
+    v.onended = () => checkAfter('Cloud voice');
+    try { await v.play(); log('Cloud voice: speaking'); checkDuring('Cloud voice'); }
+    catch (e) { voiceBusy = false; log('Cloud voice play failed: ' + e.message, 'bad'); }
+  };
+
+  $('vdevice').onclick = () => {
+    ensureCtx();
+    if (!('speechSynthesis' in window)) { log('No device voice here.', 'bad'); return; }
+    log('Device voice: start (music ' + (musicPlaying() ? 'playing' : 'not playing') + ')');
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(LINE);
+    u.onstart = () => { voiceBusy = true; log('Device voice: speaking'); checkDuring('Device voice'); };
+    u.onend = () => checkAfter('Device voice');
+    u.onerror = e => { voiceBusy = false; log('Device voice error: ' + e.error, 'bad'); };
+    speechSynthesis.speak(u);
+  };
+
+  // Lock-screen check: how far did the music move while the page was hidden?
+  let hidAt = 0, hidPos = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      hidAt = Date.now(); hidPos = musicPos();
+      log('Screen locked / page hidden (music ' + (musicPlaying() ? 'playing' : 'not playing') + ')');
+    } else if (hidAt) {
+      const away = (Date.now() - hidAt) / 1000;
+      let moved = musicPos() - hidPos;
+      if (engine() === 'element' && el && moved < 0) moved += el.duration || 0; // looped
+      const kept = moved > away * 0.8;
+      log('Back after ' + away.toFixed(0) + 's: music moved ' + moved.toFixed(0) + 's - ' +
+          (kept ? 'it KEPT PLAYING while locked' : 'it STOPPED while locked'), kept ? 'ok' : 'bad');
+      hidAt = 0;
+    }
+  });
+
+  $('copy').onclick = async () => {
+    const head = [
+      'Witness Reader music test',
+      'Device: ' + navigator.userAgent,
+      'Audio mode: ' + $('mode').value + (('audioSession' in navigator) ? '' : ' (not supported here)'),
+      'Music engine: ' + $('engine').value,
+      ''
+    ].join('\n');
+    const text = head + lines.join('\n');
+    try { await navigator.clipboard.writeText(text); log('Copied. Paste it to Claude.', 'ok'); }
+    catch (e) {
+      const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); ta.remove(); log('Copied. Paste it to Claude.', 'ok');
+    }
+  };
+  $('clear').onclick = () => { lines.length = 0; $('log').textContent = ''; };
+
+  setMode();
+  // Fetch the cloud line now, so tapping "Cloud voice" plays it straight away
+  // (iOS can refuse to play audio that starts long after the tap).
+  fetchCloud().then(u => { if (u) cloudURL = u; });
+  log('Ready. ' + (('audioSession' in navigator) ? 'Audio mode supported.' : 'No audio mode support.'));
+})();
+</script>
+</body>
+</html>
