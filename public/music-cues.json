@@ -1,0 +1,707 @@
+{
+ "_note": "Conductor's score v2 (2026-11-05). Per cue: mood bucket, specific track key (filename substring), level 0.3-1.0 (relative to the volume dial), or silence:true (music fades out). Anchors are phrases from the 11.4.26 listening copies; '^' = chapter start. Prose untouched.",
+ "cues": {
+  "ch01": [
+   {
+    "at": "^",
+    "mood": "03",
+    "track": "Swallows-Nest",
+    "level": 0.6,
+    "why": "Misty city, quiet unease under beauty"
+   },
+   {
+    "at": "The tower breathed cool air on their faces",
+    "mood": "02",
+    "track": "Autumn-in-a-Forest-Cottage",
+    "level": 0.6,
+    "why": "Hard-won shelter, the twins' home"
+   },
+   {
+    "at": "The melody in her throat wanted out",
+    "mood": "01",
+    "track": "The-Mists-Cleared",
+    "level": 0.35,
+    "why": "Magic wakes; wonder whispers"
+   },
+   {
+    "at": "blue lines began to trace themselves across the wood grain",
+    "mood": "01",
+    "track": "Elven-Forest",
+    "level": 0.3,
+    "why": "Second awakening, kept hushed"
+   },
+   {
+    "at": "dreamed of the cellar",
+    "mood": "06",
+    "track": "Returning-to-the-Spirit-Tree",
+    "level": 0.4,
+    "why": "Grief memory of the mother's sacrifice"
+   },
+   {
+    "at": "As if the world had forgotten how to make noise",
+    "silence": true,
+    "why": "Sound removed; mother's memory goes before the held breath"
+   },
+   {
+    "at": "woke with his cheeks wet and his hands clenched",
+    "mood": "06",
+    "track": "Naru-s-Origins-III-A-Broken-Bo",
+    "level": 0.4,
+    "why": "Music returns softly after the aftermath"
+   },
+   {
+    "at": "Because she reminds me of Mama",
+    "mood": "02",
+    "track": "Naru-s-Origins-I-Her-Home",
+    "level": 0.5,
+    "why": "Tender opening of the door"
+   }
+  ],
+  "ch02": [
+   {
+    "at": "^",
+    "mood": "03",
+    "track": "Through-the-Darkness",
+    "level": 0.5,
+    "why": "quiet listening at the door"
+   },
+   {
+    "at": "then the floor moved.",
+    "mood": "04",
+    "track": "Hiding-from-Kuro",
+    "level": 0.8,
+    "why": "tremor, slammed shutters"
+   },
+   {
+    "at": "then there was nothing else to do.",
+    "silence": true,
+    "why": "the bone is set; only waiting"
+   },
+   {
+    "at": "the sun had set fully by the time the room was ready.",
+    "mood": "02",
+    "track": "Autumn-in-a-Forest-Cottage",
+    "level": 0.5,
+    "why": "home out of a hiding place"
+   },
+   {
+    "at": "not just mara.",
+    "mood": "04",
+    "track": "Who-at-My-Door-Is-Standing",
+    "level": 0.6,
+    "why": "the three leaders at the door"
+   },
+   {
+    "at": "i knew it when you said it.",
+    "silence": true,
+    "why": "Tessara cannot say the Order's name"
+   },
+   {
+    "at": "the room went colder.",
+    "mood": "03",
+    "track": "A-Closer-Understanding-of-the-Pa",
+    "level": 0.45,
+    "why": "cost of forgetting settles"
+   },
+   {
+    "at": "junia stepped forward first.",
+    "mood": "01",
+    "track": "Elven-Forest",
+    "level": 0.5,
+    "why": "the Singer's hum"
+   },
+   {
+    "at": "davrin said flatly.",
+    "mood": "04",
+    "track": "Confronting-the-Ram",
+    "level": 0.7,
+    "why": "recognition becomes classification"
+   },
+   {
+    "at": "later, when mara had gone and the city had settled",
+    "mood": "06",
+    "track": "Naru-s-Origins-III-A-Broken-Bo",
+    "level": 0.5,
+    "why": "twins alone with the cost"
+   },
+   {
+    "at": "in the tower, two bells began to ring",
+    "mood": "03",
+    "track": "Swallows-Nest",
+    "level": 0.6,
+    "why": "old bells, report being written"
+   }
+  ],
+  "ch03": [
+   {
+    "at": "^",
+    "mood": "04",
+    "track": "Who-at-My-Door-Is-Standing",
+    "level": 0.6,
+    "why": "counterfeit taps"
+   },
+   {
+    "at": "morning came with whispers.",
+    "mood": "03",
+    "track": "A-Closer-Understanding-of-the-Pa",
+    "level": 0.6,
+    "why": "city turns in whispers"
+   },
+   {
+    "at": "the square was unrecognizable.",
+    "mood": "01",
+    "track": "Floating-City",
+    "level": 0.5,
+    "why": "pageantry already wrong"
+   },
+   {
+    "at": "then the music changed.",
+    "mood": "04",
+    "track": "Confronting-the-Ram",
+    "level": 1,
+    "why": "the Anthem: the one justified swell"
+   },
+   {
+    "at": "beneath the cheers, beneath the perfect chord",
+    "silence": true,
+    "why": "Anthem devours the city's hum"
+   },
+   {
+    "at": "a voice cut through the perfection.",
+    "mood": "04",
+    "track": "Dash-Through-Their-Home",
+    "level": 0.9,
+    "why": "Junia sings against it"
+   },
+   {
+    "at": "the water here ran loud enough to drown thought.",
+    "mood": "02",
+    "track": "Naru-s-Origins-II-A-Friendship",
+    "level": 0.4,
+    "why": "Mara's warm token"
+   },
+   {
+    "at": "they returned to the tower one last time.",
+    "mood": "06",
+    "track": "Naru-s-Origins-III-A-Broken-Bo",
+    "level": 0.5,
+    "why": "goodbye to home"
+   },
+   {
+    "at": "the road stretched east.",
+    "mood": "05",
+    "track": "Arrival-at-the-Sunstone",
+    "level": 0.6,
+    "why": "resolve, not triumph"
+   },
+   {
+    "at": "a whistle sounded.",
+    "mood": "01",
+    "track": "Travelling-Through-Horu-Fields",
+    "level": 0.4,
+    "why": "someone is calling"
+   }
+  ],
+  "ch04": [
+   {
+    "at": "^",
+    "mood": "03",
+    "track": "Through-the-Darkness",
+    "level": 0.5,
+    "why": "Cold dawn without birdsong, first night outdoors"
+   },
+   {
+    "at": "The threads spun out around them like lace held up to a window",
+    "mood": "01",
+    "track": "Fairy-Town",
+    "level": 0.3,
+    "why": "Warm presence felt; wonder kept low"
+   },
+   {
+    "at": "it started at the base of his skull",
+    "mood": "04",
+    "track": "Hiding-from-Kuro",
+    "level": 0.55,
+    "why": "Unseen watcher shadows them"
+   },
+   {
+    "at": "nothing to give it back to",
+    "silence": true,
+    "why": "The hollowed man; nothing left to restore, music withdraws"
+   },
+   {
+    "at": "He was stacking kindling when the branch snapped",
+    "mood": "04",
+    "track": "Confronting-the-Ram",
+    "level": 0.6,
+    "why": "Stranger emerges; music returns with the danger"
+   }
+  ],
+  "ch05": [
+   {
+    "at": "^",
+    "mood": "06",
+    "track": "Whiter-Than-Snow",
+    "level": 0.4,
+    "why": "Confession and repentance, scored low"
+   },
+   {
+    "at": "The second day of traveling as three found them at a crossroads",
+    "mood": "03",
+    "track": "Swallows-Nest",
+    "level": 0.5,
+    "why": "Uncertain road, searching travel"
+   },
+   {
+    "at": "Not the kind of whistle someone made by puckering lips and blowing",
+    "mood": "01",
+    "track": "Travelling-Through-Horu-Fields",
+    "level": 0.4,
+    "why": "The mysterious whistle calls; wonder whispers"
+   },
+   {
+    "at": "She knelt before a massive canvas stretched between two trees",
+    "mood": "04",
+    "track": "Hiding-from-Kuro",
+    "level": 0.5,
+    "why": "Weeping girl paints Accord propaganda"
+   },
+   {
+    "at": "And drew a single jagged line across",
+    "mood": "05",
+    "track": "Arrival-at-the-Sunstone",
+    "level": 0.6,
+    "why": "Defiance: art refuses the lie"
+   },
+   {
+    "at": "They stopped when the light failed",
+    "mood": "02",
+    "track": "Naru-s-Origins-II-A-Friendship",
+    "level": 0.5,
+    "why": "Fireside fellowship, the Remnant gathers"
+   },
+   {
+    "at": "He stood with his shoulders against the earth of the bank",
+    "silence": true,
+    "why": "Auren's wordless struggle before his promise"
+   },
+   {
+    "at": "Merra let go of the breath she had been holding",
+    "mood": "02",
+    "track": "Leaning-on-the-Everlasting-Arms",
+    "level": 0.35,
+    "why": "Promise sealed; sacred trust, hymn kept low"
+   },
+   {
+    "at": "Sunset bled across Eirenos like a wound refusing to close",
+    "mood": "06",
+    "track": "Naru-s-Origins-III-A-Broken-Bo",
+    "level": 0.5,
+    "why": "Alyrion's grief turns the chapter solemn"
+   },
+   {
+    "at": "Her funeral was a small thing",
+    "mood": "06",
+    "track": "The-Old-Rugged-Cross",
+    "level": 0.3,
+    "why": "Burial and vow, hymn barely audible"
+   }
+  ],
+  "ch06": [
+   {
+    "at": "^",
+    "mood": "03",
+    "track": "Swallows-Nest",
+    "level": 0.6,
+    "why": "Misty approach to the abandoned bridge"
+   },
+   {
+    "at": "She opened her mouth and released a single tone",
+    "mood": "01",
+    "track": "The-Mists-Cleared",
+    "level": 0.45,
+    "why": "Magic awakens; wonder whispers, never swells"
+   },
+   {
+    "at": "Then the sky darkened",
+    "mood": "04",
+    "track": "Confronting-the-Ram",
+    "level": 0.9,
+    "why": "The Accord counter-song crushes their light"
+   },
+   {
+    "at": "They sat in silence for a long time",
+    "silence": true,
+    "why": "Spent survivors; the story itself goes quiet"
+   },
+   {
+    "at": "Alyrion studied the resonance recorder",
+    "mood": "04",
+    "track": "Hiding-from-Kuro",
+    "level": 0.55,
+    "why": "Cold calculation in the marble city"
+   },
+   {
+    "at": "The forest learned to hold its breath",
+    "mood": "03",
+    "track": "Through-the-Darkness",
+    "level": 0.55,
+    "why": "Hunted travel through a hushed forest"
+   },
+   {
+    "at": "They waited until midnight, when the forest",
+    "mood": "01",
+    "track": "Elven-Forest",
+    "level": 0.5,
+    "why": "The song answered by unseen listeners"
+   },
+   {
+    "at": "The Silencers came an hour before dawn",
+    "mood": "04",
+    "track": "Dash-Through-Their-Home",
+    "level": 0.8,
+    "why": "Silencers arrive, hiding children under roots"
+   },
+   {
+    "at": "Junia tried to sing, but nothing came out",
+    "silence": true,
+    "why": "The world's sound is unmade; music withdraws"
+   },
+   {
+    "at": "a woman with silver hair and eyes that had seen enough",
+    "mood": "02",
+    "track": "Autumn-in-a-Forest-Cottage",
+    "level": 0.6,
+    "why": "Sanctuary at the mill, warmth and fellowship"
+   },
+   {
+    "at": "He slipped outside into the cold night air",
+    "mood": "06",
+    "track": "Be-Still-My-Soul",
+    "level": 0.35,
+    "why": "Ka'el's quiet prayer under the stars"
+   },
+   {
+    "at": "The map showed everything Alyrion needed to see",
+    "mood": "04",
+    "track": "Who-at-My-Door-Is-Standing",
+    "level": 0.6,
+    "why": "The council plans the taking of the children"
+   }
+  ],
+  "ch07": [
+   {
+    "at": "^",
+    "mood": "02",
+    "track": "Naru-s-Origins-I-Her-Home",
+    "level": 0.6,
+    "why": "Bread, hearth, and fragile hope at the mill"
+   },
+   {
+    "at": "Tomos stared at the glowing patterns, his throat working",
+    "mood": "02",
+    "track": "Is-My-Name-Written-There",
+    "level": 0.35,
+    "why": "Reverent moment; the sacred scored downward"
+   },
+   {
+    "at": "The warning came at noon",
+    "mood": "04",
+    "track": "Hiding-from-Kuro",
+    "level": 0.9,
+    "why": "Silencers and hounds three miles out"
+   },
+   {
+    "at": "Pip fell asleep first, his small body curled against",
+    "mood": "02",
+    "track": "Leaning-on-the-Everlasting-Arms",
+    "level": 0.3,
+    "why": "Tender night camp; shared prayer and promise"
+   },
+   {
+    "at": "The attack came at dusk",
+    "mood": "04",
+    "track": "Dash-Through-Their-Home",
+    "level": 1,
+    "why": "The Hush rises; the desperate uphill flight"
+   },
+   {
+    "at": "Not peaceful silence",
+    "silence": true,
+    "why": "Pip and Merra are taken; sound itself ceases"
+   },
+   {
+    "at": "Mara knelt beside Junia",
+    "mood": "06",
+    "track": "Be-Still-My-Soul",
+    "level": 0.35,
+    "why": "Grief and witness; Mara steadies Junia"
+   },
+   {
+    "at": "bent and picked up the whistle",
+    "mood": "06",
+    "track": "Returning-to-the-Spirit-Tree",
+    "level": 0.3,
+    "why": "Ka'el's oath to find them, held low"
+   },
+   {
+    "at": "They counted themselves in the grey light",
+    "silence": true,
+    "why": "Numb arithmetic of loss; the chapter ends unscored"
+   }
+  ],
+  "ch08": [
+   {
+    "at": "^",
+    "mood": "06",
+    "track": "Naru-s-Origins-III-A-Broken-Bo",
+    "level": 0.5,
+    "why": "Three days of grief walking through the forest"
+   },
+   {
+    "at": "The mountain rose before them like a declaration",
+    "mood": "01",
+    "track": "The-Mists-Cleared",
+    "level": 0.4,
+    "why": "The Temple of First Song appears; wonder whispers"
+   },
+   {
+    "at": "I need to tell you something",
+    "mood": "06",
+    "track": "Be-Still-My-Soul",
+    "level": 0.35,
+    "why": "Mara's faith teaching; hymn kept low"
+   },
+   {
+    "at": "where the path widened into a natural shelf",
+    "mood": "02",
+    "track": "tis-so-Sweet-to-Trust-in-Jesus",
+    "level": 0.3,
+    "why": "Surrender: the Shepherd wants trust, not control"
+   },
+   {
+    "at": "That night, they sat around a small fire",
+    "mood": "02",
+    "track": "Autumn-in-a-Forest-Cottage",
+    "level": 0.4,
+    "why": "Small fellowship before the confession"
+   },
+   {
+    "at": "using the voice he used for reports",
+    "mood": "04",
+    "track": "Hiding-from-Kuro",
+    "level": 0.3,
+    "why": "Auren confesses; fellowship fractures, music low"
+   },
+   {
+    "at": "could have called him back",
+    "silence": true,
+    "why": "The group broken apart; the story goes still"
+   },
+   {
+    "at": "They slept in shifts, and apart",
+    "mood": "03",
+    "track": "Swallows-Nest",
+    "level": 0.3,
+    "why": "Uneasy night on the mountain shelf"
+   },
+   {
+    "at": "Then the seams showed",
+    "silence": true,
+    "why": "Sera's quiet letter; the sacred goes unscored"
+   },
+   {
+    "at": "The sun rose slowly",
+    "mood": "05",
+    "track": "Arrival-at-the-Sunstone",
+    "level": 0.45,
+    "why": "Dawn resolve; walking in without a plan"
+   }
+  ],
+  "ch09": [
+   {
+    "at": "^",
+    "mood": "02",
+    "track": "Autumn-in-a-Forest-Cottage",
+    "level": 0.7,
+    "why": "Warm camp, woodsmoke, children laughing"
+   },
+   {
+    "at": "Junia sat alone in one of the temple",
+    "mood": "03",
+    "track": "Through-the-Darkness",
+    "level": 0.6,
+    "why": "Junia drowning quietly in absorbed feeling"
+   },
+   {
+    "at": "She saw a city made of light",
+    "mood": "01",
+    "track": "Floating-City",
+    "level": 0.7,
+    "why": "Lira's vision; wonder whispers, not swells"
+   },
+   {
+    "at": "observation tower, Auren stood watch",
+    "mood": "06",
+    "track": "Naru-s-Origins-III-A-Broken-Bo",
+    "level": 0.5,
+    "why": "Hollow watcher, solitary reflection"
+   },
+   {
+    "at": "As sunset painted the valley in shades of amber",
+    "mood": "06",
+    "track": "Be-Still-My-Soul",
+    "level": 0.35,
+    "why": "Surrender teaching; faith scored low and sacred"
+   },
+   {
+    "at": "As night fell, Mara gathered all four of them",
+    "mood": "03",
+    "track": "Mount-Horu-Puzzle-Rooms-Suite",
+    "level": 0.5,
+    "why": "Riddles of the temples, eve-of-ritual hush"
+   },
+   {
+    "at": "The meditation chamber hadn",
+    "mood": "06",
+    "track": "I-Must-Tell-Jesus",
+    "level": 0.4,
+    "why": "Alyrion's unanswered prayer, dust and grief"
+   },
+   {
+    "at": "And into the silence, something answered",
+    "silence": true,
+    "why": "The Shepherd-Architect's presence: music withdraws entirely"
+   },
+   {
+    "at": "In his quarters, Alyrion pulled out fresh parchment",
+    "mood": "04",
+    "track": "Hiding-from-Kuro",
+    "level": 0.8,
+    "why": "He refuses grace; cold pursuit orders resume"
+   }
+  ],
+  "ch10": [
+   {
+    "at": "^",
+    "mood": "03",
+    "track": "Swallows-Nest",
+    "level": 0.6,
+    "why": "Frost dawn, dread before the Accord arrives"
+   },
+   {
+    "at": "Light erupted from the shard",
+    "mood": "01",
+    "track": "The-Mists-Cleared",
+    "level": 0.8,
+    "why": "Temple wakes; wonder blooms but stays gentle"
+   },
+   {
+    "at": "Four hands joined in a cold room and nothing happened",
+    "silence": true,
+    "why": "He is here: presence is quiet, not a swell"
+   },
+   {
+    "at": "Then they sang",
+    "mood": "01",
+    "track": "Main-Theme-Definitive-Edition",
+    "level": 0.9,
+    "why": "The Great Composing blooms after the silence"
+   },
+   {
+    "at": "The shard grew hot in the depression",
+    "mood": "03",
+    "track": "A-Closer-Understanding-of-the-Pa",
+    "level": 0.6,
+    "why": "Three visions: Ruin, Remnant, Return"
+   },
+   {
+    "at": "harmony was interrupted by a sound that made",
+    "mood": "04",
+    "track": "Confronting-the-Ram",
+    "level": 0.9,
+    "why": "Anthem arrives; Alyrion confronts the singers"
+   },
+   {
+    "at": "Mara had been standing in the doorway when the second rank",
+    "silence": true,
+    "why": "Mara's death; the story goes silent"
+   },
+   {
+    "at": "The light from the Great Composing slowly faded",
+    "mood": "06",
+    "track": "The-Old-Rugged-Cross",
+    "level": 0.35,
+    "why": "Aftermath, grief, hollow survival"
+   },
+   {
+    "at": "stepped out onto the temple",
+    "mood": "02",
+    "track": "Leaning-on-the-Everlasting-Arms",
+    "level": 0.4,
+    "why": "Night vow; quiet trust under permanent stars"
+   }
+  ],
+  "ch11": [
+   {
+    "at": "^",
+    "mood": "06",
+    "track": "Returning-to-the-Spirit-Tree",
+    "level": 0.5,
+    "why": "Balcony at dusk, resolve softened by loss"
+   },
+   {
+    "at": "because he had turned around while he was saying it",
+    "silence": true,
+    "why": "Mara's absence lands; music withdraws"
+   },
+   {
+    "at": "found himself in the archive chamber",
+    "mood": "03",
+    "track": "Swallows-Nest",
+    "level": 0.5,
+    "why": "Ka'el alone with plans, quiet unease"
+   },
+   {
+    "at": "The next evening, Auren gathered the core Remnant",
+    "mood": "04",
+    "track": "Hiding-from-Kuro",
+    "level": 0.6,
+    "why": "Mara's warning of the Frequency Wars"
+   },
+   {
+    "at": "Auren folded the paper along the crease it already had",
+    "mood": "05",
+    "track": "Arrival-at-the-Sunstone",
+    "level": 0.5,
+    "why": "We already have: quiet resolve to begin"
+   },
+   {
+    "at": "Later, as the others returned to their tents",
+    "mood": "06",
+    "track": "My-Jesus-I-Love-Thee",
+    "level": 0.4,
+    "why": "Ka'el's private promise and prayer-like vigil"
+   },
+   {
+    "at": "Just the choice to keep going",
+    "mood": "05",
+    "track": "To-God-Be-the-Glory",
+    "level": 0.45,
+    "why": "Faithful, not finished; hymn as quiet defiance"
+   },
+   {
+    "at": "They buried Mara on the mountain, in stone",
+    "silence": true,
+    "why": "Burial coda: no music, only cold and stone"
+   },
+   {
+    "at": "Somewhere out there, six temples waited to be found",
+    "mood": "06",
+    "track": "What-Heavenly-Music",
+    "level": 0.3,
+    "why": "Soft return for the closing horizon"
+   }
+  ]
+ }
+}

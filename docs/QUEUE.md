@@ -108,6 +108,25 @@ From the 2026-10-07 roll call (Jonathan, by ear).
 
 ---
 
+
+---
+
+## JOB 4 - Music player (own file + its own volume slider)  ·  branch `feature/music-player`  ·  STATUS: BUILT - IN REVIEW (PR #11; chapter-matched music + in-chapter mood cues; Jonathan merges on his yes)
+From the 2026-11-05 research (Martia's Muses on iPhone): iOS has one media volume and ignores `audio.volume`,
+so music must play inside Witness Reader through a Web Audio GainNode to get a separate music slider.
+**Step 1 (this PR): test page only** - `public/music-test.html`, nothing in `index.html` changes.
+- Pick an MP3/M4A from Files -> `<audio>` -> `createMediaElementSource` -> GainNode slider. Engine B
+  (decoded buffer, Web Audio only) is a fallback to compare.
+- Audio mode switch: `navigator.audioSession.type` = playback / ambient / auto (the reader's current
+  "mix music" box uses `ambient`, which stops when the phone locks).
+- Cloud voice = one Polly line through the existing `tts-proxy`, played on a plain `new Audio()` exactly
+  like the reader. Device voice = `speechSynthesis`. The page logs whether the music kept playing during
+  and after each voice, and whether it kept playing while locked. "Copy results" -> paste to Claude.
+- Test: `node devtest/test_music_test_page.mjs`.
+- **Jonathan:** open `deploy-preview-<PR#>--witnessreader.netlify.app/music-test.html` on the iPhone,
+  run the 6 steps on the page, paste the results.
+**Step 2 (after the results):** build the Music panel into `index.html` with the winning engine + mode:
+file picker, music slider, Media Session (lock-screen), remember the file in IndexedDB. Same branch, one merge.
 ## PARKED
 - `feature/sts-proxy` (Jonathan's local commit 74802fa, ElevenLabs speech-to-speech proxy, July 25):
   never pushed. Ask Jonathan before including it anywhere.
