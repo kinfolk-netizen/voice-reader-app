@@ -1,0 +1,26 @@
+{
+  "_note": "PROVISIONAL chapter-to-mood map (arc-based, not yet checked against the text). Jonathan edits this. Buckets match the filename prefix of music files you pick: 01-... 02-... etc. No audio lives in this site.",
+  "buckets": {
+    "01": "Wonder",
+    "02": "Hope / Home",
+    "03": "Mystery / Night",
+    "04": "Tension / Accord",
+    "05": "Courage / Triumph",
+    "06": "Reflective / Epilogue"
+  },
+  "chapters": {
+    "ch00": "01",
+    "ch01": "01",
+    "ch02": "02",
+    "ch03": "03",
+    "ch04": "03",
+    "ch05": "04",
+    "ch06": "04",
+    "ch07": "03",
+    "ch08": "04",
+    "ch09": "05",
+    "ch10": "05",
+    "ch11": "06",
+    "interlude": "03"
+  }
+}
