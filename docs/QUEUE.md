@@ -111,7 +111,7 @@ From the 2026-10-07 roll call (Jonathan, by ear).
 
 ---
 
-## JOB 4 - Music player (own file + its own volume slider)  ·  branch `feature/music-player`  ·  STATUS: STEP 1 IN REVIEW
+## JOB 4 - Music player (own file + its own volume slider)  ·  branch `feature/music-player`  ·  STATUS: BUILT - IN REVIEW (PR #11; chapter-matched music + in-chapter mood cues; Jonathan merges on his yes)
 From the 2026-11-05 research (Martia's Muses on iPhone): iOS has one media volume and ignores `audio.volume`,
 so music must play inside Witness Reader through a Web Audio GainNode to get a separate music slider.
 **Step 1 (this PR): test page only** - `public/music-test.html`, nothing in `index.html` changes.
