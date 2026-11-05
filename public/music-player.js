@@ -46,13 +46,16 @@
     if (st.ctx) { if (st.ctx.state === 'suspended') st.ctx.resume(); return; }
     if (!AC) return;
     st.ctx = new AC();
-    st.el = new Audio();
-    st.el.preload = 'auto';
-    st.el.addEventListener('ended', function () { next(); });
-    var src = st.ctx.createMediaElementSource(st.el);
-    st.gain = st.ctx.createGain();
-    st.gain.gain.value = 0;
-    src.connect(st.gain); st.gain.connect(st.ctx.destination);
+    function mkDeck() {
+      var el = new Audio(); el.preload = 'auto';
+      var src = st.ctx.createMediaElementSource(el);
+      var g = st.ctx.createGain(); g.gain.value = 0;
+      src.connect(g); g.connect(st.ctx.destination);
+      var d = { el: el, gain: g };
+      el.addEventListener('ended', function () { if (st.deck === d) next(); });
+      return d;
+    }
+    st.decks = [mkDeck(), mkDeck()]; st.deck = st.decks[0]; st.el = st.deck.el; st.gain = st.deck.gain;
     if (st.ctx.state === 'suspended') st.ctx.resume();
   }
   function setVol(v, fade) {
@@ -131,8 +134,8 @@
     if (!urgent && st.lastSwitch && now - st.lastSwitch < 12000) return;
     st.curCue = c; st.lastSwitch = now;
     if (c.silence) {
-      st.silent = true; setVol(st.vol, 0.5); status();
-      setTimeout(function () { if (st.silent) pauseMusic(); }, 2200);
+      st.silent = true; setVol(st.vol, 1.8); status();
+      setTimeout(function () { if (st.silent) pauseMusic(); }, 7500);
       return;
     }
     var wasSilent = st.silent; st.silent = false; st.level = c.level || 1;
@@ -143,26 +146,33 @@
     status();
     if (moodChanged || trackChanged || wasSilent) {
       if (st.wantPlay && st.gain) {
-        st.gain.gain.cancelScheduledValues(st.ctx.currentTime);
-        st.gain.gain.setTargetAtTime(0, st.ctx.currentTime, 0.35);
-        setTimeout(function () { if (st.wantPlay && !st.silent) playCurrent(true); }, wasSilent ? 50 : 1100);
+        if (wasSilent && !moodChanged && !trackChanged && st.el && !st.el.paused) setVol(st.vol, 1.4);
+        else playCurrent(true, true);
       }
-    } else { setVol(st.vol, 0.6); }
+    } else { setVol(st.vol, 1.5); }
   }
 
-  function playCurrent(fade) {
+  function playCurrent(fade, cross) {
     if (!st.list.length || !st.on || st.silent) return;
     ensureAudio(); if (!st.ctx) return; setSession();
     var t = st.list[st.idx];
+    if (cross && st.deck && !st.deck.el.paused) {
+      /* true crossfade: old track keeps playing while it fades out slowly, new track fades in on the other deck */
+      var old = st.deck, nd = st.decks[st.decks[0] === old ? 1 : 0];
+      st.deck = nd; st.el = nd.el; st.gain = nd.gain;
+      old.gain.gain.cancelScheduledValues(st.ctx.currentTime);
+      old.gain.gain.setTargetAtTime(0, st.ctx.currentTime, 1.3);
+      setTimeout(function () { if (st.deck !== old) old.el.pause(); }, 8000);
+    }
     if (st.el._name !== t.name) {
       if (st.el._url) URL.revokeObjectURL(st.el._url);
       st.el._url = URL.createObjectURL(t); st.el._name = t.name; st.el.src = st.el._url;
     }
     if (st.gain && fade) { st.gain.gain.cancelScheduledValues(st.ctx.currentTime); st.gain.gain.setValueAtTime(0, st.ctx.currentTime); }
     var p = st.el.play(); if (p && p.catch) p.catch(function () {});
-    setVol(st.vol, fade ? 1.2 : 0.05); status();
+    setVol(st.vol, fade ? (cross ? 1.4 : 1.2) : 0.05); status();
   }
-  function pauseMusic() { if (st.el) st.el.pause(); }
+  function pauseMusic() { (st.decks || (st.el ? [{ el: st.el }] : [])).forEach(function (d) { d.el.pause(); }); }
   function next() { if (!st.list.length) return; st.idx = (st.idx + 1) % st.list.length; if (st.wantPlay) playCurrent(true); else status(); }
 
   /* ---------- UI (injected; keeps index.html edits tiny) ---------- */
