@@ -1,26 +1,26 @@
-{
-  "_note": "PROVISIONAL chapter-to-mood map (arc-based, not yet checked against the text). Jonathan edits this. Buckets match the filename prefix of music files you pick: 01-... 02-... etc. No audio lives in this site.",
-  "buckets": {
-    "01": "Wonder",
-    "02": "Hope / Home",
-    "03": "Mystery / Night",
-    "04": "Tension / Accord",
-    "05": "Courage / Triumph",
-    "06": "Reflective / Epilogue"
-  },
-  "chapters": {
-    "ch00": "01",
-    "ch01": "01",
-    "ch02": "03",
-    "ch03": "04",
-    "ch04": "03",
-    "ch05": "04",
-    "ch06": "04",
-    "ch07": "03",
-    "ch08": "04",
-    "ch09": "05",
-    "ch10": "05",
-    "ch11": "06",
-    "interlude": "03"
-  }
+﻿{
+    "_note":  "Chapter-to-mood map. ch02 and ch03 set from the full text; ch01 and ch04-ch11 from a read of each chapter (middle sections of ch05, ch06, ch09 only skimmed). Whole chapter plays one mood; interludes (Alyrion POV, dark) are 04. Jonathan edits this. Buckets match filename prefix 01-06. No audio lives in this site.",
+    "buckets":  {
+                    "01":  "Wonder",
+                    "02":  "Hope / Home",
+                    "03":  "Mystery / Night",
+                    "04":  "Tension / Accord",
+                    "05":  "Courage / Triumph",
+                    "06":  "Reflective / Epilogue"
+                },
+    "chapters":  {
+                     "ch00":  "01",
+                     "ch01":  "03",
+                     "ch02":  "03",
+                     "ch03":  "04",
+                     "ch04":  "03",
+                     "ch05":  "02",
+                     "ch06":  "05",
+                     "ch07":  "04",
+                     "ch08":  "06",
+                     "ch09":  "02",
+                     "ch10":  "05",
+                     "ch11":  "06",
+                     "interlude":  "04"
+                 }
 }
