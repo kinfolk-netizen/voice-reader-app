@@ -32,7 +32,7 @@ ok(d('plain text') === null, 'unknown -> null');
 ok(g.__wrMusic.bucketOf('03-Artist_Album_01_Title.mp3') === '03', 'bucket prefix');
 
 const cj = JSON.parse(fs.readFileSync('public/music-cues.json', 'utf8')).cues;
-for (let i = 1; i <= 11; i++) { const k = 'ch' + String(i).padStart(2, '0'); const L = cj[k]; ok(Array.isArray(L) && L.length >= 2 && L[0].at === '^', 'cues for ' + k + ' start at ^'); ok(L && L.every(c => map.buckets[c.mood]), k + ' cue moods valid'); }
+for (let i = 1; i <= 11; i++) { const k = 'ch' + String(i).padStart(2, '0'); const L = cj[k]; ok(Array.isArray(L) && L.length >= 2 && L[0].at === '^', 'cues for ' + k + ' start at ^'); ok(L && L.every(c => c.silence ? !c.mood : map.buckets[c.mood]), k + ' cue moods valid'); ok(L.filter(c => c.silence).length <= 2 && L.every(c => c.level == null || (c.level >= 0.3 && c.level <= 1)), k + ' silences<=2, levels 0.3-1'); }
 
 // no audio shipped in public/
 const bad = [];

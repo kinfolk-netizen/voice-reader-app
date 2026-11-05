@@ -4,7 +4,7 @@
   'use strict';
   var AC = window.AudioContext || window.webkitAudioContext;
   var DB = 'wr-music', STORE = 'tracks';
-  var st = { cues: null, cuePts: [], cueKey: null, lastSwitch: 0, bucketIdx: {}, tracks: [], map: null, bucket: null, list: [], idx: 0, on: true, vol: 0.35, ctx: null, gain: null, el: null, chap: null, wantPlay: false };
+  var st = { curCue: null, level: 1, silent: false, cues: null, cuePts: [], cueKey: null, lastSwitch: 0, bucketIdx: {}, tracks: [], map: null, bucket: null, list: [], idx: 0, on: true, vol: 0.35, ctx: null, gain: null, el: null, chap: null, wantPlay: false };
 
   function $(id) { return document.getElementById(id); }
   function lsGet(k, d) { try { var v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }
@@ -60,7 +60,7 @@
     if (!st.gain) return;
     var t = st.ctx.currentTime;
     st.gain.gain.cancelScheduledValues(t);
-    st.gain.gain.setTargetAtTime(st.on ? v : 0, t, fade || 0.05);
+    st.gain.gain.setTargetAtTime(st.on && !st.silent ? v * st.level : 0, t, fade || 0.05);
   }
   function setSession() { try { if (navigator.audioSession && st.tracks.length) navigator.audioSession.type = 'playback'; } catch (e) {} }
 
@@ -87,10 +87,12 @@
     var ov = lsGet('wr-music-bucket-override', '');
     st.bucket = ov || b || null;
     st.cuePts = ov ? [] : computeCues(key);
-    if (st.cuePts.length && st.cuePts[0].pos === 0) st.bucket = st.cuePts[0].mood;
-    st.lastSwitch = 0;
+    if (st.cuePts.length && st.cuePts[0].pos === 0 && st.cuePts[0].mood) st.bucket = st.cuePts[0].mood;
+    st.lastSwitch = 0; st.curCue = null; st.silent = false; st.level = 1;
     st.bucketIdx = {};
-    buildList(); status();
+    buildList();
+    if (st.cuePts.length && st.cuePts[0].track) { var j0 = trackIndex(st.cuePts[0].track); if (j0 >= 0) st.idx = j0; }
+    status();
     if (st.wantPlay && st.on) { playCurrent(true); }
   }
 
@@ -106,35 +108,50 @@
     list.forEach(function (c) {
       var a = norm(c.at), p = a === '^' ? 0 : t.indexOf(a, from);
       if (p < 0) { try { console.warn('[MUSIC] cue anchor not found:', c.at); } catch (e) {} return; }
-      out.push({ pos: p, mood: c.mood }); from = p;
+      out.push({ pos: p, mood: c.mood, track: c.track, level: c.level, silence: !!c.silence }); from = p;
     });
     return out;
   }
-  function moodAt(pos) {
+  function trackIndex(key) {
+    var k = String(key).toLowerCase();
+    for (var i = 0; i < st.list.length; i++) { if (st.list[i].name.toLowerCase().indexOf(k) >= 0) return i; }
+    return -1;
+  }
+  function cueAt(pos) {
     var m = null;
-    for (var i = 0; i < st.cuePts.length; i++) { if (st.cuePts[i].pos <= pos) m = st.cuePts[i].mood; else break; }
+    for (var i = 0; i < st.cuePts.length; i++) { if (st.cuePts[i].pos <= pos) m = st.cuePts[i]; else break; }
     return m;
   }
   function onPos(pos) {
     if (!st.cuePts.length || !st.on) return;
-    var m = moodAt(pos) || (st.map && st.map.chapters && st.map.chapters[st.chap]) || null;
-    if (!m || m === st.bucket) return;
-    var now = Date.now(), first = !st.lastSwitch;
-    if (!first && now - st.lastSwitch < 12000) return;
-    st.lastSwitch = now;
-    st.bucketIdx[st.bucket] = st.idx;
-    st.bucket = m; buildList();
-    st.idx = (st.bucketIdx[m] || 0) % Math.max(1, st.list.length);
-    status();
-    if (st.wantPlay && st.gain) {
-      st.gain.gain.cancelScheduledValues(st.ctx.currentTime);
-      st.gain.gain.setTargetAtTime(0, st.ctx.currentTime, 0.35);
-      setTimeout(function () { if (st.wantPlay) playCurrent(true); }, 1100);
+    var c = cueAt(pos);
+    if (!c || c === st.curCue) return;
+    var prev = st.curCue, now = Date.now();
+    var urgent = c.silence || (prev && prev.silence);
+    if (!urgent && st.lastSwitch && now - st.lastSwitch < 12000) return;
+    st.curCue = c; st.lastSwitch = now;
+    if (c.silence) {
+      st.silent = true; setVol(st.vol, 0.5); status();
+      setTimeout(function () { if (st.silent) pauseMusic(); }, 2200);
+      return;
     }
+    var wasSilent = st.silent; st.silent = false; st.level = c.level || 1;
+    var moodChanged = !!c.mood && c.mood !== st.bucket;
+    if (moodChanged) { st.bucketIdx[st.bucket] = st.idx; st.bucket = c.mood; buildList(); st.idx = (st.bucketIdx[c.mood] || 0) % Math.max(1, st.list.length); }
+    var trackChanged = false;
+    if (c.track) { var j = trackIndex(c.track); if (j >= 0 && j !== st.idx) { st.idx = j; trackChanged = true; } }
+    status();
+    if (moodChanged || trackChanged || wasSilent) {
+      if (st.wantPlay && st.gain) {
+        st.gain.gain.cancelScheduledValues(st.ctx.currentTime);
+        st.gain.gain.setTargetAtTime(0, st.ctx.currentTime, 0.35);
+        setTimeout(function () { if (st.wantPlay && !st.silent) playCurrent(true); }, wasSilent ? 50 : 1100);
+      }
+    } else { setVol(st.vol, 0.6); }
   }
 
   function playCurrent(fade) {
-    if (!st.list.length || !st.on) return;
+    if (!st.list.length || !st.on || st.silent) return;
     ensureAudio(); if (!st.ctx) return; setSession();
     var t = st.list[st.idx];
     if (st.el._name !== t.name) {
@@ -238,5 +255,5 @@
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
-  window.__wrMusic = { detectChapter: detectChapter, bucketOf: bucketOf };
+  window.__wrMusic = { detectChapter: detectChapter, bucketOf: bucketOf, state: st, onPos: onPos, applyChapter: applyChapter, trackIndex: trackIndex };
 })();

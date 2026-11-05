@@ -20,14 +20,16 @@ for (const key of Object.keys(cues)) {
   const t = norm(fs.readFileSync(file, 'utf8').trim());
   let from = 0, line = [];
   for (const c of cues[key]) {
-    if (!valid.has(c.mood)) { console.log(key + ': bad mood ' + c.mood); bad++; }
-    if (c.at === '^') { line.push('0%:' + c.mood); continue; }
+    const tag = c.silence ? 'SIL' : c.mood + (c.track ? '/' + c.track.slice(0, 10) : '') + '@' + (c.level == null ? 1 : c.level);
+    if (!c.silence && !valid.has(c.mood)) { console.log(key + ': bad mood ' + c.mood); bad++; }
+    if (c.level != null && (c.level < 0.3 || c.level > 1)) { console.log(key + ': level out of 0.3-1.0: ' + c.at); bad++; }
+    if (c.at === '^') { line.push('0%:' + tag); continue; }
     const a = norm(c.at);
     const p = t.indexOf(a, from);
     if (p < 0) { console.log(key + ': NOT FOUND (or out of order): ' + c.at); bad++; continue; }
     const dup = t.indexOf(a, p + 1) >= 0;
     if (dup) console.log(key + ': note - phrase appears more than once: ' + c.at);
-    line.push(Math.round(100 * p / t.length) + '%:' + c.mood); from = p;
+    line.push(Math.round(100 * p / t.length) + '%:' + tag); from = p;
   }
   console.log(key + ' ' + line.join('  '));
 }
