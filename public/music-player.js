@@ -74,7 +74,8 @@
   }
   function detectChapter(text) {
     var h = (text || '').slice(0, 700), m;
-    if ((m = /\bch(?:apter)?\.?\s*0*(\d{1,2})\b/i.exec(h))) return 'ch' + ('0' + m[1]).slice(-2);
+    var W = { zero:0, one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10, eleven:11, twelve:12 };
+    if ((m = /\bch(?:apter)?\.?\s*(?:0*(\d{1,2})|(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve))\b/i.exec(h))) { var n = m[1] ? parseInt(m[1], 10) : W[m[2].toLowerCase()]; return 'ch' + ('0' + n).slice(-2); }
     if (/\bprologue\b/i.test(h)) return 'ch00';
     if (/\bepilogue\b/i.test(h)) return 'ch11';
     if (/\binterlude\b/i.test(h)) return 'interlude';

@@ -22,6 +22,9 @@ global.localStorage = {}; new Function('window', 'document', js)(g, global.docum
 const d = g.__wrMusic.detectChapter;
 ok(d('Chapter 3: The Gate') === 'ch03', 'detect Chapter 3');
 ok(d('CH07\nText') === 'ch07', 'detect CH07');
+ok(d('Chapter Two. The Bells of Division.') === 'ch02', 'detect Chapter Two (spelled out)');
+ok(d('Chapter Three. The Measure of Faith.') === 'ch03', 'detect Chapter Three (spelled out)');
+ok(d('Chapter Ten. Title') === 'ch10', 'detect Chapter Ten');
 ok(d('Prologue') === 'ch00', 'detect Prologue');
 ok(d('Epilogue') === 'ch11', 'detect Epilogue');
 ok(d('Interlude II') === 'interlude', 'detect Interlude');
