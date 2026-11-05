@@ -133,7 +133,10 @@
       '<button type="button" id="wr-music-toggle">Music: on</button> ' +
       '<button type="button" id="wr-music-next">Next</button> ' +
       '<button type="button" id="wr-music-clear">Clear music</button>' +
-      '<div style="margin-top:10px"><label>Music volume <input type="range" id="wr-music-vol" min="0" max="1" step="0.01" style="width:60%"></label></div>' +
+      '<div style="margin-top:10px"><div style="font-size:.9em;margin-bottom:6px">Music volume: <b id="wr-music-pct"></b></div>' +
+      '<div style="display:flex;align-items:center;gap:10px"><button type="button" id="wr-vol-down" aria-label="Music volume down 5 percent" style="min-width:56px;min-height:48px;font-size:1.4em">-</button>' +
+      '<input type="range" id="wr-music-vol" min="0" max="1" step="0.01" style="flex:1">' +
+      '<button type="button" id="wr-vol-up" aria-label="Music volume up 5 percent" style="min-width:56px;min-height:48px;font-size:1.4em">+</button></div></div>' +
       '<div style="margin-top:10px"><label>Mood <select id="wr-music-mood"><option value="">Auto (match chapter)</option></select></label></div>' +
       '<p style="font-size:.8em;opacity:.7;margin:8px 0 0">Music stays on your device. Files named 01- to 06- match chapter moods.</p>';
     ref.parentNode.insertBefore(c, ref.nextSibling);
@@ -143,7 +146,13 @@
     });
     sel.value = lsGet('wr-music-bucket-override', '');
     var v = $('wr-music-vol'); v.value = st.vol;
-    v.addEventListener('input', function () { setVol(parseFloat(v.value), 0.03); });
+    var pct = $('wr-music-pct');
+    function showVol() { pct.textContent = Math.round(st.vol * 100) + '%'; v.value = st.vol; }
+    function nudge(d) { var n = Math.min(1, Math.max(0, Math.round((st.vol + d) * 100) / 100)); setVol(n, 0.03); showVol(); }
+    v.addEventListener('input', function () { setVol(parseFloat(v.value), 0.03); showVol(); });
+    $('wr-vol-down').onclick = function () { nudge(-0.05); };
+    $('wr-vol-up').onclick = function () { nudge(0.05); };
+    showVol();
     $('wr-music-pick').onclick = function () { ensureAudio(); $('wr-music-files').click(); };
     $('wr-music-files').onchange = function (e) { addFiles(e.target.files, true); };
     $('wr-music-pickdir').onclick = function () { ensureAudio(); $('wr-music-dir').click(); };
