@@ -110,11 +110,11 @@
     var lab = st.map && st.map.buckets && st.bucket ? (st.map.buckets[st.bucket] || st.bucket) : 'all tracks';
     s.textContent = st.tracks.length
       ? st.tracks.length + ' tracks loaded - chapter: ' + (st.chap || 'unknown') + ' - mood: ' + lab + (st.list[st.idx] ? ' - now: ' + st.list[st.idx].name : '')
-      : 'No music loaded. Choose MP3 files from your device.';
+      : 'No music loaded yet. Tap Add music folder and pick your MUSIC folder.';
   }
   function addFiles(files, persist) {
     var seen = {}; st.tracks.forEach(function (t) { seen[t.name] = 1; });
-    Array.prototype.forEach.call(files, function (f) { if (!seen[f.name]) st.tracks.push(f); });
+    Array.prototype.forEach.call(files, function (f) { if (!/\.(mp3|m4a|aac|wav|flac|ogg)$/i.test(f.name) || /^XX-/.test(f.name)) return; if (!seen[f.name]) st.tracks.push(f); });
     if (persist) idbSave(Array.prototype.slice.call(files));
     buildList(); status();
   }
@@ -123,15 +123,18 @@
     var c = document.createElement('div'); c.className = 'card'; c.id = 'music-card';
     c.innerHTML =
       '<h2 style="margin:0 0 8px">Background music</h2>' +
+      '<p style="margin:0 0 8px;font-size:.85em"><b>Step 1 (one time):</b> add your music library - choose the MUSIC folder. <b>After that,</b> music follows your chapter automatically.</p>' +
       '<p id="wr-music-status" style="margin:0 0 8px;font-size:.9em"></p>' +
       '<input type="file" id="wr-music-files" accept="audio/*" multiple style="display:none">' +
-      '<button type="button" id="wr-music-pick">Choose music</button> ' +
+      '<input type="file" id="wr-music-dir" webkitdirectory multiple style="display:none">' +
+      '<button type="button" id="wr-music-pickdir">Add music folder</button> ' +
+      '<button type="button" id="wr-music-pick">Add files</button> ' +
       '<button type="button" id="wr-music-toggle">Music: on</button> ' +
       '<button type="button" id="wr-music-next">Next</button> ' +
       '<button type="button" id="wr-music-clear">Clear music</button>' +
       '<div style="margin-top:10px"><label>Music volume <input type="range" id="wr-music-vol" min="0" max="1" step="0.01" style="width:60%"></label></div>' +
       '<div style="margin-top:10px"><label>Mood <select id="wr-music-mood"><option value="">Auto (match chapter)</option></select></label></div>' +
-      '<p style="font-size:.8em;opacity:.7;margin:8px 0 0">Music stays on your device. Name files like 01-... to 06-... to match moods.</p>';
+      '<p style="font-size:.8em;opacity:.7;margin:8px 0 0">Music stays on your device. Files named 01- to 06- match chapter moods.</p>';
     ref.parentNode.insertBefore(c, ref.nextSibling);
     var sel = $('wr-music-mood');
     if (st.map && st.map.buckets) Object.keys(st.map.buckets).forEach(function (k) {
@@ -142,6 +145,8 @@
     v.addEventListener('input', function () { setVol(parseFloat(v.value), 0.03); });
     $('wr-music-pick').onclick = function () { ensureAudio(); $('wr-music-files').click(); };
     $('wr-music-files').onchange = function (e) { addFiles(e.target.files, true); };
+    $('wr-music-pickdir').onclick = function () { ensureAudio(); $('wr-music-dir').click(); };
+    $('wr-music-dir').onchange = function (e) { addFiles(e.target.files, true); };
     $('wr-music-toggle').onclick = function () {
       st.on = !st.on; this.textContent = 'Music: ' + (st.on ? 'on' : 'off');
       if (st.on) { if (st.wantPlay) playCurrent(true); } else { setVol(st.vol); pauseMusic(); }
