@@ -22,7 +22,7 @@ for (const key of Object.keys(cues)) {
   for (const c of cues[key]) {
     const tag = c.silence ? 'SIL' : c.mood + (c.track ? '/' + c.track.slice(0, 10) : '') + '@' + (c.level == null ? 1 : c.level);
     if (!c.silence && !valid.has(c.mood)) { console.log(key + ': bad mood ' + c.mood); bad++; }
-    if (c.level != null && (c.level < 0.3 || c.level > 1)) { console.log(key + ': level out of 0.3-1.0: ' + c.at); bad++; }
+    if (c.level != null && (c.level < 0.25 || c.level > 1)) { console.log(key + ': level out of 0.25-1.0: ' + c.at); bad++; }
     if (c.at === '^') { line.push('0%:' + tag); continue; }
     const a = norm(c.at);
     const p = t.indexOf(a, from);
