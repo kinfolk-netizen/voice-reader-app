@@ -9,8 +9,12 @@ import fs from 'fs';
 const src = fs.readFileSync('public/index.html', 'utf-8').split(/\r?\n/);
 const slice = (a, b) => src.slice(a - 1, b).join('\n');   // 1-indexed inclusive
 
-const liveBlock = slice(2295, 2406);          // state + probe + liveness + understudy
-const seatBlock = slice(2628, 2823);       // autoCastSpeakers + castSeatingReport
+// Anchored to markers (not fixed line numbers) so edits elsewhere in index.html
+// don't break the harness. Block lengths are unchanged from the v2.34 ranges.
+const liveEnd = src.findIndex(l => l.includes('// ---------- end Live Cast Seating ----------'));   // 1-indexed line before the marker
+const liveBlock = slice(liveEnd - 111, liveEnd);          // state + probe + liveness + understudy
+const seatStart = src.findIndex(l => l.includes('async autoCastSpeakers(speakers) {')) + 1;
+const seatBlock = slice(seatStart, seatStart + 195);       // autoCastSpeakers + castSeatingReport
 const failStart = src.findIndex(l => l.includes('failoverChunk(provider, chunk, status, data) {')) + 1;
 let failEnd = failStart;
 while (!/^            \},$/.test(src[failEnd - 1])) failEnd++;
