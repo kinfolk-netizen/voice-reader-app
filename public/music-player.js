@@ -176,12 +176,42 @@
   function next() { if (!st.list.length) return; st.idx = (st.idx + 1) % st.list.length; if (st.wantPlay) playCurrent(true); else status(); }
 
   /* ---------- UI (injected; keeps index.html edits tiny) ---------- */
+  var ALBUMS = { Ori: 'Ori and the Blind Forest', OriWotW: 'Ori and the Will of the Wisps', PF2: 'Peaceful Fantasy 2', CHC2: 'Celtic Hymn Collection II' };
+  var ARTISTS = { Coker: 'Gareth Coker', Fiechter: 'Derek Fiechter', Martia: "Martia's Muses" };
+  function prettyTrack(name) {
+    var base = String(name || '').replace(/\.[a-z0-9]+$/i, '').replace(/^\d\d-\d\d_/, '');
+    var p = base.split('_');
+    if (p.length >= 4 && /^\d+$/.test(p[2])) {
+      var t = p.slice(3).join(' ').replace(/-s-/g, "'s ").replace(/-/g, ' ').replace(/^tis /i, "'Tis ").replace(/\s+/g, ' ').trim();
+      return { title: t, sub: ALBUMS[p[1]] || ARTISTS[p[0]] || p[0] };
+    }
+    return { title: base.replace(/[_-]+/g, ' ').trim(), sub: '' };
+  }
+  function chapLabel(c) {
+    if (!c) return 'No chapter yet';
+    if (c === 'ch00') return 'Prologue';
+    if (c === 'interlude') return 'Interlude';
+    var m = /^ch(\d+)$/.exec(c); return m ? 'Chapter ' + parseInt(m[1], 10) : c;
+  }
+  function setText(id, t) { var e = $(id); if (e && e.textContent !== t) e.textContent = t; }
   function status() {
-    var s = $('wr-music-status'); if (!s) return;
-    var lab = st.map && st.map.buckets && st.bucket ? (st.map.buckets[st.bucket] || st.bucket) : 'all tracks';
-    s.textContent = st.tracks.length
-      ? st.tracks.length + ' tracks loaded - chapter: ' + (st.chap || 'unknown') + ' - mood: ' + lab + (st.list[st.idx] ? ' - now: ' + st.list[st.idx].name : '')
-      : 'No music loaded yet. Tap Add music folder and pick your MUSIC folder.';
+    var card = $('music-card'); if (!card) return;
+    var has = st.tracks.length > 0;
+    card.classList.toggle('wrm-empty', !has);
+    card.classList.toggle('wrm-off', !st.on);
+    var lab = st.map && st.map.buckets && st.bucket ? (st.map.buckets[st.bucket] || st.bucket) : 'All tracks';
+    var cur = st.list[st.idx], pt = cur ? prettyTrack(cur.name) : null;
+    var eyebrow = !st.on ? 'Music off' : st.silent ? 'Resting - silence by design' : (st.wantPlay ? 'Now playing' : 'Up next');
+    setText('wrm-eyebrow', eyebrow);
+    setText('wrm-title', pt ? pt.title : 'Waiting for a chapter');
+    setText('wrm-sub', pt ? pt.sub : '');
+    setText('wrm-chap', chapLabel(st.chap));
+    setText('wrm-mood', lab);
+    setText('wrm-count', st.tracks.length + (st.tracks.length === 1 ? ' track' : ' tracks') + ' on this device');
+    var tg = $('wr-music-toggle'); if (tg) tg.setAttribute('aria-checked', st.on ? 'true' : 'false');
+    setText('wr-music-status', has
+      ? st.tracks.length + ' tracks loaded. ' + chapLabel(st.chap) + ', mood ' + lab + (pt ? '. ' + eyebrow + ': ' + pt.title : '')
+      : 'No music loaded yet. Tap Add music folder and pick your MUSIC folder.');
   }
   function addFiles(files, persist) {
     var seen = {}; st.tracks.forEach(function (t) { seen[t.name] = 1; });
@@ -189,30 +219,87 @@
     if (persist) idbSave(Array.prototype.slice.call(files));
     buildList(); status();
   }
+  var WRM_CSS = [
+    '#music-card .wrm-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}',
+    '#music-card .wrm-head .card-title{margin:0}',
+    '#music-card button{margin:0}',
+    '#music-card .wrm-switch{position:relative;width:51px;height:31px;padding:0;border-radius:999px;background:var(--hairline);transition:background .2s ease;flex:0 0 auto}',
+    '#music-card .wrm-switch span{position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .2s ease}',
+    '#music-card .wrm-switch[aria-checked="true"]{background:var(--accent)}',
+    '#music-card .wrm-switch[aria-checked="true"] span{transform:translateX(20px)}',
+    '#music-card .wrm-switch:hover{opacity:1}',
+    '#music-card .wrm-setup{display:none;text-align:center;padding:8px 4px 4px}',
+    '#music-card.wrm-empty .wrm-setup{display:block}',
+    '#music-card.wrm-empty .wrm-main{display:none}',
+    '#music-card .wrm-setup-t{font-family:var(--serif);font-size:1.15em;font-weight:600;margin-bottom:6px}',
+    '#music-card .wrm-setup-s{font-size:.88em;color:var(--ink-2);line-height:1.5;margin:0 auto 16px;max-width:34ch}',
+    '#music-card .wrm-primary{background:var(--accent);color:#fff;width:100%;min-height:48px;font-size:15px}',
+    '#music-card .wrm-primary:hover{background:var(--accent-deep);opacity:1}',
+    '#music-card .wrm-now{display:flex;align-items:center;gap:14px;background:var(--surface-2);border:1px solid var(--hairline-soft);border-radius:var(--radius-s);padding:12px}',
+    '#music-card .wrm-art{flex:0 0 48px;height:48px;border-radius:10px;background:var(--accent-wash-strong);color:var(--accent);display:flex;align-items:center;justify-content:center}',
+    '#music-card .wrm-meta{flex:1 1 auto;min-width:0}',
+    '#music-card .wrm-eyebrow{font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:3px}',
+    '#music-card .wrm-title{font-family:var(--serif);font-size:1.05em;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '#music-card .wrm-sub{font-size:.8em;color:var(--ink-3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    '#music-card .wrm-icon{flex:0 0 44px;width:44px;height:44px;padding:0;border-radius:50%;background:transparent;border:1px solid var(--hairline);color:var(--ink-2);display:flex;align-items:center;justify-content:center}',
+    '#music-card .wrm-icon:hover{border-color:var(--accent);color:var(--accent);opacity:1}',
+    '#music-card .wrm-chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 18px}',
+    '#music-card .wrm-chip{font-size:12px;font-weight:500;padding:5px 11px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--hairline-soft)}',
+    '#music-card .wrm-chip-accent{background:var(--accent-wash);color:var(--accent);border-color:transparent}',
+    '#music-card .wrm-row-label{display:flex;justify-content:space-between;align-items:baseline;font-size:.85em;color:var(--ink-2);font-weight:500;margin-bottom:8px}',
+    '#music-card .wrm-pct{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600}',
+    '#music-card .wrm-vol{display:flex;align-items:center;gap:12px;margin-bottom:18px}',
+    '#music-card .wrm-vol input{flex:1 1 auto}',
+    '#music-card select{margin-bottom:0}',
+    '#music-card .wrm-lib{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:1px solid var(--hairline-soft)}',
+    '#music-card .wrm-count{font-size:.82em;color:var(--ink-3)}',
+    '#music-card .wrm-links{display:flex;gap:4px;flex-wrap:wrap}',
+    '#music-card .wrm-link{background:transparent;color:var(--ink-2);padding:8px 10px;font-size:13px;font-weight:500;border-radius:8px}',
+    '#music-card .wrm-link:hover{background:var(--surface-2);opacity:1}',
+    '#music-card .wrm-link.wrm-danger{color:var(--err)}',
+    '#music-card .wrm-link.wrm-armed{background:var(--err);color:#fff}',
+    '#music-card.wrm-off .wrm-now,#music-card.wrm-off .wrm-chips,#music-card.wrm-off .wrm-vol{opacity:.45}',
+    '#music-card .wrm-foot{font-size:.76em;color:var(--ink-3);line-height:1.5;margin-top:10px}',
+    '#music-card .wrm-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}'
+  ].join('\n');
+  var ICON_NOTE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
+  var ICON_NEXT = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 5.5v13a1 1 0 0 0 1.5.86l10-6.5a1 1 0 0 0 0-1.72l-10-6.5A1 1 0 0 0 5 5.5z"/><rect x="17.5" y="5" width="2.2" height="14" rx="1.1"/></svg>';
   function ui() {
     var ref = $('player-card'); if (!ref || $('music-card')) return;
-    var c = document.createElement('div'); c.className = 'card'; c.id = 'music-card';
+    if (!$('wrm-style')) { var css = document.createElement('style'); css.id = 'wrm-style'; css.textContent = WRM_CSS; document.head.appendChild(css); }
+    var c = document.createElement('div'); c.className = 'card wrm-empty'; c.id = 'music-card';
     c.innerHTML =
-      '<h2 style="margin:0 0 8px">Background music</h2>' +
-      '<p style="margin:0 0 8px;font-size:.85em"><b>Step 1 (one time):</b> add your music library - choose the MUSIC folder. <b>After that,</b> music follows your chapter automatically.</p>' +
-      '<p id="wr-music-status" style="margin:0 0 8px;font-size:.9em"></p>' +
+      '<div class="wrm-head"><div class="card-title">Background music</div>' +
+      '<button type="button" id="wr-music-toggle" class="wrm-switch" role="switch" aria-checked="true" aria-label="Background music"><span></span></button></div>' +
+      '<div class="wrm-setup">' +
+        '<div class="wrm-setup-t">Add your music library</div>' +
+        '<p class="wrm-setup-s">Choose your MUSIC folder once. After that, the score follows every chapter on its own.</p>' +
+        '<button type="button" class="wrm-primary" data-wrm="pickdir">Add music folder</button>' +
+      '</div>' +
+      '<div class="wrm-main">' +
+        '<div class="wrm-now"><div class="wrm-art">' + ICON_NOTE + '</div>' +
+          '<div class="wrm-meta"><div class="wrm-eyebrow" id="wrm-eyebrow"></div><div class="wrm-title" id="wrm-title"></div><div class="wrm-sub" id="wrm-sub"></div></div>' +
+          '<button type="button" id="wr-music-next" class="wrm-icon" aria-label="Next track">' + ICON_NEXT + '</button></div>' +
+        '<div class="wrm-chips"><span class="wrm-chip" id="wrm-chap"></span><span class="wrm-chip wrm-chip-accent" id="wrm-mood"></span></div>' +
+        '<div class="wrm-row-label"><span>Music volume</span><span class="wrm-pct" id="wr-music-pct"></span></div>' +
+        '<div class="wrm-vol"><button type="button" id="wr-vol-down" class="wrm-icon" aria-label="Music volume down 5 percent">&minus;</button>' +
+          '<input type="range" id="wr-music-vol" min="0" max="1" step="0.01" aria-label="Music volume">' +
+          '<button type="button" id="wr-vol-up" class="wrm-icon" aria-label="Music volume up 5 percent">+</button></div>' +
+        '<div class="wrm-row-label"><label for="wr-music-mood" style="margin:0;font-size:inherit">Mood</label></div>' +
+        '<select id="wr-music-mood"><option value="">Match the chapter (auto)</option></select>' +
+        '<div class="wrm-lib"><span class="wrm-count" id="wrm-count"></span><span class="wrm-links">' +
+          '<button type="button" class="wrm-link" data-wrm="pickdir">Update folder</button>' +
+          '<button type="button" class="wrm-link" id="wr-music-pick">Add files</button>' +
+          '<button type="button" class="wrm-link wrm-danger" id="wr-music-clear">Clear</button></span></div>' +
+        '<p class="wrm-foot">Your music stays on this device. Files named 01- to 06- match the chapter moods.</p>' +
+      '</div>' +
+      '<p id="wr-music-status" class="wrm-sr" aria-live="polite"></p>' +
       '<input type="file" id="wr-music-files" accept="audio/*" multiple style="display:none">' +
-      '<input type="file" id="wr-music-dir" webkitdirectory multiple style="display:none">' +
-      '<button type="button" id="wr-music-pickdir">Add music folder</button> ' +
-      '<button type="button" id="wr-music-pick">Add files</button> ' +
-      '<button type="button" id="wr-music-toggle">Music: on</button> ' +
-      '<button type="button" id="wr-music-next">Next</button> ' +
-      '<button type="button" id="wr-music-clear">Clear music</button>' +
-      '<div style="margin-top:10px"><div style="font-size:.9em;margin-bottom:6px">Music volume: <b id="wr-music-pct"></b></div>' +
-      '<div style="display:flex;align-items:center;gap:10px"><button type="button" id="wr-vol-down" aria-label="Music volume down 5 percent" style="min-width:56px;min-height:48px;font-size:1.4em">-</button>' +
-      '<input type="range" id="wr-music-vol" min="0" max="1" step="0.01" style="flex:1">' +
-      '<button type="button" id="wr-vol-up" aria-label="Music volume up 5 percent" style="min-width:56px;min-height:48px;font-size:1.4em">+</button></div></div>' +
-      '<div style="margin-top:10px"><label>Mood <select id="wr-music-mood"><option value="">Auto (match chapter)</option></select></label></div>' +
-      '<p style="font-size:.8em;opacity:.7;margin:8px 0 0">Music stays on your device. Files named 01- to 06- match chapter moods.</p>';
+      '<input type="file" id="wr-music-dir" webkitdirectory multiple style="display:none">';
     ref.parentNode.insertBefore(c, ref.nextSibling);
     var sel = $('wr-music-mood');
     if (st.map && st.map.buckets) Object.keys(st.map.buckets).forEach(function (k) {
-      var o = document.createElement('option'); o.value = k; o.textContent = k + ' ' + st.map.buckets[k]; sel.appendChild(o);
+      var o = document.createElement('option'); o.value = k; o.textContent = st.map.buckets[k]; sel.appendChild(o);
     });
     sel.value = lsGet('wr-music-bucket-override', '');
     var v = $('wr-music-vol'); v.value = st.vol;
@@ -225,14 +312,24 @@
     showVol();
     $('wr-music-pick').onclick = function () { ensureAudio(); $('wr-music-files').click(); };
     $('wr-music-files').onchange = function (e) { addFiles(e.target.files, true); };
-    $('wr-music-pickdir').onclick = function () { ensureAudio(); $('wr-music-dir').click(); };
+    Array.prototype.forEach.call(c.querySelectorAll('[data-wrm="pickdir"]'), function (b) { b.onclick = function () { ensureAudio(); $('wr-music-dir').click(); }; });
     $('wr-music-dir').onchange = function (e) { addFiles(e.target.files, true); };
     $('wr-music-toggle').onclick = function () {
-      st.on = !st.on; this.textContent = 'Music: ' + (st.on ? 'on' : 'off');
+      st.on = !st.on;
       if (st.on) { if (st.wantPlay) playCurrent(true); } else { setVol(st.vol); pauseMusic(); }
+      status();
     };
     $('wr-music-next').onclick = function () { if (st.list.length) { st.idx = (st.idx + 1) % st.list.length; st.wantPlay = true; playCurrent(true); } };
-    $('wr-music-clear').onclick = function () { pauseMusic(); st.tracks = []; st.list = []; st.idx = 0; idbClear(); status(); };
+    var clr = $('wr-music-clear'), armT = 0;
+    clr.onclick = function () {
+      if (!clr.classList.contains('wrm-armed')) {
+        clr.classList.add('wrm-armed'); clr.textContent = 'Tap again to clear';
+        clearTimeout(armT); armT = setTimeout(function () { clr.classList.remove('wrm-armed'); clr.textContent = 'Clear'; }, 3500);
+        return;
+      }
+      clearTimeout(armT); clr.classList.remove('wrm-armed'); clr.textContent = 'Clear';
+      pauseMusic(); st.tracks = []; st.list = []; st.idx = 0; idbClear(); status();
+    };
     sel.onchange = function () { lsSet('wr-music-bucket-override', sel.value); applyChapter(st.chap); };
     status();
   }
@@ -248,7 +345,7 @@
       var orig = app[n]; if (typeof orig !== 'function') return;
       app[n] = function () {
         if (n === 'play') { st.wantPlay = true; playCurrent(false); }
-        else { st.wantPlay = false; pauseMusic(); }
+        else { st.wantPlay = false; pauseMusic(); status(); }
         return orig.apply(this, arguments);
       };
     });
