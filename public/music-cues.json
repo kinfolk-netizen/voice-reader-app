@@ -1,5 +1,5 @@
 {
- "_note": "Conductor's score v2.1 (2026-11-06) = v2 + blind-panel changes (changes adopted only where 3+ chairs independently agreed). Per cue: mood bucket, track key (filename substring), level 0.3-1.0 (0.25 allowed after silences), or silence:true. '^' = chapter start.",
+ "_note": "Conductor's score v2.2 (2026-11-06) = v2.1 + new Tension/Courage tracks from Ori and the Will of the Wisps to cut repetition. Track swaps chosen by title; adjust after listening.",
  "cues": {
   "ch01": [
    {
@@ -106,7 +106,7 @@
    {
     "at": "davrin said flatly.",
     "mood": "04",
-    "track": "Confronting-the-Ram",
+    "track": "OriWotW_20_Trouble-Within",
     "level": 0.5,
     "why": "recognition becomes classification"
    },
@@ -183,7 +183,7 @@
    {
     "at": "the road stretched east.",
     "mood": "05",
-    "track": "Arrival-at-the-Sunstone",
+    "track": "OriWotW_36_Strength-of-the-Forest",
     "level": 0.4,
     "why": "resolve, not triumph"
    },
@@ -213,7 +213,7 @@
    {
     "at": "it started at the base of his skull",
     "mood": "04",
-    "track": "Hiding-from-Kuro",
+    "track": "OriWotW_31_Mora-the-Spider",
     "level": 0.55,
     "why": "Unseen watcher shadows them"
    },
@@ -225,7 +225,7 @@
    {
     "at": "He was stacking kindling when the branch snapped",
     "mood": "04",
-    "track": "Confronting-the-Ram",
+    "track": "OriWotW_07_Howl",
     "level": 0.6,
     "why": "Stranger emerges; music returns with the danger"
    }
@@ -255,14 +255,14 @@
    {
     "at": "She knelt before a massive canvas stretched between two trees",
     "mood": "04",
-    "track": "Hiding-from-Kuro",
+    "track": "OriWotW_26_Ash-and-Bone",
     "level": 0.5,
     "why": "Weeping girl paints Accord propaganda"
    },
    {
     "at": "And drew a single jagged line across",
     "mood": "05",
-    "track": "Arrival-at-the-Sunstone",
+    "track": "OriWotW_33_The-Darkness-Lifted",
     "level": 0.6,
     "why": "Defiance: art refuses the lie"
    },
@@ -318,7 +318,7 @@
    {
     "at": "Then the sky darkened",
     "mood": "04",
-    "track": "Confronting-the-Ram",
+    "track": "OriWotW_16_Kwolok-s-Throne-Room",
     "level": 0.7,
     "why": "The Accord counter-song crushes their light"
    },
@@ -351,7 +351,7 @@
    {
     "at": "The Silencers came an hour before dawn",
     "mood": "04",
-    "track": "Dash-Through-Their-Home",
+    "track": "OriWotW_23_Escaping-a-Foul-Presence",
     "level": 0.4,
     "why": "Silencers arrive, hiding children under roots"
    },
@@ -400,7 +400,7 @@
    {
     "at": "The warning came at noon",
     "mood": "04",
-    "track": "Hiding-from-Kuro",
+    "track": "OriWotW_13_Hornbug",
     "level": 0.6,
     "why": "Silencers and hounds three miles out"
    },
@@ -414,7 +414,7 @@
    {
     "at": "The attack came at dusk",
     "mood": "04",
-    "track": "Dash-Through-Their-Home",
+    "track": "OriWotW_51_Escaping-the-Sandworm",
     "level": 0.55,
     "why": "The Hush rises; the desperate uphill flight"
    },
@@ -492,7 +492,7 @@
    {
     "at": "The sun rose slowly",
     "mood": "05",
-    "track": "Arrival-at-the-Sunstone",
+    "track": "OriWotW_37_Resolution-in-Paradise",
     "level": 0.45,
     "why": "Dawn resolve; walking in without a plan"
    }
@@ -555,7 +555,7 @@
    {
     "at": "In his quarters, Alyrion pulled out fresh parchment",
     "mood": "04",
-    "track": "Hiding-from-Kuro",
+    "track": "OriWotW_20_Trouble-Within",
     "level": 0.5,
     "why": "He refuses grace; cold pursuit orders resume"
    }
