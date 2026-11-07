@@ -241,7 +241,7 @@
     '#music-card .wrm-eyebrow{font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:3px}',
     '#music-card .wrm-title{font-family:var(--serif);font-size:1.05em;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
     '#music-card .wrm-sub{font-size:.8em;color:var(--ink-3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-    '#music-card .wrm-icon{flex:0 0 44px;width:44px;height:44px;padding:0;border-radius:50%;background:transparent;border:1px solid var(--hairline);color:var(--ink-2);display:flex;align-items:center;justify-content:center}',
+    '#music-card .wrm-icon{flex:0 0 44px;width:44px;height:44px;padding:0;border-radius:50%;background:transparent;border:1px solid var(--hairline);color:var(--ink-2);font-size:22px;font-weight:400;line-height:1;display:flex;align-items:center;justify-content:center}',
     '#music-card .wrm-icon:hover{border-color:var(--accent);color:var(--accent);opacity:1}',
     '#music-card .wrm-chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 18px}',
     '#music-card .wrm-chip{font-size:12px;font-weight:500;padding:5px 11px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--hairline-soft)}',
