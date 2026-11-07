@@ -1,4 +1,4 @@
-/* Witness Reader scene themes - Pitch Room Run 21 (2026-11-07). Each block is scoped to [data-theme="<id>"]. */
+/* Witness Reader scene themes - Pitch Room Runs 21 + 23 (2026-11-07). Each block is scoped to [data-theme="<id>"]. */
 /* ---- Scene theme base (shared) ---- */
 #wr-scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .app-container { position: relative; z-index: 1; }
@@ -1335,4 +1335,254 @@
   @keyframes sa-breathe { from { opacity: 0.75; } to { opacity: 1; } }
   @keyframes sa-drift { from { transform: translateX(-14px); } to { transform: translateX(16px); } }
   @keyframes sa-float { from { transform: translate(0, 0); opacity: 0.5; } to { transform: translate(-18px, -26px); opacity: 1; } }
+}
+
+/* ===== Gulf Morning (beachc) ===== */
+/* Gulf Morning (beachc) - Caleb Turner. 7:10am on a Gulf Coast beach: an empty sling chair, coffee in the sand, the old pier, small waves coming in. */
+[data-theme="beachc"]:root, [data-theme="beachc"] {
+  --paper: #EADBC0;
+  --surface: #FBF6EC;
+  --surface-2: #F5EEDF;
+  --ink: #1F2B33;
+  --ink-2: #43525A;
+  --ink-3: #5B686D;
+  --hairline: rgba(31, 43, 51, 0.16);
+  --hairline-soft: rgba(31, 43, 51, 0.09);
+  --accent: #1D6A73;
+  --accent-deep: #154F57;
+  --accent-wash: rgba(29, 106, 115, 0.13);
+  --accent-wash-strong: rgba(29, 106, 115, 0.24);
+  --ok: #3F7A4A;
+  --err: #A63D2A;
+  --shadow-1: 0 1px 2px rgba(60, 44, 20, 0.08), 0 12px 30px rgba(70, 56, 30, 0.16);
+  --shadow-play: 0 8px 22px rgba(29, 106, 115, 0.36);
+  color-scheme: light;
+}
+
+/* ---- the beach ---- */
+[data-theme="beachc"] #wr-scene {
+  background: linear-gradient(180deg, #A9C3D2 0%, #C9D6DA 14%, #EED9C2 24%, #F5DDC2 27%, #E9D8BA 52%, #E2CDA9 100%);
+}
+[data-theme="beachc"] #wr-scene > * { position: absolute; display: block; }
+[data-theme="beachc"] .bc-sun {
+  left: -40vw; top: 4vh; width: 80vw; height: 28vh; border-radius: 50%; opacity: 0.8;
+  background: radial-gradient(closest-side, rgba(255, 246, 226, 0.95) 0 6%, rgba(255, 228, 196, 0.55) 22%, rgba(255, 222, 190, 0) 100%);
+}
+[data-theme="beachc"] .bc-cloud {
+  left: -20vw; top: 3vh; width: 150vw; height: 16vh; opacity: 0.85;
+  background:
+    radial-gradient(40% 18% at 30% 40%, rgba(255, 252, 246, 0.8), rgba(255, 252, 246, 0) 70%),
+    radial-gradient(34% 14% at 70% 66%, rgba(255, 244, 232, 0.7), rgba(255, 244, 232, 0) 70%),
+    radial-gradient(26% 10% at 52% 20%, rgba(248, 244, 240, 0.55), rgba(248, 244, 240, 0) 70%);
+}
+[data-theme="beachc"] .bc-sea {
+  left: 0; right: 0; top: 27vh; height: 21vh;
+  background: linear-gradient(180deg, #6F94A2 0%, #5F929A 16%, #66A09F 50%, #86BDB3 82%, #B0D5C6 100%);
+  box-shadow: 0 -1px 0 rgba(255, 246, 230, 0.7), 0 -6px 14px rgba(255, 240, 222, 0.5);
+}
+[data-theme="beachc"] .bc-glint {
+  left: 2vw; top: 27vh; width: 50vw; height: 12vh;
+  background: repeating-linear-gradient(180deg, rgba(255, 246, 224, 0) 0 5px, rgba(255, 246, 224, 0.55) 5px 6px);
+  -webkit-mask-image: radial-gradient(50% 70% at 40% 0%, #000, transparent 75%);
+  mask-image: radial-gradient(50% 70% at 40% 0%, #000, transparent 75%);
+}
+[data-theme="beachc"] .bc-surf { left: 0; top: 31vh; width: 100vw; height: 15vh; }
+[data-theme="beachc"] .bc-pier {
+  right: 0; top: 18.75vh; width: 78vw; height: 33vh; opacity: 0.4;
+  /* shortened: the far end dissolves into morning haze, only the near end stands at the right edge */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0 62%, rgba(0, 0, 0, 0.5) 82%, #000 96%);
+  mask-image: linear-gradient(90deg, transparent 0 62%, rgba(0, 0, 0, 0.5) 82%, #000 96%);
+}
+[data-theme="beachc"]:has(#now-playing.open) .bc-pier { opacity: 0.9; }
+[data-theme="beachc"]:has(#now-playing.open) .bc-sun { left: -30vw; top: 1vh; width: 100vw; height: 40vh; opacity: 1; }
+[data-theme="beachc"] .bc-wet {
+  left: 0; right: 0; top: 46.5vh; height: 12vh;
+  background: linear-gradient(180deg, #BFAE8E 0%, #CBB897 45%, rgba(233, 216, 186, 0) 100%);
+}
+[data-theme="beachc"] .bc-wash { left: -4vw; top: 46vh; width: 108vw; height: 5vh; }
+[data-theme="beachc"] .bc-sand {
+  left: 0; top: 50vh; width: 100vw; height: 50vh; opacity: 0.55;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 25%);
+  mask-image: linear-gradient(180deg, transparent, #000 25%);
+}
+[data-theme="beachc"] .bc-ripples { left: 0; top: 57vh; width: 100vw; height: 40vh; opacity: 0.5; }
+[data-theme="beachc"] .bc-chair { left: 3vw; top: 48vh; width: 50vw; height: auto; max-width: 300px; }
+[data-theme="beachc"] .bc-haze {
+  inset: 0;
+  background: linear-gradient(180deg, rgba(250, 244, 232, 0) 40%, rgba(250, 242, 226, 0.18) 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="beachc"] .bc-wash { animation: bc-wash 9s ease-in-out infinite alternate; }
+  [data-theme="beachc"] .bc-cloud { animation: bc-cloud 140s ease-in-out infinite alternate; }
+  [data-theme="beachc"] .bc-glint { animation: bc-glint 6s ease-in-out infinite alternate; }
+}
+@keyframes bc-wash { 0% { transform: translate3d(0, -1.2vh, 0); opacity: 0.75; } 100% { transform: translate3d(1vw, 2.4vh, 0); opacity: 1; } }
+@keyframes bc-cloud { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-14vw, 0, 0); } }
+@keyframes bc-glint { from { opacity: 0.55; } to { opacity: 1; } }
+
+/* ---- app on the sand ---- */
+[data-theme="beachc"] .header h1 { text-shadow: 0 1px 16px rgba(255, 248, 236, 0.9); }
+[data-theme="beachc"] .header p { color: #33424A; text-shadow: 0 0 10px rgba(255, 248, 236, 0.9); }
+[data-theme="beachc"] .scene-picker-label { color: #3F4D54; text-shadow: 0 0 8px rgba(255, 246, 232, 0.95); }
+[data-theme="beachc"] .card {
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.05);
+  backdrop-filter: blur(14px) saturate(1.05);
+  border-color: rgba(255, 252, 244, 0.7);
+}
+[data-theme="beachc"] .reader-display { background: color-mix(in srgb, var(--surface-2) 94%, transparent); }
+[data-theme="beachc"] select,
+[data-theme="beachc"] textarea,
+[data-theme="beachc"] input[type="text"] { background: color-mix(in srgb, var(--surface-2) 92%, transparent); }
+
+/* full-screen player: sit in the chair and look at the water */
+[data-theme="beachc"] .app-container:has(#now-playing.open) > :not(#now-playing) { visibility: hidden; }
+[data-theme="beachc"] #now-playing {
+  background: radial-gradient(90% 26% at 50% 42%, rgba(252, 247, 236, 0.86) 0%, rgba(252, 247, 236, 0.55) 62%, rgba(252, 247, 236, 0) 100%);
+}
+[data-theme="beachc"] .np-bottom {
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 252, 244, 0.75);
+  border-radius: 26px;
+  padding: 16px 16px 18px;
+  box-shadow: var(--shadow-1);
+}
+
+.theme-dot[data-theme="beachc"] {
+  background: linear-gradient(180deg, #B9CCD6 0 30%, #F3DCC2 30% 38%, #6FA3A6 38% 58%, #FFFBF2 58% 62%, #E6D3B1 62%);
+}
+
+/* ===== Night Sea (oceanc) ===== */
+/* Night Sea (oceanc) - Caleb Turner. On deck of a small boat at night: lifelines, a brass lantern, and the moon laying a road across open water. */
+[data-theme="oceanc"]:root, [data-theme="oceanc"] {
+  --paper: #0B1422;
+  --surface: #111C2C;
+  --surface-2: #0E1826;
+  --ink: #EAF0F6;
+  --ink-2: #BCC9D6;
+  --ink-3: #93A3B4;
+  --hairline: rgba(234, 240, 246, 0.15);
+  --hairline-soft: rgba(234, 240, 246, 0.08);
+  --accent: #E2C482;
+  --accent-deep: #F0D9A6;
+  --accent-wash: rgba(226, 196, 130, 0.16);
+  --accent-wash-strong: rgba(226, 196, 130, 0.28);
+  --ok: #8FCFAE;
+  --err: #F09A86;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 34px rgba(2, 6, 14, 0.5);
+  --shadow-play: 0 6px 26px rgba(226, 196, 130, 0.34);
+  color-scheme: dark;
+}
+
+/* ---- the open water ---- */
+[data-theme="oceanc"] #wr-scene {
+  background: linear-gradient(180deg, #070D19 0%, #0E1A2E 18%, #1F3250 33.6%, #1A2C46 34%, #12213A 50%, #0B1628 72%, #060C17 100%);
+}
+[data-theme="oceanc"] #wr-scene > * { position: absolute; display: block; }
+[data-theme="oceanc"] .oc-stars {
+  left: 0; top: 0; width: 100%; height: 34vh;
+  background-image:
+    radial-gradient(circle, rgba(236, 242, 255, 0.9) 0 0.7px, transparent 1.3px),
+    radial-gradient(circle, rgba(236, 242, 255, 0.45) 0 0.6px, transparent 1.2px),
+    radial-gradient(circle, rgba(255, 246, 226, 0.85) 0 1px, transparent 1.8px);
+  background-size: 137px 113px, 89px 157px, 211px 191px;
+  background-position: 13px 9px, 52px 71px, 120px 40px;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.6) 55%, transparent 95%);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.6) 55%, transparent 95%);
+}
+[data-theme="oceanc"] .oc-halo {
+  left: 50vw; top: -10vh; width: 70vw; height: 44vh; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(220, 226, 240, 0.32), rgba(150, 170, 210, 0.12) 50%, rgba(120, 140, 190, 0) 100%);
+}
+[data-theme="oceanc"] .oc-moon {
+  left: calc(84.5vw - 70px); top: 6px; width: 140px; height: 140px; border-radius: 50%;
+  background: radial-gradient(closest-side, #FFFCF2 0 22%, #F6EED8 28%, rgba(246, 238, 216, 0.42) 31%, rgba(226, 230, 242, 0.16) 48%, rgba(200, 212, 236, 0.05) 72%, rgba(200, 212, 236, 0) 100%);
+}
+[data-theme="oceanc"] .oc-wisp {
+  left: 52vw; top: 10.6vh; width: 70vw; height: 2.6vh; border-radius: 50%; opacity: 0.75;
+  background: radial-gradient(closest-side, rgba(70, 86, 116, 0.9), rgba(70, 86, 116, 0));
+}
+[data-theme="oceanc"] .oc-sea {
+  left: 0; right: 0; top: 34vh; height: 2px;
+  background: linear-gradient(90deg, rgba(200, 214, 236, 0.1), rgba(230, 236, 246, 0.6) 82%, rgba(200, 214, 236, 0.15));
+}
+[data-theme="oceanc"] .oc-swell { left: -5vw; top: 34vh; width: 110vw; height: 66vh; opacity: 0.16; }
+[data-theme="oceanc"] .oc-sheen {
+  left: 36vw; top: 34vh; width: 92vw; height: 66vh;
+  background:
+    radial-gradient(9% 100% at 50% 0%, rgba(250, 238, 206, 0.16), rgba(250, 238, 206, 0) 100%),
+    radial-gradient(42% 60% at 50% 0%, rgba(214, 214, 214, 0.2), rgba(190, 206, 232, 0.05) 60%, rgba(190, 206, 232, 0) 100%);
+}
+[data-theme="oceanc"] .oc-glit { left: 0; top: 34.2vh; width: 100vw; height: 66vh; }
+[data-theme="oceanc"] .oc-ga { opacity: 1; }
+[data-theme="oceanc"] .oc-gb { opacity: 0.45; }
+[data-theme="oceanc"] .oc-lampglow {
+  left: -24vw; top: 38vh; width: 90vw; height: 40vh; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 196, 110, 0.32), rgba(255, 170, 80, 0.08) 55%, rgba(255, 170, 80, 0) 100%);
+}
+[data-theme="oceanc"] .oc-rail { left: 0; bottom: 0; width: 100vw; height: 52vh; opacity: 0.35; }
+[data-theme="oceanc"] .oc-lr { display: none; }
+/* main page + reader: the lantern hangs at the left edge of frame, in the clear gutter beside the title */
+[data-theme="oceanc"] .oc-lamp { left: -1px; top: 0; width: 36px; height: 27vh; }
+[data-theme="oceanc"] .oc-lampglow { left: -38vw; top: 4vh; width: 80vw; height: 36vh; }
+[data-theme="oceanc"]:has(#now-playing.open) .oc-rail { opacity: 1; }
+[data-theme="oceanc"]:has(#now-playing.open) .oc-lr { display: inline; }
+[data-theme="oceanc"]:has(#now-playing.open) .oc-lamp { display: none; }
+[data-theme="oceanc"]:has(#now-playing.open) .oc-lampglow { left: -24vw; top: 38vh; width: 90vw; height: 40vh; }
+[data-theme="oceanc"] .oc-vignette {
+  inset: 0;
+  background: radial-gradient(130% 90% at 55% 40%, rgba(4, 8, 16, 0) 55%, rgba(4, 8, 16, 0.55) 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="oceanc"] .oc-ga { animation: oc-glit 5.5s ease-in-out infinite alternate; }
+  [data-theme="oceanc"] .oc-gb { animation: oc-glit 7s ease-in-out -3s infinite alternate-reverse; }
+  [data-theme="oceanc"] .oc-swell { animation: oc-swell 16s ease-in-out infinite alternate; }
+}
+@keyframes oc-glit { from { opacity: 0.3; } to { opacity: 0.95; } }
+@keyframes oc-swell { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-3vw, 1.2vh, 0); } }
+
+/* ---- app over the water ---- */
+[data-theme="oceanc"] .header h1 { text-shadow: 0 2px 18px rgba(4, 8, 16, 0.8); }
+[data-theme="oceanc"] .header p,
+[data-theme="oceanc"] .scene-picker-label { text-shadow: 0 1px 10px rgba(4, 8, 16, 0.9); }
+[data-theme="oceanc"] .card {
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  backdrop-filter: blur(14px) saturate(1.1);
+  border-color: rgba(200, 216, 236, 0.14);
+}
+[data-theme="oceanc"] .reader-display { background: color-mix(in srgb, var(--surface-2) 94%, transparent); }
+[data-theme="oceanc"] select,
+[data-theme="oceanc"] textarea,
+[data-theme="oceanc"] input[type="text"] { background: color-mix(in srgb, var(--surface-2) 92%, transparent); }
+/* pale moon-gold buttons carry dark glyphs */
+[data-theme="oceanc"] .control-btn.primary,
+[data-theme="oceanc"] #player-card .rd-transport .control-btn.primary,
+[data-theme="oceanc"] #use-text-btn,
+[data-theme="oceanc"] .cast-room-btn { color: #0B1422; }
+
+/* full-screen player: the sentence floats over the moon road */
+[data-theme="oceanc"] .app-container:has(#now-playing.open) > :not(#now-playing) { visibility: hidden; }
+[data-theme="oceanc"] #now-playing {
+  background: radial-gradient(95% 24% at 50% 42%, rgba(7, 13, 25, 0.82) 0%, rgba(7, 13, 25, 0.55) 60%, rgba(7, 13, 25, 0) 100%);
+}
+[data-theme="oceanc"] .np-bottom {
+  background: color-mix(in srgb, var(--surface) 74%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(200, 216, 236, 0.14);
+  border-radius: 26px;
+  padding: 16px 16px 18px;
+  box-shadow: var(--shadow-1);
+}
+
+.theme-dot[data-theme="oceanc"] {
+  background:
+    radial-gradient(circle at 64% 26%, #FFF6DE 0 12%, rgba(255, 246, 222, 0) 14%),
+    linear-gradient(90deg, transparent 56%, rgba(243, 230, 196, 0.8) 60% 68%, transparent 72%) 0 52% / 100% 48% no-repeat,
+    linear-gradient(180deg, #0E1A2E 0 50%, #1E3150 50% 53%, #0B1628 53%);
 }
