@@ -284,7 +284,7 @@
             transition: background 0.25s ease;
         }
 
-        .reader-sentence:hover { background: var(--hairline-soft); }
+        @media (hover: hover) { .reader-sentence:hover { background: var(--hairline-soft); } }
 
         .reader-sentence.highlight {
             background: var(--accent-wash);
@@ -905,7 +905,102 @@
             .reader-content { font-size: 1.06em; line-height: 1.8; }
             .cast-name { flex-basis: 30%; }
         }
+
+        /* ======================================================================
+           Reader card v3 — Pitch Room Run 20 winner (Margot Lane, "The Page Is
+           the Player"), finished by Nia Brooks. The book page is the screen;
+           controls sit around it like a running header and footer.
+           Everything is scoped to #player-card and uses theme tokens only.
+           ====================================================================== */
+        #player-card { padding: 0; overflow: hidden; }
+        #player-card button { margin: 0; }
+        #player-card .rd-head { padding: 10px 8px 10px 22px; border-bottom: 1px solid var(--hairline-soft); }
+        #player-card .rd-head-row { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+        #player-card .rd-work { flex: 1; min-width: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); line-height: 1.4; }
+        #player-card .rd-icon { width: 44px; height: 44px; padding: 0; display: grid; place-items: center; background: transparent; color: var(--ink-2); border-radius: var(--radius-s); flex: none; }
+        #player-card .rd-icon:active { background: var(--surface-2); }
+        #player-card #status { display: flex; align-items: flex-start; gap: 8px; text-align: left; font-size: 12.5px; font-weight: 500; color: var(--ink-2); margin: 0 14px 2px 0; min-height: 0; line-height: 1.45; font-variant-numeric: tabular-nums; }
+        #player-card #status::before { content: ""; flex: none; width: 6px; height: 6px; margin-top: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-wash); }
+
+        /* the page: whole 30px lines, 13 visible, fade spans exactly the last line */
+        #player-card .reader-display {
+            background: transparent; border: 0; border-radius: 0; margin: 0;
+            padding: 20px 28px 60px; max-height: none;
+            height: calc(20px + 13 * 30px);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 calc(100% - 30px), transparent 100%);
+                    mask-image: linear-gradient(to bottom, transparent 0, #000 16px, #000 calc(100% - 30px), transparent 100%);
+            scrollbar-width: none;
+        }
+        #player-card .reader-display::-webkit-scrollbar { display: none; }
+        #player-card .reader-content { font-family: var(--serif); font-size: 19px; line-height: 30px; color: var(--ink); hyphens: auto; -webkit-hyphens: auto; }
+        #player-card .reader-content p { margin: 0; text-indent: 1.4em; }
+        #player-card .reader-content p.rd-noindent { text-indent: 0; }
+        #player-card .reader-content p.rd-first::first-letter { float: left; font-size: 62px; line-height: 54px; padding: 4px 8px 0 0; color: var(--accent); font-weight: 400; }
+        #player-card .reader-content p.rd-first::first-line { font-variant: small-caps; letter-spacing: 0.03em; }
+        #player-card .reader-content p.rd-chapter { text-indent: 0; text-align: center; padding: 8px 0 22px; }
+        #player-card .reader-content p.rd-chapter::after { content: "\25C6"; display: block; font-size: 9px; line-height: 20px; color: var(--accent); margin-top: 6px; }
+        #player-card .rd-ch-label { display: block; font-family: var(--sans); font-size: 11px; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: var(--ink-2); line-height: 20px; }
+        #player-card .rd-ch-num { display: block; font-size: 46px; line-height: 60px; color: var(--ink); text-transform: capitalize; }
+        #player-card .rd-ch-plain { display: block; font-size: 24px; line-height: 30px; font-variant: small-caps; letter-spacing: 0.04em; }
+        #player-card .reader-sentence { border-radius: 3px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+        #player-card .reader-sentence.highlight { background: var(--accent-wash); box-shadow: none; }
+
+        /* folio: progress + place */
+        #player-card .rd-folio { padding: 0 22px; }
+        #player-card .progress-bar { position: relative; height: 44px; margin: 0; background: transparent; border-radius: 0; overflow: visible; display: flex; align-items: center; }
+        #player-card .progress-bar::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--hairline); }
+        #player-card #progress-fill { position: relative; height: 3px; border-radius: 2px; background: var(--accent); }
+        #player-card #progress-fill::after { content: ""; position: absolute; right: -5px; top: 50%; width: 11px; height: 11px; margin-top: -5.5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--surface); }
+        #player-card .rd-folio-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: -8px; min-height: 44px; }
+        #player-card .rd-where { font-size: 13.5px; font-weight: 500; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+        #player-card #resume-pos-btn { min-height: 44px; padding: 0 0 0 10px; background: transparent; color: var(--ink-2); font-size: 13.5px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+        #player-card #resume-pos-btn.hidden { display: none; }
+        #player-card #resume-pos-btn::before { content: ""; width: 10px; height: 13px; flex: none; background: var(--accent); -webkit-mask: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 13'%3E%3Cpath d='M0 0h10v13L5 9.5 0 13z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 13'%3E%3Cpath d='M0 0h10v13L5 9.5 0 13z'/%3E%3C/svg%3E") center / contain no-repeat; }
+
+        /* transport */
+        #player-card .rd-transport { display: flex; justify-content: center; align-items: center; gap: 22px; margin: 2px 0 12px; }
+        #player-card .rd-transport .control-btn { width: 56px; height: 56px; border: 0; background: transparent; color: var(--ink); }
+        #player-card .rd-transport .control-btn:active { background: var(--surface-2); }
+        #player-card .rd-transport .control-btn.primary { width: 72px; height: 72px; background: var(--accent); color: #fff; box-shadow: var(--shadow-play); }
+
+        /* note bar: Copy quiet on the left, Note under the right thumb */
+        #player-card .rd-notebar { display: flex; align-items: center; gap: 10px; padding: 0 16px 16px 14px; }
+        #player-card #copy-btn { flex: none; width: 56px; height: 56px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: transparent; color: var(--ink-2); border-radius: var(--radius-s); }
+        #player-card #copy-btn:active { background: var(--surface-2); }
+        #player-card #copy-btn span { font-size: 12px; font-weight: 500; }
+        #player-card #note-btn { flex: 1; min-width: 0; min-height: 60px; display: flex; align-items: center; gap: 12px; padding: 8px 18px; border-radius: 999px; background: var(--accent-wash); color: var(--accent-deep); text-align: left; }
+        #player-card #note-btn:hover { opacity: 1; background: var(--accent-wash-strong); }
+        #player-card #note-btn svg { flex: none; }
+        #player-card #note-btn .rd-txt { display: block; font-size: 16.5px; font-weight: 600; line-height: 1.2; }
+        #player-card #note-btn small { display: block; font-size: 13px; font-weight: 400; line-height: 1.3; color: var(--ink-2); margin-top: 2px; }
+        @media (prefers-color-scheme: dark) { #player-card #note-btn { color: var(--accent); } }
+
+        /* mix toggle drawn as a switch; the whole row is the tap target */
+        #player-card .rd-mix { display: flex; align-items: center; gap: 14px; min-height: 64px; margin: 0; padding: 10px 22px; border-top: 1px solid var(--hairline-soft); cursor: pointer; }
+        #player-card .rd-mix-txt { flex: 1; min-width: 0; }
+        #player-card .rd-lbl { display: block; color: var(--ink); font-size: 15px; line-height: 1.3; }
+        #player-card .rd-hint { display: block; color: var(--ink-2); font-size: 13px; line-height: 1.35; margin-top: 2px; }
+        #player-card .rd-mix input { appearance: none; -webkit-appearance: none; margin: 0; flex: none; position: relative; width: 51px; height: 31px; border-radius: 999px; background: var(--ink-3); cursor: pointer; transition: background 0.2s; }
+        #player-card .rd-mix input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: var(--surface); box-shadow: var(--shadow-1); transition: transform 0.2s; }
+        #player-card .rd-mix input:checked { background: var(--accent); }
+        #player-card .rd-mix input:checked::after { background: #fff; transform: translateX(20px); }
+
+        /* notes as endnotes */
+        #player-card .writer-desk { margin: 0; padding: 6px 22px 12px; border-top: 1px solid var(--hairline); background: var(--surface-2); }
+        #player-card .rd-desk-head { display: flex; align-items: center; justify-content: space-between; min-height: 48px; }
+        #player-card .rd-sc { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); }
+        #player-card .rd-sc b { color: var(--accent); font-weight: 600; margin-left: 6px; }
+        #player-card #export-notes-btn { min-height: 44px; padding: 0 0 0 12px; background: transparent; color: var(--ink-2); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+        #player-card #notes-list { counter-reset: endnote; }
+        #player-card #notes-list:empty::before { content: "No notes yet. Tap \201CNote this line\201D while you listen."; display: block; padding: 4px 0 10px; font-size: 13px; color: var(--ink-2); }
+        #player-card .note-item { position: relative; counter-increment: endnote; background: transparent; border: 0; border-top: 1px solid var(--hairline-soft); border-radius: 0; margin: 0; padding: 14px 0 16px 28px; }
+        #player-card .note-item::before { content: counter(endnote); position: absolute; left: 0; top: 14px; font-family: var(--serif); font-size: 15px; line-height: 1.5; color: var(--accent); }
+        #player-card .note-item .np { font-family: var(--serif); font-style: italic; font-size: 14.5px; line-height: 1.5; color: var(--ink-2); margin: 0; }
+        #player-card .note-item .nt { font-family: var(--serif); font-size: 16px; line-height: 1.5; color: var(--ink); margin-top: 6px; }
+        #player-card .note-item .nd { font-size: 12.5px; color: var(--ink-2); margin-top: 8px; font-variant-numeric: tabular-nums; }
+        #player-card .memo-play { margin-top: 8px; }
     </style>
+    <link rel="stylesheet" href="scene-themes.css">
 </head>
 <body>
     <div class="app-container">
@@ -1006,6 +1101,8 @@
 
         <div class="card collapsible" id="manuscript-card">
             <div class="card-title">Manuscript</div>
+            <label for="book-title">Book title <span style="color:var(--ink-3);font-weight:400">(shown on your lock screen)</span></label>
+            <input type="text" id="book-title" autocomplete="off" placeholder="The Resonance Field Saga">
             <textarea id="text" placeholder="Paste your chapter here&hellip;">Welcome to Witness Reader. Paste a chapter, press play, and follow along as every sentence lights up in turn. Tap any sentence to begin reading from that moment.</textarea>
             <button id="use-text-btn">Load Text</button>
         </div>
@@ -1021,39 +1118,50 @@
         </div>
 
         <div class="card" id="player-card" style="display: none;">
-            <div class="card-title">Reader</div>
-
-            <button id="open-np-btn" class="np-open-btn" title="Open the full-screen player">Open full-screen player</button>
-
-            <label class="mix-toggle">
-                <input type="checkbox" id="mix-music">
-                <span>Mix with background music</span>
-            </label>
-
-            <div id="status">Ready to play</div>
-
-            <div class="controls">
-                <button class="control-btn" id="skip-back" title="Previous sentence"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11 12l8.5-6v12L11 12zm-6.5 0L13 6v12l-8.5-6z"/></svg></button>
-                <button class="control-btn primary" id="play-btn" title="Play"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg></button>
-                <button class="control-btn" id="skip-forward" title="Next sentence"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13 12L4.5 6v12L13 12zm6.5 0L11 6v12l8.5-6z"/></svg></button>
-            </div>
-
-            <div class="progress-bar" id="progress-bar">
-                <div id="progress-fill"></div>
+            <div class="rd-head">
+                <div class="rd-head-row">
+                    <div class="rd-work" id="rd-work">The Resonance Field Saga</div>
+                    <button id="open-np-btn" class="rd-icon" title="Open the full-screen player" aria-label="Open the full-screen player"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg></button>
+                </div>
+                <div id="status" aria-live="polite">Ready to play</div>
             </div>
 
             <div class="reader-display">
                 <div class="reader-content" id="reader-content"></div>
             </div>
 
+            <div class="rd-folio">
+                <div class="progress-bar" id="progress-bar" role="slider" aria-label="Chapter progress - tap to jump" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                    <div id="progress-fill"></div>
+                </div>
+                <div class="rd-folio-row">
+                    <span class="rd-where" id="rd-where"></span>
+                    <button id="resume-pos-btn" class="hidden" title="Jump to your saved spot">Jump to saved spot</button>
+                </div>
+            </div>
+
+            <div class="controls rd-transport">
+                <button class="control-btn" id="skip-back" title="Previous sentence" aria-label="Previous sentence"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M11 12l8.5-6v12L11 12zm-6.5 0L13 6v12l-8.5-6z"/></svg></button>
+                <button class="control-btn primary" id="play-btn" title="Play" aria-label="Play or pause"><svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7L8 5z"/></svg></button>
+                <button class="control-btn" id="skip-forward" title="Next sentence" aria-label="Next sentence"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M13 12L4.5 6v12L13 12zm6.5 0L11 6v12l8.5-6z"/></svg></button>
+            </div>
+
+            <div class="rd-notebar">
+                <button id="copy-btn" title="Copy current passage (C)" aria-label="Copy passage"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg><span>Copy</span></button>
+                <button id="note-btn" title="Pause and note this line (N)" aria-label="Note this line"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg><span><span class="rd-txt">Note this line</span><small>Pauses so you can say or type the fix</small></span></button>
+            </div>
+
+            <label class="mix-toggle rd-mix">
+                <span class="rd-mix-txt"><span class="rd-lbl">Keep other apps' audio playing</span><span class="rd-hint">Spotify or Apple Music stays on under the narration</span></span>
+                <input type="checkbox" id="mix-music" role="switch">
+            </label>
+
             <div id="cost-display" class="hidden"></div>
 
             <div class="writer-desk" id="writer-desk">
-                <div class="writer-toolbar">
-                    <button id="note-btn" title="Pause and note this passage (N)">Note</button>
-                    <button id="copy-btn" title="Copy current passage (C)">Copy passage</button>
-                    <button id="resume-pos-btn" class="hidden" title="Resume where you left off">Resume</button>
-                    <button id="export-notes-btn" title="Download notes as Markdown">Export notes</button>
+                <div class="rd-desk-head">
+                    <span class="rd-sc">Notes<b id="notes-count"></b></span>
+                    <button id="export-notes-btn" title="Download notes as Markdown"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Export notes</button>
                 </div>
                 <div id="note-editor" class="hidden">
                     <div class="note-card">
@@ -1193,9 +1301,26 @@
 
             setupEventListeners() {
                 document.getElementById('use-text-btn').addEventListener('click', () => this.loadText());
+                const bt = document.getElementById('book-title');
+                if (bt) {
+                    try { bt.value = localStorage.getItem('wr-book-title') || ''; } catch (e) {}
+                    bt.addEventListener('change', () => {
+                        try { localStorage.setItem('wr-book-title', bt.value.trim()); } catch (e) {}
+                        this.updateReaderHeader();
+                    });
+                }
                 document.getElementById('play-btn').addEventListener('click', () => this.togglePlay());
                 document.getElementById('skip-back').addEventListener('click', () => this.skipSentence(-1));
                 document.getElementById('skip-forward').addEventListener('click', () => this.skipSentence(1));
+                document.getElementById('progress-bar').addEventListener('click', (e) => {
+                    const total = (this.currentText || '').length;
+                    if (!total) return;
+                    const r = e.currentTarget.getBoundingClientRect();
+                    const frac = Math.max(0, Math.min(1, (e.clientX - r.left) / (r.width || 1)));
+                    const idx = this.findSentenceIndexAt(Math.floor(frac * total));
+                    const span = this.readerSentenceSpans[idx];
+                    if (span) { this.currentCharIndex = parseInt(span.dataset.start, 10) || 0; this.jumpToOffset(this.currentCharIndex); this.refreshNowPlaying(); }
+                });
                 if ('mediaSession' in navigator) {
                     // Lock-screen / background media controls (best-effort; some unsupported).
                     const setAction = (name, fn) => {
@@ -1822,13 +1947,15 @@ async loadDynamicVoices(providerId) {
                 const list = document.getElementById('notes-list');
                 if (!list) return;
                 list.innerHTML = '';
+                const cnt = document.getElementById('notes-count');
+                if (cnt) cnt.textContent = this.notes.length ? String(this.notes.length) : '';
                 this.notes.slice().reverse().forEach((n) => {
                     const div = document.createElement('div');
                     div.className = 'note-item';
                     div.innerHTML = '<div class="np"></div><div class="nt"></div><div class="nd"></div>';
                     div.querySelector('.np').textContent = '\u201C' + n.passage.slice(0, 120) + (n.passage.length > 120 ? '\u2026' : '') + '\u201D';
                     div.querySelector('.nt').textContent = n.note || n.transcript || (n.memoId ? '(voice memo)' : '');
-                    div.querySelector('.nd').textContent = n.pct + '% - ' + new Date(n.ts).toLocaleString();
+                    div.querySelector('.nd').textContent = new Date(n.ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' \u00B7 ' + n.pct + '%';
                     if (n.memoId) {
                         const playBtn = document.createElement('button');
                         playBtn.className = 'memo-play';
@@ -1906,7 +2033,7 @@ async loadDynamicVoices(providerId) {
                 const btn = document.getElementById('resume-pos-btn');
                 if (saved > 50 && saved < this.currentText.length - 50) {
                     const pct = Math.round((saved / this.currentText.length) * 100);
-                    btn.textContent = 'Resume at ' + pct + '%';
+                    btn.textContent = 'Jump to saved spot \u00B7 ' + pct + '%';
                     btn.classList.remove('hidden');
                     btn.onclick = () => { this.jumpToOffset(saved); btn.classList.add('hidden'); };
                 } else {
@@ -1956,6 +2083,56 @@ async loadDynamicVoices(providerId) {
                 return bits.join(' · ') + ' — Ready to play';
             },
 
+            // v3 (2026-11-07): every character of the chapter now belongs to a
+            // sentence span, so the narrator can never speak words that are not
+            // on screen. The old regex dropped any sentence that ended in a
+            // closing quote or bracket ("...afraid." He went) and any line with
+            // no end punctuation (headings), which left Now Playing stuck on a
+            // stale line while the voice kept reading. Each non-empty line is a
+            // paragraph (Google Docs pastes use single newlines).
+            splitReaderSentences(text) {
+                const out = [];
+                const ENDERS = '.!?…';
+                const CLOSERS = '"\'”’»)]}*_';
+                const lineRe = /[^\n]+/g;
+                let m, para = 0;
+                while ((m = lineRe.exec(text)) !== null) {
+                    const lineStart = m.index, lineEnd = m.index + m[0].length;
+                    let i = lineStart;
+                    while (i < lineEnd && /\s/.test(text[i])) i++;
+                    if (i >= lineEnd) continue;               // blank line
+                    let sStart = i;
+                    while (i < lineEnd) {
+                        if (ENDERS.indexOf(text[i]) !== -1) {
+                            let j = i;
+                            while (j < lineEnd && ENDERS.indexOf(text[j]) !== -1) j++;
+                            while (j < lineEnd && CLOSERS.indexOf(text[j]) !== -1) j++;
+                            if (j >= lineEnd || /\s/.test(text[j])) {
+                                out.push({ start: sStart, end: j, para });
+                                while (j < lineEnd && /\s/.test(text[j])) j++;
+                                sStart = j; i = j; continue;
+                            }
+                            i = j; continue;
+                        }
+                        i++;
+                    }
+                    let e = lineEnd;
+                    while (e > sStart && /\s/.test(text[e - 1])) e--;
+                    if (e > sStart) out.push({ start: sStart, end: e, para });
+                    para++;
+                }
+                return out;
+            },
+
+            // A short first line with no end punctuation ("Chapter Three",
+            // "Prologue") is shown as the chapter opening.
+            chapterHeading(text) {
+                const first = (text || '').split('\n').map(l => l.trim()).find(l => l.length) || '';
+                if (!first || first.length > 60 || /[.!?…,;:]$/.test(first)) return null;
+                if (!/^(chapter|ch\.?|prologue|epilogue|interlude|part|book)\b/i.test(first)) return null;
+                return first;
+            },
+
             prepareReaderText() {
                 const readerContent = document.getElementById('reader-content');
                 readerContent.innerHTML = '';
@@ -1963,42 +2140,45 @@ async loadDynamicVoices(providerId) {
                 this.readerActiveIndex = -1;
 
                 const text = this.currentText || '';
+                const parts = this.splitReaderSentences(text);
+                const heading = this.chapterHeading(text);
+                this.chapterTitle = heading || '';
+                console.log('[SENTENCE PARSING] Found', parts.length, 'sentences');
 
-                // Split text into sentences
-                // Match sentences ending with . ! ? followed by space or end of string
-                const sentenceRegex = /[^.!?]+[.!?]+(?:\s|$)/g;
-                const sentences = text.match(sentenceRegex) || [text];
-
-                console.log('[SENTENCE PARSING] Found', sentences.length, 'sentences');
-
-                let currentPosition = 0;
-                let pEl = document.createElement('p');
-                let sentencesInParagraph = 0;
-
-                sentences.forEach((sentence, index) => {
-                    // Find actual position in original text
-                    const sentenceStart = text.indexOf(sentence, currentPosition);
-
-                    // Check if this sentence starts a new paragraph (preceded by \n\n)
-                    if (sentenceStart > 0) {
-                        const textBefore = text.substring(currentPosition, sentenceStart);
-                        if (textBefore.includes('\n\n')) {
-                            // Flush current paragraph
-                            if (sentencesInParagraph > 0) {
-                                readerContent.appendChild(pEl);
-                                pEl = document.createElement('p');
-                                sentencesInParagraph = 0;
-                            }
-                        }
+                let pEl = null, lastPara = -1, proseParas = 0;
+                parts.forEach((seg, index) => {
+                    if (seg.para !== lastPara) {
+                        pEl = document.createElement('p');
+                        const isHeading = heading && seg.para === 0;
+                        if (isHeading) pEl.className = 'rd-chapter';
+                        else if (proseParas === 0) { pEl.className = 'rd-first rd-noindent'; proseParas++; }
+                        else proseParas++;
+                        readerContent.appendChild(pEl);
+                        lastPara = seg.para;
+                    } else {
+                        pEl.appendChild(document.createTextNode(' '));
                     }
-
-                    // Create sentence span
+                    const sentence = text.slice(seg.start, seg.end);
                     const span = document.createElement('span');
-                    span.textContent = sentence;
                     span.classList.add('reader-sentence');
-                    span.dataset.start = String(sentenceStart >= 0 ? sentenceStart : currentPosition);
+                    if (heading && seg.para === 0) {
+                        const hm = sentence.match(/^(\S+)\s+(.+)$/);
+                        if (hm && /^(chapter|ch\.?|part|book)$/i.test(hm[1])) {
+                            const a = document.createElement('span'); a.className = 'rd-ch-label'; a.textContent = hm[1];
+                            const b = document.createElement('span'); b.className = 'rd-ch-num'; b.textContent = hm[2];
+                            span.appendChild(a); span.appendChild(document.createTextNode(' ')); span.appendChild(b);
+                        } else {
+                            const a = document.createElement('span'); a.className = 'rd-ch-plain'; a.textContent = sentence;
+                            span.appendChild(a);
+                        }
+                    } else {
+                        span.textContent = sentence;
+                    }
+                    span.dataset.start = String(seg.start);
+                    // highlight range runs to the next sentence, so the gap
+                    // (spaces, newlines) still maps to a visible line
+                    span.dataset.end = String(index + 1 < parts.length ? parts[index + 1].start : text.length);
 
-                    // Click handler to jump to sentence
                     span.addEventListener('click', () => {
                         const start = parseInt(span.dataset.start, 10) || 0;
                         this.readStartOffset = start;
@@ -2007,25 +2187,12 @@ async loadDynamicVoices(providerId) {
                     });
 
                     pEl.appendChild(span);
-
-                    // Add space between sentences (except last one)
-                    if (index < sentences.length - 1) {
-                        pEl.appendChild(document.createTextNode(' '));
-                    }
-
                     this.readerSentenceSpans.push(span);
-                    sentencesInParagraph++;
-
-                    // Update position
-                    currentPosition = sentenceStart >= 0 ? sentenceStart + sentence.length : currentPosition + sentence.length;
                 });
 
-                // Flush final paragraph
-                if (sentencesInParagraph > 0) {
-                    readerContent.appendChild(pEl);
-                }
-
                 console.log('[SENTENCE PARSING] Created', this.readerSentenceSpans.length, 'sentence spans');
+                this.updateReaderHeader();
+                this.updateFolio(this.readStartOffset || 0);
             },
 
             togglePlay() {
@@ -2261,8 +2428,12 @@ async loadDynamicVoices(providerId) {
                 }
                 // current sentence
                 const sentEl = document.getElementById('np-sentence');
-                if (sentEl && this.readerActiveIndex >= 0 && this.readerSentenceSpans[this.readerActiveIndex]) {
-                    sentEl.textContent = this.readerSentenceSpans[this.readerActiveIndex].textContent.trim();
+                let npIdx = this.readerActiveIndex;
+                if (npIdx < 0 && this.readerSentenceSpans && this.readerSentenceSpans.length && (this.currentCharIndex || this.readStartOffset)) {
+                    npIdx = this.findSentenceIndexAt(this.currentCharIndex || this.readStartOffset || 0);
+                }
+                if (sentEl && npIdx >= 0 && this.readerSentenceSpans[npIdx]) {
+                    sentEl.textContent = this.readerSentenceSpans[npIdx].textContent.trim();
                 }
                 // play glyph
                 const btn = document.getElementById('np-play');
@@ -3706,13 +3877,7 @@ async loadDynamicVoices(providerId) {
                         await audio.play();
                         if ('mediaSession' in navigator) {
                             try {
-                                navigator.mediaSession.metadata = new MediaMetadata({
-                                    title: 'Witness Reader',
-                                    artist: (chunk.speaker && chunk.speaker !== this.NARRATOR)
-                                        ? chunk.speaker
-                                        : 'Narrator',
-                                    album: 'The Resonance Field'
-                                });
+                                this.updateLockScreen(chunk.speaker);
                                 navigator.mediaSession.playbackState = 'playing';
                             } catch (e) { /* MediaSession best-effort */ }
                         }
@@ -3788,17 +3953,21 @@ async loadDynamicVoices(providerId) {
                 this.savePosition(charIndex);
                 this.clearHighlight();
 
+                let hit = -1;
                 for (let i = 0; i < this.readerSentenceSpans.length; i++) {
                     const span = this.readerSentenceSpans[i];
                     const start = parseInt(span.dataset.start, 10);
-                    const end = start + span.textContent.length;
-
-                    if (charIndex >= start && charIndex < end) {
-                        span.classList.add('highlight');
-                        this.readerActiveIndex = i;
-                        this.scrollSentenceIntoView(span);
-                        break;
-                    }
+                    const end = span.dataset.end ? parseInt(span.dataset.end, 10) : start + span.textContent.length;
+                    if (charIndex >= start && charIndex < end) { hit = i; break; }
+                }
+                // v3: never leave the reader (or Now Playing) without a line —
+                // fall back to the last sentence that starts at or before the voice.
+                if (hit < 0 && this.readerSentenceSpans.length) hit = this.findSentenceIndexAt(charIndex);
+                if (hit >= 0) {
+                    const span = this.readerSentenceSpans[hit];
+                    span.classList.add('highlight');
+                    this.readerActiveIndex = hit;
+                    this.scrollSentenceIntoView(span);
                 }
 
                 // progress (both bars) + live Now Playing sentence
@@ -3808,7 +3977,52 @@ async loadDynamicVoices(providerId) {
                 if (pf) pf.style.width = pct;
                 const npf = document.getElementById('np-progress-fill');
                 if (npf) npf.style.width = pct;
+                this.updateFolio(charIndex);
                 this.refreshNowPlaying();
+            },
+
+            // ---------- Reader header, folio and lock screen (v3) ----------
+            bookTitle() {
+                try { return localStorage.getItem('wr-book-title') || 'The Resonance Field Saga'; } catch (e) { return 'The Resonance Field Saga'; }
+            },
+
+            updateReaderHeader() {
+                const w = document.getElementById('rd-work');
+                if (w) w.textContent = this.chapterTitle ? this.bookTitle() + ' \u00B7 ' + this.chapterTitle : this.bookTitle();
+                this.updateLockScreen();
+            },
+
+            // "34% · 12 min left": time left estimated from characters at the
+            // current speed (about 15 characters a second at 1x).
+            updateFolio(charIndex) {
+                const el = document.getElementById('rd-where');
+                const total = (this.currentText || '').length;
+                if (!el || !total) return;
+                const pct = Math.max(0, Math.min(100, Math.round((charIndex / total) * 100)));
+                const speedEl = document.getElementById('speed');
+                const speed = (speedEl && parseFloat(speedEl.value)) || 1;
+                const mins = Math.max(0, Math.round((total - charIndex) / (15 * speed) / 60));
+                el.textContent = pct + '% \u00B7 ' + (mins < 1 ? 'under a minute left' : mins + ' min left');
+                const bar = document.getElementById('progress-bar');
+                if (bar) bar.setAttribute('aria-valuenow', String(pct));
+            },
+
+            // Lock screen / Control Center: chapter title, book name, cover art.
+            updateLockScreen(speaker) {
+                if (!('mediaSession' in navigator) || typeof MediaMetadata === 'undefined') return;
+                try {
+                    const who = speaker && speaker !== this.NARRATOR ? speaker : '';
+                    const chapter = this.chapterTitle || 'Witness Reader';
+                    navigator.mediaSession.metadata = new MediaMetadata({
+                        title: who ? chapter + ' \u00B7 ' + who : chapter,
+                        artist: this.bookTitle(),
+                        album: 'Witness Reader',
+                        artwork: [
+                            { src: 'art/cover-512.png', sizes: '512x512', type: 'image/png' },
+                            { src: 'art/cover-1024.png', sizes: '1024x1024', type: 'image/png' }
+                        ]
+                    });
+                } catch (e) { /* MediaSession best-effort */ }
             },
 
             highlightSentenceByIndex(index) {
@@ -3880,5 +4094,6 @@ async loadDynamicVoices(providerId) {
         app.init();
     </script>
     <script src="music-player.js"></script>
+    <script src="scene-themes.js"></script>
 </body>
 </html>

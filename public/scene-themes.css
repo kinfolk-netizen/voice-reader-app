@@ -1,0 +1,1588 @@
+/* Witness Reader scene themes - Pitch Room Runs 21 + 23 (2026-11-07). Each block is scoped to [data-theme="<id>"]. */
+/* ---- Scene theme base (shared) ---- */
+#wr-scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.app-container { position: relative; z-index: 1; }
+.scene-picker { margin-top: 14px; }
+.scene-picker-label { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px; }
+.scene-row { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: none; justify-content: flex-start; -webkit-overflow-scrolling: touch; }
+.scene-row::-webkit-scrollbar { display: none; }
+@media (min-width: 560px) { .scene-row { flex-wrap: wrap; justify-content: center; overflow: visible; } }
+.theme-dot.scene-chip { width: auto; height: 44px; flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 0 14px 0 8px; border-radius: 999px; background: var(--surface) !important; box-shadow: none; border: 1px solid var(--hairline); color: var(--ink-2); font-size: 13px; font-weight: 600; margin: 0; }
+.theme-dot.scene-chip.active { border-color: var(--accent); color: var(--ink); box-shadow: 0 0 0 2px var(--accent-wash); }
+.theme-dot.scene-chip:hover { transform: none; }
+.scene-swatch.theme-dot { width: 26px; height: 26px; border-radius: 50%; border: 0; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); pointer-events: none; display: block; }
+
+/* ===== Rainy Café (rainycafe) ===== */
+/* Rainy Cafe — a window seat at dusk: wet street lights outside, amber lamp inside. */
+[data-theme="rainycafe"] {
+  --paper: #18140f;
+  --surface: #2a2019;
+  --surface-2: #211a14;
+  --ink: #f5ecdf;
+  --ink-2: #cdbca8;
+  --ink-3: #a3917e;
+  --hairline: rgba(245, 236, 223, 0.15);
+  --hairline-soft: rgba(245, 236, 223, 0.08);
+  --accent: #e6ab72;
+  --accent-deep: #f2c08f;
+  --accent-wash: rgba(230, 171, 114, 0.20);
+  --accent-wash-strong: rgba(230, 171, 114, 0.32);
+  --ok: #93c9a2;
+  --err: #f0977c;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 32px rgba(8, 5, 3, 0.45);
+  --shadow-play: 0 6px 24px rgba(230, 171, 114, 0.42);
+  color-scheme: dark;
+}
+
+/* ---------- scene ---------- */
+[data-theme="rainycafe"] #wr-scene { background: #141a24; }
+[data-theme="rainycafe"] #wr-scene > * { position: absolute; }
+
+/* the street beyond the glass: soft out-of-focus lights */
+[data-theme="rainycafe"] .rc-street {
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 28%, rgba(255, 196, 120, 0.55) 0 11px, rgba(255, 196, 120, 0.12) 12px, transparent 34px),
+    radial-gradient(circle at 86% 18%, rgba(255, 214, 160, 0.50) 0 9px, rgba(255, 210, 150, 0.12) 10px, transparent 30px),
+    radial-gradient(circle at 72% 40%, rgba(120, 205, 210, 0.36) 0 13px, rgba(120, 200, 205, 0.09) 14px, transparent 40px),
+    radial-gradient(circle at 90% 60%, rgba(255, 185, 110, 0.34) 0 15px, rgba(255, 185, 110, 0.08) 16px, transparent 42px),
+    radial-gradient(circle at 8% 72%, rgba(150, 178, 235, 0.28) 0 12px, transparent 34px),
+    radial-gradient(circle at 52% 9%, rgba(255, 224, 176, 0.35) 0 7px, transparent 22px),
+    radial-gradient(circle at 40% 30%, rgba(255, 200, 140, 0.22) 0 5px, transparent 16px),
+    radial-gradient(circle at 62% 66%, rgba(255, 170, 110, 0.24) 0 9px, transparent 28px),
+    radial-gradient(ellipse 160% 34% at 50% 58%, rgba(70, 95, 120, 0.35), transparent 70%),
+    radial-gradient(ellipse 140% 45% at 50% 100%, rgba(240, 150, 80, 0.38), transparent 70%),
+    linear-gradient(180deg, #172233 0%, #22324a 42%, #34404f 68%, #4a3a30 100%);
+}
+
+/* rain falling outside — one tall tile strip, slid downward */
+[data-theme="rainycafe"] .rc-rain {
+  left: -10%; right: -10%; top: -220px; height: calc(100% + 440px);
+  opacity: 0.7;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='220'%3E%3Cg stroke='rgba(200,218,240,0.32)' stroke-width='1' stroke-linecap='round'%3E%3Cpath d='M12 10l-4 34'/%3E%3Cpath d='M58 70l-3 26'/%3E%3Cpath d='M34 128l-4 36'/%3E%3Cpath d='M80 160l-3 24'/%3E%3Cpath d='M70 6l-2 18'/%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='130' height='220'%3E%3Cg stroke='rgba(200,218,240,0.18)' stroke-width='1' stroke-linecap='round'%3E%3Cpath d='M24 40l-3 22'/%3E%3Cpath d='M96 110l-3 28'/%3E%3Cpath d='M60 186l-2 20'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* drops beading on the glass + fog rising from the warm sill */
+[data-theme="rainycafe"] .rc-glass {
+  inset: 0;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='180'%3E%3Cg fill='rgba(225,235,250,0.10)' stroke='rgba(235,242,255,0.22)' stroke-width='.7'%3E%3Ccircle cx='18' cy='22' r='3'/%3E%3Ccircle cx='96' cy='40' r='2'/%3E%3Ccircle cx='60' cy='88' r='3.6'/%3E%3Ccircle cx='122' cy='118' r='1.6'/%3E%3Ccircle cx='30' cy='140' r='2.2'/%3E%3Ccircle cx='84' cy='162' r='1.4'/%3E%3C/g%3E%3Cg fill='rgba(255,255,255,0.55)'%3E%3Ccircle cx='17' cy='21' r='.8'/%3E%3Ccircle cx='59' cy='87' r='1'/%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='210' height='150'%3E%3Cg fill='rgba(225,235,250,0.08)' stroke='rgba(235,242,255,0.16)' stroke-width='.6'%3E%3Ccircle cx='50' cy='30' r='1.6'/%3E%3Ccircle cx='160' cy='70' r='2.6'/%3E%3Ccircle cx='110' cy='128' r='1.3'/%3E%3Ccircle cx='190' cy='14' r='1.1'/%3E%3C/g%3E%3C/svg%3E") 40px 60px,
+    linear-gradient(180deg, transparent 58%, rgba(232, 214, 196, 0.10) 82%, rgba(232, 214, 196, 0.18) 100%);
+}
+
+/* one slow drop sliding down the pane */
+[data-theme="rainycafe"] .rc-drip {
+  left: 22%; top: 8%; width: 5px; height: 7px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.8) 0 1px, rgba(225, 235, 250, 0.25) 2px, rgba(225, 235, 250, 0.12));
+  box-shadow: 0 -40px 0 -1px rgba(225, 235, 250, 0.06);
+  opacity: 0.85;
+}
+
+/* warm pendant lamp reflected in the glass */
+[data-theme="rainycafe"] .rc-lamp {
+  right: -60px; top: -40px; width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(255, 190, 120, 0.28), rgba(255, 170, 100, 0.08) 45%, transparent 70%);
+}
+
+/* window frame: dark wood transom + side jambs */
+[data-theme="rainycafe"] .rc-frame {
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 0 14px, #2a1c13 14px, #3b291c 19px, #22170f 24px, transparent 24px) top / 100% 24px no-repeat,
+    linear-gradient(90deg, #22170f 0 5px, #3b291c 5px 8px, transparent 8px) left / 8px 100% no-repeat,
+    linear-gradient(270deg, #22170f 0 5px, #3b291c 5px 8px, transparent 8px) right / 8px 100% no-repeat;
+}
+
+/* the sill: wood ledge lit from inside */
+[data-theme="rainycafe"] .rc-sill {
+  left: 0; right: 0; bottom: 0; height: 64px;
+  background:
+    linear-gradient(180deg, #6b4630 0, #4a2f20 6px, #3a2418 14px, #24160e 100%);
+  box-shadow: 0 -1px 0 rgba(255, 210, 160, 0.35), 0 -30px 60px rgba(255, 160, 90, 0.18);
+}
+[data-theme="rainycafe"] .rc-mug { right: 12px; bottom: 52px; width: 58px; height: 48px; }
+/* plant tucked into the left corner of the sill, clear of the transport controls */
+[data-theme="rainycafe"] .rc-plant { left: 4px; bottom: 50px; width: 44px; height: 60px; opacity: 0.92; }
+[data-theme="rainycafe"] .rc-steam { right: 22px; bottom: 96px; width: 44px; height: 66px; opacity: 0.7;
+  -webkit-mask-image: linear-gradient(0deg, transparent, #000 30%, #000 50%, transparent); mask-image: linear-gradient(0deg, transparent, #000 30%, #000 50%, transparent); }
+[data-theme="rainycafe"] .rc-steam svg { width: 100%; height: 100%; }
+[data-theme="rainycafe"] .rc-steam path { fill: none; stroke: rgba(255, 244, 230, 0.5); stroke-width: 6; stroke-linecap: round; }
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="rainycafe"] .rc-rain { animation: rc-fall 2.4s linear infinite; will-change: transform; }
+  [data-theme="rainycafe"] .rc-drip { animation: rc-slide 14s cubic-bezier(.5, 0, .7, 1) -5s infinite; }
+  [data-theme="rainycafe"] .rc-steam { animation: rc-rise 7s ease-in-out -3s infinite; }
+  @keyframes rc-fall { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-12px, 220px, 0); } }
+  @keyframes rc-slide {
+    0%, 20% { transform: translateY(0); opacity: 0; }
+    26% { opacity: .85; }
+    60% { transform: translateY(18vh); }
+    92% { transform: translateY(62vh); opacity: .85; }
+    100% { transform: translateY(66vh); opacity: 0; }
+  }
+  @keyframes rc-rise {
+    0% { transform: translateY(14px) scaleY(.8); opacity: 0; }
+    35% { opacity: .55; }
+    100% { transform: translateY(-26px) scaleY(1.1); opacity: 0; }
+  }
+}
+
+/* ---------- app over the scene ---------- */
+[data-theme="rainycafe"] body { background: var(--paper); }
+[data-theme="rainycafe"] .header { padding-top: 84px; background: radial-gradient(ellipse 62% 40% at 50% 70%, rgba(12, 16, 24, 0.55), transparent 78%); }
+[data-theme="rainycafe"] .header h1 { color: var(--ink); text-shadow: 0 2px 18px rgba(10, 8, 6, 0.75); }
+[data-theme="rainycafe"] .header p { color: #ead9c4; text-shadow: 0 1px 10px rgba(10, 8, 6, 0.9); }
+[data-theme="rainycafe"] .badge { color: var(--accent); text-shadow: 0 1px 8px rgba(10, 8, 6, 0.9); }
+
+[data-theme="rainycafe"] .card {
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  backdrop-filter: blur(14px) saturate(1.1);
+  border: 1px solid rgba(255, 220, 180, 0.10);
+}
+[data-theme="rainycafe"] .reader-display { background: color-mix(in srgb, var(--surface-2) 94%, transparent); }
+
+/* text on the caramel accent goes dark-roast, not white */
+[data-theme="rainycafe"] #use-text-btn,
+[data-theme="rainycafe"] .control-btn.primary,
+[data-theme="rainycafe"] .cast-room-btn { color: #24170e; }
+
+/* full-screen player: tinted glass so the window shows through */
+[data-theme="rainycafe"] #now-playing {
+  background:
+    radial-gradient(ellipse 110% 34% at 50% 44%, rgba(20, 15, 11, 0.78), rgba(20, 15, 11, 0.55) 55%, rgba(20, 15, 11, 0.12) 100%),
+    linear-gradient(180deg, rgba(18, 14, 10, 0.30), rgba(18, 14, 10, 0) 22%, rgba(18, 14, 10, 0) 70%, rgba(18, 14, 10, 0.40));
+}
+[data-theme="rainycafe"] .app-container:has(#now-playing.open) > :not(#now-playing) { visibility: hidden; }
+[data-theme="rainycafe"] .np-top .np-title,
+[data-theme="rainycafe"] #np-status { color: var(--ink-2); }
+
+.theme-dot[data-theme="rainycafe"] {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 196, 120, 0.9) 0 2px, transparent 4px),
+    radial-gradient(circle at 70% 40%, rgba(120, 200, 205, 0.8) 0 2px, transparent 4px),
+    linear-gradient(180deg, #1b2432 0 62%, #6b4630 62% 70%, #e6ab72 70%);
+}
+
+/* ===== Dusk Library (library) ===== */
+/* LIBRARY AT DUSK — tall shelves, a banker's lamp, the last light through a high window.
+   Priya Raman · Pitch Room run 21 */
+[data-theme="library"] {
+  color-scheme: dark;
+  --paper: #16100C;
+  --surface: #21170F;
+  --surface-2: #1A120C;
+  --ink: #F2E8D7;
+  --ink-2: #CDBDA3;
+  --ink-3: #A39176;
+  --hairline: rgba(242, 232, 215, 0.15);
+  --hairline-soft: rgba(242, 232, 215, 0.08);
+  --accent: #5FA275;
+  --accent-deep: #4C8A61;
+  --accent-wash: rgba(95, 162, 117, 0.20);
+  --accent-wash-strong: rgba(95, 162, 117, 0.30);
+  --ok: #8CC79E;
+  --err: #E59478;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 10px 28px rgba(0, 0, 0, 0.35);
+  --shadow-play: 0 6px 22px rgba(95, 162, 117, 0.40);
+}
+[data-theme="library"] body { background: var(--paper); }
+
+/* ---------- the room ---------- */
+[data-theme="library"] #wr-scene { background: #16100C; }
+[data-theme="library"] #wr-scene > * { position: absolute; display: block; }
+[data-theme="library"] #wr-scene i { position: absolute; display: block; }
+
+[data-theme="library"] .lb-wall {
+  inset: 0;
+  background:
+    radial-gradient(120% 60% at 50% 18%, rgba(120, 72, 96, 0.30), transparent 70%),
+    linear-gradient(180deg, #221824 0%, #1E1513 46%, #150E0A 100%);
+}
+
+/* high arched window, the sky going from indigo to ember */
+[data-theme="library"] .lb-window {
+  /* lowered + shortened so the whole arch clears the NOW PLAYING header */
+  top: 10.5vh; left: 50%; width: min(42vw, 260px); height: 24vh;
+  transform: translateX(-50%);
+  border-radius: 999px 999px 3px 3px;
+  border: 7px solid #2E2016;
+  box-shadow: 0 0 0 2px #120B07, 0 0 60px 10px rgba(214, 128, 92, 0.18);
+  overflow: hidden;
+}
+[data-theme="library"] .lb-sky {
+  inset: 0;
+  background:
+    radial-gradient(70% 30% at 50% 100%, rgba(255, 196, 120, 0.85), transparent 70%),
+    linear-gradient(180deg, #1D1D3C 0%, #3A2C55 34%, #7A4867 62%, #C77060 84%, #E9A464 100%);
+}
+[data-theme="library"] .lb-sky::after { /* far rooftops */
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 14%;
+  background: #1A1018;
+  clip-path: polygon(0 60%, 12% 60%, 12% 30%, 22% 30%, 22% 55%, 38% 55%, 38% 10%, 41% 0, 44% 10%, 44% 50%, 62% 50%, 62% 25%, 76% 25%, 76% 58%, 88% 58%, 88% 40%, 100% 40%, 100% 100%, 0 100%);
+}
+[data-theme="library"] .lb-panes {
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 2px), #2E2016 calc(50% - 2px) calc(50% + 2px), transparent calc(50% + 2px)),
+    repeating-linear-gradient(180deg, transparent 0 calc(25% - 2px), #2E2016 calc(25% - 2px) 25%),
+    linear-gradient(90deg, transparent calc(25% - 1px), rgba(46, 32, 22, 0.8) calc(25% - 1px) 25%, transparent 25% calc(75% - 1px), rgba(46, 32, 22, 0.8) calc(75% - 1px) 75%, transparent 75%);
+}
+
+/* the shaft of last light, falling down and to the left */
+[data-theme="library"] .lb-beam {
+  top: 33vh; left: 8vw; width: 70vw; height: 57vh;
+  background: linear-gradient(200deg, rgba(255, 178, 118, 0.20), rgba(255, 160, 110, 0.07) 55%, transparent 85%);
+  clip-path: polygon(52% 0, 82% 0, 64% 100%, 0 100%);
+  opacity: 0.85;
+  z-index: 2;
+}
+[data-theme="library"] .lb-motes {
+  top: 34vh; left: 46vw; width: 2px; height: 2px; border-radius: 50%;
+  background: rgba(255, 214, 160, 0.7);
+  box-shadow:
+    -30px 40px 0 0 rgba(255, 214, 160, 0.55), 18px 90px 0 0 rgba(255, 214, 160, 0.45),
+    -64px 150px 0 0 rgba(255, 214, 160, 0.5), -12px 210px 0 0 rgba(255, 214, 160, 0.35),
+    -92px 260px 0 1px rgba(255, 214, 160, 0.3), -40px 320px 0 0 rgba(255, 214, 160, 0.4),
+    -120px 380px 0 0 rgba(255, 214, 160, 0.3), 6px 140px 0 0 rgba(255, 214, 160, 0.3);
+  z-index: 3;
+}
+
+/* tall bookcases, both walls */
+[data-theme="library"] .lb-case {
+  top: 16vh; bottom: 0; width: 25vw; max-width: 170px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 96px, #3E2918 96px 103px, #0F0905 103px 108px),
+    linear-gradient(90deg, #1A110B, #24170E 50%, #1A110B);
+  box-shadow: inset 0 0 0 6px #2C1D12, inset 0 0 40px rgba(0, 0, 0, 0.7);
+  z-index: 1;
+}
+[data-theme="library"] .lb-l { left: 0; border-radius: 0 3px 0 0; }
+[data-theme="library"] .lb-r { right: 0; border-radius: 3px 0 0 0; }
+[data-theme="library"] .lb-books {
+  top: 0; bottom: 0; left: 8px; right: 8px;
+  background: repeating-linear-gradient(90deg,
+    #5B2622 0 9px, #120B07 9px 10px, #24402F 10px 17px, #120B07 17px 18px,
+    #7A5A2C 18px 23px, #120B07 23px 24px, #2A3150 24px 34px, #120B07 34px 35px,
+    #43283C 35px 41px, #120B07 41px 42px, #6E5236 42px 50px, #120B07 50px 51px,
+    #3B4A32 51px 57px, #120B07 57px 58px, #8A3B2A 58px 64px, transparent 64px 72px);
+  -webkit-mask-image: repeating-linear-gradient(180deg, transparent 0 22px, #000 22px 96px, transparent 96px 108px);
+  mask-image: repeating-linear-gradient(180deg, transparent 0 22px, #000 22px 96px, transparent 96px 108px);
+  opacity: 0.82;
+}
+[data-theme="library"] .lb-b2 {
+  background: repeating-linear-gradient(90deg,
+    transparent 0 64px, #2F3B5A 64px 70px, #120B07 70px 71px, #6C2B26 71px 77px, transparent 77px 98px,
+    #556B3E 98px 104px, #120B07 104px 105px, transparent 105px 130px);
+  -webkit-mask-image: repeating-linear-gradient(180deg, transparent 0 40px, #000 40px 96px, transparent 96px 108px);
+  mask-image: repeating-linear-gradient(180deg, transparent 0 40px, #000 40px 96px, transparent 96px 108px);
+  opacity: 0.9;
+}
+[data-theme="library"] .lb-r .lb-books { background-position: 23px 0; }
+[data-theme="library"] .lb-r .lb-b2 { background-position: -40px 0; }
+
+/* the reading desk and the banker's lamp */
+[data-theme="library"] .lb-desk {
+  left: 0; right: 0; bottom: 0; height: 25vh;
+  background:
+    radial-gradient(60% 40% at 18% 0%, rgba(255, 190, 110, 0.22), transparent 70%),
+    repeating-linear-gradient(178deg, transparent 0 22px, rgba(0, 0, 0, 0.10) 22px 24px),
+    linear-gradient(180deg, #6A4428 0, #3E2817 6px, #2A1B10 30%, #120B07 100%);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 4;
+}
+[data-theme="library"] .lb-pool {
+  left: -38vw; bottom: 2vh; width: 110vw; height: 50vh;
+  background: radial-gradient(50% 50% at 50% 66%, rgba(255, 200, 112, 0.48), rgba(255, 170, 90, 0.14) 48%, transparent 72%);
+  z-index: 5;
+}
+[data-theme="library"] .lb-lamp {
+  /* smaller and lower on the desk: clear of the status line above and the skip-back button beside */
+  left: 1vw; bottom: calc(16.5vh - 24px); width: min(18vw, 90px); height: auto;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.6));
+  z-index: 6;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="library"] .lb-beam { animation: lb-beam 18s ease-in-out infinite alternate; }
+  [data-theme="library"] .lb-pool { animation: lb-lamp 7s ease-in-out infinite; }
+  [data-theme="library"] .lb-motes { animation: lb-motes 26s ease-in-out infinite alternate; }
+}
+@keyframes lb-beam { from { opacity: 0.6; transform: translateX(0); } to { opacity: 1; transform: translateX(-10px); } }
+@keyframes lb-lamp { 0%, 100% { opacity: 1; } 46% { opacity: 0.9; } 50% { opacity: 0.97; } 54% { opacity: 0.88; } }
+@keyframes lb-motes { from { transform: translate(0, 0); opacity: 0.7; } to { transform: translate(-14px, 36px); opacity: 1; } }
+
+/* ---------- the app, set into the room ---------- */
+[data-theme="library"] .header h1,
+[data-theme="library"] .header p,
+[data-theme="library"] .header .badge { text-shadow: 0 1px 2px rgba(10, 6, 4, 0.9), 0 0 18px rgba(10, 6, 4, 0.75); }
+[data-theme="library"] .header .badge { color: #9FD3AE; }
+[data-theme="library"] .header p { color: var(--ink); }
+
+[data-theme="library"] .card {
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  backdrop-filter: blur(14px) saturate(1.15);
+  border-color: rgba(242, 232, 215, 0.10);
+}
+[data-theme="library"] .reader-display {
+  background: color-mix(in srgb, var(--surface-2) 90%, transparent);
+  border-color: rgba(214, 173, 94, 0.18);
+}
+[data-theme="library"] .card-title { color: #B9A585; }
+[data-theme="library"] #use-text-btn,
+[data-theme="library"] .cast-room-btn { color: #fff; }
+
+/* full-screen player: the room stays, the sentence is lit */
+[data-theme="library"] #now-playing {
+  background:
+    radial-gradient(70% 34% at 50% 45%, rgba(22, 16, 12, 0.82), rgba(22, 16, 12, 0) 100%),
+    linear-gradient(180deg, rgba(22, 16, 12, 0.10), rgba(22, 16, 12, 0.30) 70%, rgba(22, 16, 12, 0.55));
+}
+/* while the player is open, the desk behind it steps away so only the room shows */
+[data-theme="library"] .app-container:has(> #now-playing.open) > :not(#now-playing) { visibility: hidden; }
+[data-theme="library"] .app-container:has(> #now-playing.open) #note-editor { visibility: visible; }
+[data-theme="library"] #now-playing .control-btn:not(.primary),
+[data-theme="library"] #now-playing .np-chip { background: rgba(22, 16, 12, 0.55); border-color: rgba(242, 232, 215, 0.22); color: var(--ink); }
+[data-theme="library"] #np-sentence { text-shadow: 0 1px 2px rgba(10, 6, 4, 0.8); }
+[data-theme="library"] #np-speaker { color: #9FD3AE; }
+
+.theme-dot[data-theme="library"] {
+  background:
+    radial-gradient(circle at 30% 72%, #FFD27A 0 14%, transparent 42%),
+    linear-gradient(180deg, #3A2C55 0%, #C77060 48%, #2B5B3C 52%, #1A110B 100%);
+}
+
+/* ===== Cabin Fire (cabin) ===== */
+/* Cabin Fire — log walls, a hearth low and left, snow in the window. One warm light source. */
+[data-theme="cabin"] {
+  color-scheme: dark;
+  --paper: #1A110C;
+  --surface: #2A1C14;
+  --surface-2: #20150E;
+  --ink: #F7ECDD;
+  --ink-2: #D9C5AB;
+  --ink-3: #B19A80;
+  --hairline: rgba(247, 236, 221, 0.17);
+  --hairline-soft: rgba(247, 236, 221, 0.09);
+  --accent: #D46F32;
+  --accent-deep: #F2A465;
+  --accent-wash: rgba(232, 135, 58, 0.22);
+  --accent-wash-strong: rgba(232, 135, 58, 0.34);
+  --ok: #9CC7A2;
+  --err: #F0937A;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 30px rgba(8, 4, 2, 0.45);
+  --shadow-play: 0 6px 26px rgba(232, 120, 48, 0.5);
+}
+
+/* ---- scene ---- */
+[data-theme="cabin"] #wr-scene { background: #140c08; }
+[data-theme="cabin"] #wr-scene > * { position: absolute; }
+[data-theme="cabin"] #wr-scene .cb-wall {
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(10, 6, 4, 0.78) 0%, rgba(10, 6, 4, 0.35) 45%, rgba(10, 6, 4, 0.1) 100%),
+    repeating-linear-gradient(180deg,
+      #120a06 0 2px, #4b3020 2px 5px, #3a2518 5px 20px, #2c1b11 20px 34px, #1b100a 34px 44px);
+}
+[data-theme="cabin"] #wr-scene .cb-glow {
+  inset: 0;
+  background:
+    radial-gradient(120% 70% at 0% 100%, rgba(255, 140, 60, 0.42) 0%, rgba(214, 92, 34, 0.18) 38%, transparent 70%);
+}
+[data-theme="cabin"] #wr-scene .cb-flicker {
+  inset: 0;
+  background: radial-gradient(90% 55% at 4% 96%, rgba(255, 170, 80, 0.30) 0%, rgba(255, 120, 40, 0.10) 45%, transparent 72%);
+  will-change: opacity;
+}
+
+/* window: tall, upper right, cropped by the edge like a magazine photo */
+[data-theme="cabin"] #wr-scene .cb-win {
+  top: 22px; right: -18px;
+  width: min(48vw, 260px); height: min(36vh, 330px);
+  border: 12px solid #2b1a10;
+  border-bottom-width: 16px;
+  box-shadow: inset 0 0 0 2px #120a06, 0 0 0 2px #120a06, 0 18px 40px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  background: #0d1626;
+}
+[data-theme="cabin"] #wr-scene .cb-sky {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(60% 40% at 30% 18%, rgba(170, 196, 230, 0.28), transparent 70%),
+    linear-gradient(180deg, #0a1220 0%, #16243a 60%, #2a3b55 100%);
+}
+[data-theme="cabin"] #wr-scene .cb-snow {
+  position: absolute; left: 0; right: 0; top: -100%; height: 200%;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255,255,255,0.9) 0 1.4px, transparent 2px),
+    radial-gradient(circle at 70% 60%, rgba(255,255,255,0.75) 0 1.1px, transparent 1.7px),
+    radial-gradient(circle at 45% 85%, rgba(255,255,255,0.55) 0 0.9px, transparent 1.4px),
+    radial-gradient(circle at 85% 15%, rgba(255,255,255,0.6) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 10% 70%, rgba(255,255,255,0.8) 0 1.6px, transparent 2.2px);
+  background-size: 53px 61px, 71px 83px, 37px 47px, 97px 89px, 113px 131px;
+  background-position: 0 0, 17px 29px, 7px 13px, 41px 5px, 63px 71px;
+  will-change: transform;
+}
+[data-theme="cabin"] #wr-scene .cb-pines {
+  position: absolute; left: 0; bottom: 0; width: 100%; height: 46%;
+}
+/* mullions + firelight caught on the glass */
+[data-theme="cabin"] #wr-scene .cb-pane {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 4px), #2b1a10 calc(50% - 4px) calc(50% + 4px), transparent calc(50% + 4px)),
+    linear-gradient(180deg, transparent calc(50% - 4px), #2b1a10 calc(50% - 4px) calc(50% + 4px), transparent calc(50% + 4px)),
+    linear-gradient(200deg, transparent 55%, rgba(255, 150, 70, 0.12) 100%);
+}
+[data-theme="cabin"] #wr-scene .cb-sill {
+  top: calc(22px + min(36vh, 330px) - 2px); right: -30px;
+  width: calc(min(48vw, 260px) + 40px); height: 12px;
+  background: linear-gradient(180deg, #5a3a26, #2a190f);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5);
+}
+[data-theme="cabin"] #wr-scene .cb-hearth {
+  left: -128px; bottom: -40px; width: 300px; height: 270px;
+  filter: drop-shadow(0 -6px 30px rgba(255, 120, 40, 0.25));
+}
+[data-theme="cabin"] #wr-scene .cb-vignette {
+  inset: 0;
+  background: radial-gradient(140% 100% at 50% 55%, transparent 55%, rgba(6, 3, 2, 0.6) 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="cabin"] #wr-scene .cb-flicker { animation: cb-flicker 5.2s ease-in-out infinite; }
+  [data-theme="cabin"] #wr-scene .cb-snow { animation: cb-snow 26s linear infinite; }
+}
+@keyframes cb-flicker {
+  0%, 100% { opacity: 0.85; }
+  18% { opacity: 1; }
+  31% { opacity: 0.7; }
+  47% { opacity: 0.95; }
+  63% { opacity: 0.78; }
+  80% { opacity: 1; }
+}
+@keyframes cb-snow {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-12px, 50%, 0); }
+}
+
+/* ---- app over the scene ---- */
+[data-theme="cabin"] body { background: #140c08; }
+[data-theme="cabin"] .header h1,
+[data-theme="cabin"] .header p,
+[data-theme="cabin"] .header .badge { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 18px rgba(10, 6, 4, 0.95); }
+[data-theme="cabin"] .header .badge { color: var(--accent-deep); }
+[data-theme="cabin"] .card {
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  backdrop-filter: blur(14px) saturate(1.15);
+  border-color: rgba(247, 236, 221, 0.1);
+}
+[data-theme="cabin"] .reader-display {
+  background: color-mix(in srgb, var(--surface-2) 94%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 190, 130, 0.06);
+}
+[data-theme="cabin"] .reader-sentence.highlight { color: #FFF6EA; }
+
+/* the player floats over the scene, not over the desk */
+[data-theme="cabin"] body:has(#now-playing.open) .app-container > :not(#now-playing) { visibility: hidden; }
+[data-theme="cabin"] #now-playing {
+  background:
+    radial-gradient(70% 45% at 50% 42%, rgba(20, 12, 8, 0.72), transparent 100%),
+    linear-gradient(180deg, transparent 62%, rgba(20, 12, 8, 0.32) 100%),
+    color-mix(in srgb, var(--paper) 42%, transparent);
+}
+[data-theme="cabin"] #np-sentence { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), 0 0 8px rgba(12, 7, 4, 0.7); }
+[data-theme="cabin"] #np-speaker { color: var(--accent-deep); }
+[data-theme="cabin"] #now-playing .control-btn:not(.primary) {
+  background: rgba(26, 17, 12, 0.6);
+  color: var(--ink);
+}
+[data-theme="cabin"] #now-playing .np-chip { background: rgba(26, 17, 12, 0.6); color: var(--ink); }
+
+.theme-dot[data-theme="cabin"] {
+  background:
+    radial-gradient(circle at 30% 85%, #ffb35c 0 18%, #d2581f 34%, transparent 60%),
+    linear-gradient(135deg, #1a2a44 0 38%, #3a2518 38%);
+}
+
+/* ===== Front Porch (porch) ===== */
+/* Front Porch — a Mississippi porch at dusk. Haint-blue ceiling, porch light on, fireflies in the yard. */
+[data-theme="porch"] {
+  --paper: #1B1726;
+  --surface: #241E31;
+  --surface-2: #1D1829;
+  --ink: #F5ECDD;
+  --ink-2: #D2C4B0;
+  --ink-3: #AE9F8C;
+  --hairline: rgba(245, 225, 190, 0.18);
+  --hairline-soft: rgba(245, 225, 190, 0.09);
+  --accent: #EBB55E;
+  --accent-deep: #F4C97E;
+  --accent-wash: rgba(235, 181, 94, 0.16);
+  --accent-wash-strong: rgba(235, 181, 94, 0.26);
+  --ok: #9CC79A;
+  --err: #EE9478;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 32px rgba(8, 4, 16, 0.45);
+  --shadow-play: 0 0 0 6px rgba(235, 181, 94, 0.12), 0 8px 28px rgba(235, 160, 70, 0.45);
+  color-scheme: dark;
+}
+
+[data-theme="porch"] #wr-scene { background: #1B1726; }
+[data-theme="porch"] #wr-scene > * { position: absolute; }
+[data-theme="porch"] #wr-scene i { display: block; position: absolute; }
+
+/* the evening: indigo going to peach at the tree line, first stars */
+[data-theme="porch"] .po-sky {
+  inset: 0;
+  background:
+    radial-gradient(1.5px 1.5px at 22% 14%, rgba(255, 246, 225, 0.9), transparent),
+    radial-gradient(1px 1px at 64% 9%, rgba(255, 246, 225, 0.8), transparent),
+    radial-gradient(1.2px 1.2px at 81% 22%, rgba(255, 246, 225, 0.7), transparent),
+    radial-gradient(1px 1px at 41% 25%, rgba(255, 246, 225, 0.6), transparent),
+    radial-gradient(70% 22% at 60% 63%, rgba(255, 170, 110, 0.55), transparent 70%),
+    linear-gradient(180deg, #17152B 0%, #231E3F 22%, #3A2E57 36%, #6A4466 48%, #B4666A 57%, #E39667 62.5%, #2A2030 63%, #1A1622 76%, #15121C 100%);
+}
+
+/* oaks and pines across the field */
+[data-theme="porch"] .po-trees {
+  left: 0; right: 0;
+  top: 51vh;
+  width: 100%;
+  height: 13vh;
+}
+
+/* the porch itself: ceiling, posts, rail, boards */
+[data-theme="porch"] .po-ceiling {
+  left: 0; right: 0; top: 0;
+  height: 7vh;
+  background:
+    radial-gradient(60% 260% at 6% 100%, rgba(255, 196, 120, 0.42), transparent 70%),
+    repeating-linear-gradient(180deg, #34505A 0 9px, #2A434C 9px 10px);
+  box-shadow: 0 2px 0 #D9CDB8, 0 7px 0 #A79A86, 0 10px 16px rgba(0, 0, 0, 0.45);
+}
+[data-theme="porch"] .po-post {
+  top: 7vh; bottom: 0;
+  width: clamp(16px, 4.5vw, 34px);
+  background: linear-gradient(90deg, #8E8474, #D8CDBA 35%, #EDE4D3 55%, #B3A894);
+}
+[data-theme="porch"] .po-l {
+  left: max(-4px, calc(50% - 440px));
+  background: linear-gradient(90deg, #A89C88, #F4E4C6 40%, #FFEBC8 60%, #C9B796);
+  box-shadow: 4px 0 18px rgba(255, 190, 110, 0.25);
+}
+[data-theme="porch"] .po-r {
+  right: max(-4px, calc(50% - 440px));
+  background: linear-gradient(90deg, #6E6658, #A79C89 45%, #8A8070);
+}
+
+/* porch light, mounted on the left post */
+[data-theme="porch"] .po-lamp {
+  left: calc(max(-4px, calc(50% - 440px)) + clamp(16px, 4.5vw, 34px) - 2px);
+  margin-left: 10px;
+  top: calc(7vh + 22px);
+  width: 18px; height: 28px;
+  border-radius: 3px 3px 4px 4px;
+  background: linear-gradient(180deg, #2A221C 0 4px, #FFE4A8 4px 23px, #2A221C 23px);
+  box-shadow: 0 0 8px 3px rgba(255, 214, 140, 0.85);
+}
+/* wall bracket back to the post + little cap, so the whole fixture reads in frame */
+[data-theme="porch"] .po-lamp::before { content: ""; position: absolute; left: -12px; top: 9px; width: 12px; height: 3px; background: #2A221C; border-radius: 1px; }
+[data-theme="porch"] .po-lamp::after { content: ""; position: absolute; left: 3px; top: -5px; width: 12px; height: 5px; background: #2A221C; border-radius: 3px 3px 0 0; }
+[data-theme="porch"] .po-lamp i {
+  left: 50%; top: 50%;
+  width: 640px; height: 640px;
+  margin: -320px 0 0 -320px;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  background: radial-gradient(closest-side, rgba(255, 200, 125, 0.62), rgba(255, 170, 90, 0.26) 35%, rgba(255, 150, 80, 0.08) 65%, transparent);
+}
+
+/* railing: top rail, square balusters, bottom rail */
+[data-theme="porch"] .po-rail {
+  left: 0; right: 0;
+  top: 75vh; height: 18vh;
+  background:
+    linear-gradient(180deg, #EFE5D2 0 7px, #9A8F7C 7px 10px, transparent 10px calc(100% - 9px), #CFC4B0 calc(100% - 9px)),
+    repeating-linear-gradient(90deg, transparent 0 26px, #B9AE99 26px 28px, #E3D9C6 28px 33px, #8F8573 33px 35px);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.18);
+}
+[data-theme="porch"] .po-floor {
+  left: 0; right: 0; bottom: 0;
+  height: 7vh;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 40%),
+    repeating-linear-gradient(90deg, #6B6255 0 38px, #554D42 38px 40px);
+}
+
+/* fireflies */
+[data-theme="porch"] .po-flies { inset: 0; }
+[data-theme="porch"] .po-flies i {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #FFFDD0;
+  box-shadow: 0 0 9px 4px rgba(232, 248, 120, 0.95), 0 0 28px 11px rgba(210, 238, 100, 0.38);
+  opacity: 1;
+}
+[data-theme="porch"] .po-flies i:nth-child(1) { left: 14%; top: 55vh; }
+[data-theme="porch"] .po-flies i:nth-child(2) { left: 31%; top: 60vh; opacity: 0.75; }
+[data-theme="porch"] .po-flies i:nth-child(3) { left: 47%; top: 52vh; }
+[data-theme="porch"] .po-flies i:nth-child(4) { left: 62%; top: 58vh; opacity: 0.85; }
+[data-theme="porch"] .po-flies i:nth-child(5) { left: 76%; top: 53vh; }
+[data-theme="porch"] .po-flies i:nth-child(6) { left: 88%; top: 62vh; opacity: 0.7; }
+[data-theme="porch"] .po-flies i:nth-child(7) { left: 24%; top: 65vh; }
+[data-theme="porch"] .po-flies i:nth-child(8) { left: 54%; top: 66vh; opacity: 0.8; }
+[data-theme="porch"] .po-flies i:nth-child(9) { left: 70%; top: 46vh; width: 3px; height: 3px; }
+
+/* ---------- the app, sitting in the porch light ---------- */
+[data-theme="porch"] body { background: #1B1726; }
+[data-theme="porch"] .header h1 { color: #FBF3E4; text-shadow: 0 2px 14px rgba(10, 6, 20, 0.6); }
+[data-theme="porch"] .header p { color: #E2D6C4; text-shadow: 0 1px 10px rgba(10, 6, 20, 0.7); }
+[data-theme="porch"] .badge { color: #F2C77F; }
+[data-theme="porch"] .np-top .np-title { color: #EADFCF; }
+[data-theme="porch"] .np-icon-btn { color: #EADFCF; }
+[data-theme="porch"] .card {
+  background: color-mix(in srgb, #221C2F 84%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 220, 170, 0.12);
+}
+[data-theme="porch"] .reader-display {
+  background: rgba(18, 14, 26, 0.72);
+  border-color: rgba(255, 220, 170, 0.10);
+}
+[data-theme="porch"] .reader-content { color: #F7EEDF; }
+[data-theme="porch"] .reader-sentence.highlight { background: rgba(235, 181, 94, 0.22); box-shadow: 0 0 0 3px rgba(235, 181, 94, 0.22); }
+/* gold buttons take dark lettering, like a painted sign */
+[data-theme="porch"] #use-text-btn,
+[data-theme="porch"] .control-btn.primary,
+[data-theme="porch"] .cast-room-btn { color: #2A1A08; }
+
+/* full-screen player: the desk steps aside, the porch shows through */
+[data-theme="porch"] .app-container:has(> #now-playing.open) > :not(#now-playing) { visibility: hidden; }
+[data-theme="porch"] #now-playing {
+  background:
+    radial-gradient(90% 22% at 50% 44%, rgba(20, 15, 32, 0.78), rgba(20, 15, 32, 0.45) 65%, transparent),
+    linear-gradient(180deg, rgba(20, 15, 32, 0.15), rgba(20, 15, 32, 0.05) 50%, rgba(20, 15, 32, 0.2));
+}
+[data-theme="porch"] #np-sentence { color: #FBF3E4; }
+[data-theme="porch"] .np-bottom {
+  background: rgba(30, 24, 44, 0.76);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 220, 170, 0.12);
+  border-radius: 22px;
+  padding: 14px 12px 12px;
+}
+
+/* swatch */
+.theme-dot[data-theme="porch"] {
+  background:
+    radial-gradient(circle at 70% 62%, #F6F39A 0 7%, transparent 9%),
+    radial-gradient(circle at 26% 30%, #FFD58C 0 12%, rgba(255, 190, 110, 0.5) 18%, transparent 34%),
+    linear-gradient(180deg, #231E3F 0 45%, #B4666A 62%, #E39667 70%, #1A1622 72%);
+}
+
+/* ---------- motion: fireflies and a breathing bulb ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="porch"] .po-flies i { animation: po-blink 7s ease-in-out infinite; }
+  [data-theme="porch"] .po-flies i:nth-child(2n) { animation-duration: 9s; animation-delay: -3s; }
+  [data-theme="porch"] .po-flies i:nth-child(3n) { animation-duration: 11s; animation-delay: -6s; animation-direction: reverse; }
+  [data-theme="porch"] .po-lamp i { animation: po-glow 6s ease-in-out infinite alternate; }
+  @keyframes po-blink {
+    0%, 100% { transform: translate(0, 0); opacity: 0.95; }
+    25% { opacity: 1; }
+    45% { transform: translate(14px, -10px); opacity: 0.55; }
+    70% { opacity: 1; }
+    85% { transform: translate(-6px, -18px); }
+  }
+  @keyframes po-glow { from { opacity: 0.85; } to { opacity: 1; } }
+}
+
+/* ===== Listening Room (vinyl) ===== */
+/* Listening Room — oxblood walls, a walnut deck seen from above, brass VU light. Late set, one more side. */
+[data-theme="vinyl"] {
+  color-scheme: dark;
+  --paper: #150C0B;
+  --surface: #251614;
+  --surface-2: #1C100E;
+  --ink: #F5EADB;
+  --ink-2: #D6C3AA;
+  --ink-3: #AD9780;
+  --hairline: rgba(245, 234, 219, 0.17);
+  --hairline-soft: rgba(245, 234, 219, 0.09);
+  --accent: #E2A646;
+  --accent-deep: #F0C077;
+  --accent-wash: rgba(226, 166, 70, 0.18);
+  --accent-wash-strong: rgba(226, 166, 70, 0.30);
+  --ok: #A3C9A0;
+  --err: #EF9277;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.45), 0 10px 30px rgba(6, 2, 2, 0.5);
+  --shadow-play: 0 6px 26px rgba(226, 166, 70, 0.4);
+}
+
+/* ---- scene ---- */
+[data-theme="vinyl"] #wr-scene { background: #150C0B; }
+[data-theme="vinyl"] #wr-scene > * { position: absolute; }
+[data-theme="vinyl"] #wr-scene .vn-wall {
+  inset: 0;
+  background:
+    radial-gradient(90% 60% at 100% 100%, rgba(226, 150, 60, 0.20), transparent 70%),
+    linear-gradient(180deg, rgba(8, 3, 3, 0.55), rgba(8, 3, 3, 0.15) 50%, rgba(8, 3, 3, 0.45)),
+    repeating-linear-gradient(90deg, #2b1513 0 21px, #1a0c0b 21px 23px, #321a17 23px 24px);
+}
+[data-theme="vinyl"] #wr-scene .vn-haze {
+  inset: -10% -20%;
+  background:
+    radial-gradient(40% 30% at 70% 30%, rgba(255, 200, 140, 0.07), transparent 70%),
+    radial-gradient(35% 25% at 30% 65%, rgba(255, 190, 130, 0.05), transparent 70%);
+  will-change: transform;
+}
+
+/* record shelf: a cropped column of spines down the left edge */
+[data-theme="vinyl"] #wr-scene .vn-crate {
+  left: -16px; top: 300px; bottom: -20px; width: 84px;
+  background: #21110d;
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.55);
+  border-right: 6px solid #3b2216;
+  border-top: 10px solid #4a2b1b;
+}
+[data-theme="vinyl"] #wr-scene .vn-row {
+  position: absolute; left: 0; right: 0; height: 118px;
+  border-bottom: 10px solid #4a2b1b;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+}
+[data-theme="vinyl"] #wr-scene .vn-row::after {
+  content: ""; position: absolute; inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.45), transparent 22%, transparent 80%, rgba(0, 0, 0, 0.35)),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.45), transparent 60%);
+}
+[data-theme="vinyl"] #wr-scene .r1 { top: 12px;
+  background: linear-gradient(90deg, #7a2e24 0 7px, #151212 7px 11px, #c99b45 11px 17px, #e4d6bb 17px 21px, #2e4c53 21px 31px, #191515 31px 34px, #8c5a33 34px 41px, #3b2f4c 41px 46px, #d9cbb0 46px 49px, #6d2a22 49px 58px, #181414 58px 62px, #b5893d 62px 68px, #2b3f45 68px 84px); }
+[data-theme="vinyl"] #wr-scene .r2 { top: 152px;
+  background: linear-gradient(90deg, #e2d4b8 0 5px, #232020 5px 13px, #a03a2b 13px 17px, #355a5f 17px 23px, #d1a24b 23px 33px, #141111 33px 36px, #5e3a5a 36px 42px, #e9dcc2 42px 45px, #7c4b2a 45px 55px, #1d1919 55px 58px, #c3423a 58px 63px, #2f474c 63px 73px, #d7c8ab 73px 84px); }
+[data-theme="vinyl"] #wr-scene .r3 { top: 292px;
+  background: linear-gradient(90deg, #2c4a50 0 8px, #d8a548 8px 12px, #171313 12px 18px, #8a3326 18px 26px, #e6d9bf 26px 29px, #4a3a5e 29px 36px, #1a1616 36px 40px, #b07a3b 40px 48px, #d5c6a8 48px 51px, #6e2b23 51px 60px, #121010 60px 65px, #3d6066 65px 72px, #c99a43 72px 84px); }
+/* amp on the floor, bottom right: brushed face, two brass VU meters */
+[data-theme="vinyl"] #wr-scene .vn-amp {
+  right: -66px; bottom: -12px; width: 160px; height: 56px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #3a3230 0, #221c1b 12%, #171211 100%);
+  box-shadow: 0 -1px 0 rgba(255, 220, 170, 0.25), 0 14px 26px rgba(0, 0, 0, 0.6);
+}
+[data-theme="vinyl"] #wr-scene .vn-amp i {
+  position: absolute; top: 12px; width: 44px; height: 28px; border-radius: 3px;
+  background:
+    linear-gradient(62deg, transparent calc(50% - 0.8px), #2a1608 calc(50% - 0.8px) calc(50% + 0.8px), transparent calc(50% + 0.8px)) 6px 4px / 30px 24px no-repeat,
+    radial-gradient(120% 140% at 50% 120%, #ffe2a0 0%, #f0b24c 45%, #9c5a1a 100%);
+  box-shadow: inset 0 0 0 2px #0d0909, 0 0 18px rgba(255, 180, 70, 0.55);
+}
+[data-theme="vinyl"] #wr-scene .vn-amp i:first-child { left: 14px; }
+[data-theme="vinyl"] #wr-scene .vn-amp i + i { left: 66px; }
+[data-theme="vinyl"] #wr-scene .vn-amp b {
+  position: absolute; left: 122px; top: 14px; width: 24px; height: 24px; border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #8a7b6a, #2a2321 70%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+[data-theme="vinyl"] #wr-scene .vn-ampglow {
+  right: -110px; bottom: -70px; width: 340px; height: 260px;
+  background: radial-gradient(closest-side, rgba(255, 176, 72, 0.32), rgba(255, 150, 50, 0.08) 60%, transparent);
+  will-change: opacity;
+}
+
+/* the deck: walnut plinth, seen from above, cropped by the top-right corner */
+[data-theme="vinyl"] #wr-scene .vn-deck {
+  left: calc(100% - 200px); top: 36px; width: 330px; height: 330px;
+  border-radius: 16px;
+  transform: rotate(180deg) scale(0.82);
+  background:
+    repeating-linear-gradient(97deg, rgba(0, 0, 0, 0.10) 0 2px, transparent 2px 9px, rgba(255, 210, 160, 0.04) 9px 11px, transparent 11px 17px),
+    linear-gradient(135deg, #5e3821, #3a2014 70%, #2a170e);
+  box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 220, 180, 0.08);
+}
+[data-theme="vinyl"] #wr-scene .vn-platter {
+  position: absolute; left: 20px; top: 20px; width: 270px; height: 270px; border-radius: 50%;
+  background: radial-gradient(circle, #0b0909 0 66%, #6f6560 67%, #b9ada2 69%, #4b423e 72%, #1a1514 100%);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+}
+[data-theme="vinyl"] #wr-scene .vn-disc {
+  position: absolute; left: 32px; top: 32px; width: 246px; height: 246px; border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 0 35%, #0a0808 35% 37%, transparent 37% 60%, #0a0808 60% 61%, transparent 61%),
+    repeating-radial-gradient(circle, #141111 0 1.2px, #1d1919 1.2px 2.6px);
+  will-change: transform;
+}
+[data-theme="vinyl"] #wr-scene .vn-label {
+  position: absolute; left: 50%; top: 50%; width: 82px; height: 82px; margin: -41px 0 0 -41px; border-radius: 50%;
+  background:
+    radial-gradient(circle, #d9cdb6 0 3px, #0a0808 3.5px 5px, transparent 5.5px),
+    linear-gradient(0deg, transparent 22%, rgba(20, 8, 6, 0.75) 22% 25%, transparent 25% 30%, rgba(20, 8, 6, 0.6) 30% 32%, transparent 32%),
+    linear-gradient(90deg, #7f2a21 0 50%, #c18c39 50%);
+  filter: brightness(0.9);
+}
+[data-theme="vinyl"] #wr-scene .vn-sheen {
+  position: absolute; left: 32px; top: 32px; width: 246px; height: 246px; border-radius: 50%;
+  background: conic-gradient(from 20deg, transparent 0 18deg, rgba(255, 220, 180, 0.13) 34deg, transparent 52deg 198deg, rgba(255, 220, 180, 0.10) 214deg, transparent 232deg);
+}
+[data-theme="vinyl"] #wr-scene .vn-arm {
+  left: 167px; top: 13px; width: 160px; height: 208px;
+  filter: drop-shadow(-6px 8px 6px rgba(0, 0, 0, 0.6));
+}
+[data-theme="vinyl"] #wr-scene .vn-vignette {
+  inset: 0;
+  background: radial-gradient(140% 100% at 50% 50%, transparent 55%, rgba(5, 2, 2, 0.6) 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="vinyl"] #wr-scene .vn-disc { animation: vn-spin 7.2s linear infinite; }
+  [data-theme="vinyl"] #wr-scene .vn-ampglow { animation: vn-breathe 6s ease-in-out infinite; }
+  [data-theme="vinyl"] #wr-scene .vn-haze { animation: vn-drift 38s ease-in-out infinite alternate; }
+}
+@keyframes vn-spin { to { transform: rotate(360deg); } }
+@keyframes vn-breathe { 0%, 100% { opacity: 0.7; } 50% { opacity: 1; } }
+@keyframes vn-drift { from { transform: translate3d(-4%, 0, 0); } to { transform: translate3d(4%, -3%, 0); } }
+
+/* ---- app over the scene ---- */
+[data-theme="vinyl"] body { background: #150C0B; }
+[data-theme="vinyl"] .header h1,
+[data-theme="vinyl"] .header p,
+[data-theme="vinyl"] .header .badge { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 18px rgba(8, 3, 3, 0.95); }
+[data-theme="vinyl"] .card {
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  backdrop-filter: blur(14px) saturate(1.15);
+  border-color: rgba(245, 234, 219, 0.1);
+}
+[data-theme="vinyl"] .reader-display { background: color-mix(in srgb, var(--surface-2) 94%, transparent); }
+[data-theme="vinyl"] .control-btn.primary,
+[data-theme="vinyl"] #use-text-btn,
+[data-theme="vinyl"] .cast-room-btn { color: #1A0E0C; }
+
+[data-theme="vinyl"] body:has(#now-playing.open) .app-container > :not(#now-playing) { visibility: hidden; }
+[data-theme="vinyl"] #now-playing {
+  background:
+    radial-gradient(70% 45% at 50% 44%, rgba(18, 9, 8, 0.74), transparent 100%),
+    color-mix(in srgb, var(--paper) 38%, transparent);
+}
+[data-theme="vinyl"] #np-sentence { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), 0 0 8px rgba(10, 4, 4, 0.7); }
+[data-theme="vinyl"] #now-playing .control-btn:not(.primary),
+[data-theme="vinyl"] #now-playing .np-chip { background: rgba(21, 12, 11, 0.62); color: var(--ink); }
+
+.theme-dot[data-theme="vinyl"] {
+  background:
+    radial-gradient(circle, #d39a3e 0 3px, #141111 3.5px 7px, #1d1919 7px 9px, #141111 9px 11px, transparent 11.5px),
+    #8f2f24;
+}
+
+/* ===== Neon Diner (neondiner) ===== */
+/* Neon Diner — 2 a.m. booth: a pink sign humming over the counter, chrome and red vinyl, nobody rushing you. */
+[data-theme="neondiner"] {
+  --paper: #0d0f18;
+  --surface: #171a27;
+  --surface-2: #121521;
+  --ink: #f3eff7;
+  --ink-2: #bdb7cf;
+  --ink-3: #928daa;
+  --hairline: rgba(225, 230, 245, 0.15);
+  --hairline-soft: rgba(225, 230, 245, 0.08);
+  --accent: #ee82b2;
+  --accent-deep: #f39dc3;
+  --accent-wash: rgba(238, 130, 178, 0.16);
+  --accent-wash-strong: rgba(238, 130, 178, 0.27);
+  --ok: #6fe0b4;
+  --err: #ff8c7c;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 30px rgba(3, 4, 10, 0.5);
+  --shadow-play: 0 0 0 1px rgba(245, 180, 210, 0.30), 0 4px 24px rgba(236, 110, 168, 0.40);
+  color-scheme: dark;
+}
+
+/* ---------- scene ---------- */
+[data-theme="neondiner"] #wr-scene { background: #0b0d16; }
+[data-theme="neondiner"] #wr-scene > * { position: absolute; }
+
+/* back wall: deep teal-navy, faint panel seams */
+[data-theme="neondiner"] .nd-wall {
+  inset: 0;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 77px, rgba(150, 200, 220, 0.045) 77px 78px),
+    radial-gradient(ellipse 90% 40% at 50% 100%, rgba(255, 80, 120, 0.12), transparent 70%),
+    linear-gradient(180deg, #0a0c15 0%, #0f1828 40%, #13202f 66%, #0e1420 100%);
+}
+
+/* pink neon wash spilling onto the wall around the sign */
+[data-theme="neondiner"] .nd-glow {
+  left: 50%; top: -80px; width: 560px; height: 420px; margin-left: -280px;
+  background:
+    radial-gradient(ellipse 50% 42% at 50% 50%, rgba(236, 96, 160, 0.22), rgba(236, 96, 160, 0.06) 55%, transparent 75%),
+    radial-gradient(ellipse 22% 26% at 28% 52%, rgba(63, 216, 238, 0.18), transparent 70%);
+}
+
+/* the sign */
+[data-theme="neondiner"] .nd-sign { left: 50%; top: 68px; margin-left: -117px; width: 234px; height: 101px; }
+[data-theme="neondiner"] .nd-small { font: 600 9.5px/1 -apple-system, "SF Pro Text", system-ui, sans-serif; letter-spacing: .42em; fill: #9ef0fb; opacity: .85; }
+
+/* two enamel pendant lamps with warm cones */
+[data-theme="neondiner"] .nd-lamp { top: 0; width: 48px; height: 112px; }
+[data-theme="neondiner"] .nd-l { left: 6%; }
+[data-theme="neondiner"] .nd-r { right: 6%; }
+[data-theme="neondiner"] .nd-lamp::before {
+  content: ""; position: absolute; left: 23px; top: 0; width: 2px; height: 82px;
+  background: linear-gradient(#000, #3a4252);
+}
+[data-theme="neondiner"] .nd-lamp::after {
+  content: ""; position: absolute; left: 0; top: 80px; width: 48px; height: 22px;
+  border-radius: 24px 24px 3px 3px;
+  background: linear-gradient(180deg, #2f9c92, #1d6e68 70%, #134c48);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 10px 0 -7px #ffe6b8, 0 14px 30px 4px rgba(255, 196, 120, 0.45);
+}
+
+/* chrome rail + red vinyl booth back */
+[data-theme="neondiner"] .nd-rail {
+  left: 0; right: 0; bottom: calc(17vh + 12px); height: 5px;
+  background: linear-gradient(180deg, #f2f5f9, #8a93a1 50%, #cfd5dd);
+  opacity: .55;
+}
+[data-theme="neondiner"] .nd-booth {
+  left: -4px; right: -4px; bottom: 0; height: 17vh;
+  border-radius: 26px 26px 0 0;
+  background:
+    linear-gradient(180deg, rgba(255, 150, 190, 0.22), transparent 18%, rgba(0, 0, 0, 0.45) 90%),
+    repeating-linear-gradient(90deg, #5c1522 0 6px, #74202f 16px, #5c1522 30px, #360a12 31px 33px);
+  box-shadow: inset 0 7px 0 #872a3b, inset 0 9px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* formica tabletop with a chrome edge, front and center */
+[data-theme="neondiner"] .nd-table {
+  left: 0; right: 0; bottom: 0; height: 40px;
+  background:
+    linear-gradient(180deg, #eef2f6 0, #8e97a4 3px, #dfe4ea 6px, #6c7480 8px, transparent 8px),
+    radial-gradient(circle at 20% 60%, rgba(255, 255, 255, 0.06) 0 1px, transparent 2px) 0 0 / 9px 7px,
+    linear-gradient(180deg, #3c6d70, #24474b);
+  box-shadow: 0 -10px 24px rgba(0, 0, 0, 0.35);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="neondiner"] .nd-word { animation: nd-flicker 9s steps(1, end) infinite; }
+  [data-theme="neondiner"] .nd-glow { animation: nd-hum 8s ease-in-out infinite alternate; will-change: opacity; }
+  @keyframes nd-flicker {
+    0%, 61%, 63.5%, 65%, 100% { opacity: 1; }
+    62%, 64.2% { opacity: .55; }
+  }
+  @keyframes nd-hum { from { opacity: .75; } to { opacity: 1; } }
+}
+
+/* ---------- app over the scene ---------- */
+[data-theme="neondiner"] body { background: var(--paper); }
+[data-theme="neondiner"] .header { padding-top: 172px; }
+[data-theme="neondiner"] .header h1 { color: var(--ink); text-shadow: 0 0 24px rgba(238, 130, 178, 0.22), 0 2px 12px rgba(5, 6, 12, 0.8); }
+[data-theme="neondiner"] .header p { color: #d9d3e6; text-shadow: 0 1px 10px rgba(5, 6, 12, 0.9); }
+[data-theme="neondiner"] .badge { color: #9ef0fb; }
+
+[data-theme="neondiner"] .card {
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(214, 222, 235, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), var(--shadow-1);
+}
+[data-theme="neondiner"] .reader-display { background: color-mix(in srgb, var(--surface-2) 96%, transparent); }
+[data-theme="neondiner"] .card-title { color: #9ef0fb; opacity: .8; }
+
+/* text on the pink accent stays dark so it reads like a lit sign */
+[data-theme="neondiner"] #use-text-btn,
+[data-theme="neondiner"] .control-btn.primary,
+[data-theme="neondiner"] .cast-room-btn { color: #2b0a19; }
+
+/* full-screen player: the diner stays in view, the sentence gets a dim pool */
+[data-theme="neondiner"] #now-playing {
+  background:
+    radial-gradient(ellipse 115% 32% at 50% 46%, rgba(9, 11, 19, 0.82), rgba(9, 11, 19, 0.55) 55%, rgba(9, 11, 19, 0.10) 100%),
+    linear-gradient(180deg, rgba(9, 11, 19, 0) 62%, rgba(9, 11, 19, 0.55) 80%, rgba(9, 11, 19, 0.35));
+}
+[data-theme="neondiner"] .app-container:has(#now-playing.open) > :not(#now-playing) { visibility: hidden; }
+/* transport sits on its own dark counter panel so the booth stripes never run behind the buttons */
+[data-theme="neondiner"] .np-bottom {
+  background: color-mix(in srgb, #0c0e17 90%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(214, 222, 235, 0.12);
+  border-radius: 26px;
+  padding: 16px 16px 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 -8px 30px rgba(3, 4, 10, 0.55);
+}
+[data-theme="neondiner"] .np-top .np-title,
+[data-theme="neondiner"] #np-status { color: var(--ink-2); }
+
+.theme-dot[data-theme="neondiner"] {
+  background:
+    radial-gradient(circle at 50% 38%, #fbe2ee 0 2px, #ee72aa 3px, rgba(236, 110, 168, 0.32) 6px, transparent 9px),
+    linear-gradient(180deg, #0f1828 0 66%, #94283a 66%);
+  box-shadow: inset 0 0 0 2px var(--paper), 0 0 8px rgba(236, 110, 168, 0.38);
+}
+
+/* ===== Golden Hour (goldenhour) ===== */
+/* Golden Hour — late sun through the blinds, a quiet bedroom at 5:40pm */
+[data-theme="goldenhour"]:root {
+  --paper: #F1C796;
+  --surface: #FFF6EA;
+  --surface-2: #FCEEDB;
+  --ink: #2C1A0E;
+  --ink-2: #66401F;
+  --ink-3: #85603D;
+  --hairline: rgba(84, 44, 16, 0.16);
+  --hairline-soft: rgba(84, 44, 16, 0.09);
+  --accent: #A44E26;
+  --accent-deep: #87401E;
+  --accent-wash: rgba(236, 150, 70, 0.30);
+  --accent-wash-strong: rgba(236, 150, 70, 0.42);
+  --ok: #46703A;
+  --err: #A2361F;
+  --shadow-1: 0 1px 2px rgba(90, 44, 14, 0.10), 0 12px 32px rgba(120, 58, 18, 0.18);
+  --shadow-play: 0 8px 24px rgba(164, 78, 38, 0.42);
+  color-scheme: light;
+}
+
+/* ---- the room ---- */
+[data-theme="goldenhour"] #wr-scene {
+  background:
+    radial-gradient(120% 70% at 85% 8%, #FFE2B4 0%, rgba(255, 226, 180, 0) 60%),
+    linear-gradient(180deg, #F6D3A2 0%, #EDB880 38%, #DA9658 72%, #B8703F 100%);
+}
+[data-theme="goldenhour"] #wr-scene > * { position: absolute; }
+
+[data-theme="goldenhour"] .gh-sun {
+  top: -22vmax; right: -24vmax; width: 70vmax; height: 70vmax; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 238, 200, 0.95) 0%, rgba(255, 214, 150, 0.45) 30%, rgba(255, 200, 130, 0) 64%);
+}
+
+[data-theme="goldenhour"] .gh-bed { left: -2vw; right: -2vw; bottom: 0; width: 104vw; height: 26vh; }
+
+/* blind slats projected on the wall: lit gaps, soft edges, plant shadow inside */
+[data-theme="goldenhour"] .gh-light {
+  top: 6vh; left: -10vw; width: 130vw; height: 78vh;
+  transform: rotate(-14deg) skewX(-18deg);
+  background: repeating-linear-gradient(180deg,
+    rgba(255, 240, 205, 0) 0 11px,
+    rgba(255, 242, 208, 0.78) 12.5px 30px,
+    rgba(255, 240, 205, 0) 31.5px 42px);
+  -webkit-mask-image: radial-gradient(56% 50% at 58% 44%, #000 34%, rgba(0, 0, 0, 0.55) 62%, transparent 92%);
+  mask-image: radial-gradient(56% 50% at 58% 44%, #000 34%, rgba(0, 0, 0, 0.55) 62%, transparent 92%);
+}
+[data-theme="goldenhour"] .gh-leafshadow {
+  position: absolute; right: 6%; top: 2%; width: 44%; height: 66%;
+  opacity: 0.14; filter: blur(4px);
+}
+
+/* dust motes: two soft fields of specks, each a single painted layer */
+[data-theme="goldenhour"] .gh-motes { left: 0; width: 100%; top: -40vh; height: 180vh; opacity: 0.9; }
+[data-theme="goldenhour"] .gh-m1 {
+  background-image:
+    radial-gradient(circle, rgba(255, 250, 230, 0.95) 0 1.2px, transparent 2.4px),
+    radial-gradient(circle, rgba(255, 246, 220, 0.8) 0 1px, transparent 2px),
+    radial-gradient(circle, rgba(255, 250, 230, 0.9) 0 1.5px, transparent 3px);
+  background-size: 230px 270px, 170px 210px, 310px 340px;
+  background-position: 30px 40px, 120px 150px, 210px 90px;
+  -webkit-mask-image: linear-gradient(200deg, #000 0%, rgba(0, 0, 0, 0.7) 40%, transparent 70%);
+  mask-image: linear-gradient(200deg, #000 0%, rgba(0, 0, 0, 0.7) 40%, transparent 70%);
+}
+[data-theme="goldenhour"] .gh-m2 {
+  background-image:
+    radial-gradient(circle, rgba(255, 244, 214, 0.75) 0 2px, transparent 4px),
+    radial-gradient(circle, rgba(255, 250, 232, 0.7) 0 1px, transparent 2px);
+  background-size: 380px 420px, 140px 190px;
+  background-position: 260px 300px, 60px 20px;
+  -webkit-mask-image: linear-gradient(210deg, #000 5%, transparent 65%);
+  mask-image: linear-gradient(210deg, #000 5%, transparent 65%);
+}
+
+[data-theme="goldenhour"] .gh-plant { left: -9vmin; bottom: 0; height: 50vh; width: auto; aspect-ratio: 250 / 390; }
+/* leaves read as a soft cast shadow, not cut paper: static blur (never animated), quieter on the main page */
+[data-theme="goldenhour"] .gh-plant { filter: blur(5px); opacity: 0.42; }
+[data-theme="goldenhour"]:has(#now-playing.open) .gh-plant { opacity: 0.68; }
+
+/* warm haze to settle the contrast where cards sit */
+[data-theme="goldenhour"] .gh-haze {
+  inset: 0;
+  background: linear-gradient(180deg, rgba(246, 212, 164, 0) 0%, rgba(160, 84, 36, 0.10) 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="goldenhour"] .gh-light { animation: gh-drift 48s ease-in-out infinite alternate; }
+  [data-theme="goldenhour"] .gh-m1 { animation: gh-float 70s linear infinite; }
+  [data-theme="goldenhour"] .gh-m2 { animation: gh-float2 95s linear infinite; }
+}
+@keyframes gh-drift {
+  from { transform: translate3d(0, 0, 0) rotate(-14deg) skewX(-18deg); opacity: 1; }
+  to { transform: translate3d(-5vw, 3vh, 0) rotate(-13deg) skewX(-18deg); opacity: 0.82; }
+}
+@keyframes gh-float { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-40px, -40vh, 0); } }
+@keyframes gh-float2 { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(30px, -36vh, 0); } }
+
+/* ---- app over the room ---- */
+[data-theme="goldenhour"] .header h1 { text-shadow: 0 1px 18px rgba(255, 236, 200, 0.7); }
+[data-theme="goldenhour"] .header p { color: #57351A; }
+[data-theme="goldenhour"] .card {
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  backdrop-filter: blur(14px) saturate(1.1);
+  border-color: rgba(255, 246, 230, 0.55);
+}
+[data-theme="goldenhour"] .reader-display { background: color-mix(in srgb, var(--surface-2) 92%, transparent); }
+[data-theme="goldenhour"] select,
+[data-theme="goldenhour"] textarea,
+[data-theme="goldenhour"] input[type="text"] { background: color-mix(in srgb, var(--surface-2) 90%, transparent); }
+
+/* full-screen player: let the room itself sit behind the sentence */
+[data-theme="goldenhour"] .app-container:has(#now-playing.open) > :not(#now-playing) { visibility: hidden; }
+[data-theme="goldenhour"] #now-playing {
+  background: radial-gradient(80% 20% at 50% 39%, rgba(255, 244, 226, 0.72) 0%, rgba(255, 240, 218, 0.30) 70%, rgba(255, 240, 218, 0) 100%);
+}
+[data-theme="goldenhour"] .np-bottom {
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  backdrop-filter: blur(14px) saturate(1.1);
+  border: 1px solid rgba(255, 246, 230, 0.6);
+  border-radius: 26px;
+  padding: 16px 16px 18px;
+  box-shadow: var(--shadow-1);
+}
+
+.theme-dot[data-theme="goldenhour"] {
+  background:
+    repeating-linear-gradient(160deg, rgba(255, 240, 205, 0) 0 3px, rgba(255, 240, 205, 0.75) 3px 6px),
+    linear-gradient(180deg, #F2C48A, #C27840);
+}
+
+/* ===== Sanctuary (sanctuary) ===== */
+/* Sanctuary — Sunday morning, before anyone arrives. Limestone, oak pews, colored window light. */
+[data-theme="sanctuary"] {
+  --paper: #E6DCCB;
+  --surface: #F8F2E7;
+  --surface-2: #F1E8D9;
+  --ink: #2A2119;
+  --ink-2: #554839;
+  --ink-3: #74665A;
+  --hairline: rgba(58, 40, 24, 0.16);
+  --hairline-soft: rgba(58, 40, 24, 0.08);
+  --accent: #8E3B3D;
+  --accent-deep: #722C2F;
+  --accent-wash: rgba(176, 72, 74, 0.13);
+  --accent-wash-strong: rgba(176, 72, 74, 0.22);
+  --ok: #3E6B4C;
+  --err: #A1382A;
+  --shadow-1: 0 1px 2px rgba(60, 40, 20, 0.06), 0 10px 30px rgba(60, 40, 20, 0.10);
+  --shadow-play: 0 6px 20px rgba(142, 59, 61, 0.32);
+  color-scheme: light;
+}
+
+/* ---------- the room ---------- */
+[data-theme="sanctuary"] #wr-scene { background: #E6DCCB; }
+[data-theme="sanctuary"] #wr-scene > * { position: absolute; }
+[data-theme="sanctuary"] #wr-scene i { display: block; position: absolute; }
+
+[data-theme="sanctuary"] .sa-wall::after {
+  content: ""; position: absolute;
+  left: max(4%, calc(50% - 300px)); top: 14vh;
+  width: 64px; height: 190px;
+  border-radius: 99px 99px 4px 4px;
+  border: 5px solid #D3C5AE;
+  background: linear-gradient(180deg, #EFD3A0, #DDB1AB 40%, #B4C8DA 70%, #E8D2A4);
+  filter: blur(2.5px);
+  opacity: 0.45;
+}
+[data-theme="sanctuary"] .sa-wall {
+  inset: 0;
+  background:
+    radial-gradient(140% 90% at 50% 40%, transparent 55%, rgba(70, 50, 30, 0.16)),
+    radial-gradient(120% 60% at 82% 18%, rgba(255, 244, 222, 0.75), transparent 60%),
+    repeating-linear-gradient(0deg, transparent 0 46px, rgba(120, 96, 68, 0.07) 46px 47px),
+    repeating-linear-gradient(90deg, transparent 0 92px, rgba(120, 96, 68, 0.05) 92px 93px),
+    linear-gradient(180deg, #D8CBB4 0%, #E5DAC7 40%, #DDCFB8 70%, #CDBDA3 100%);
+}
+
+/* lancet window: an abstract quilt of glass, lead lines on top */
+[data-theme="sanctuary"] .sa-window {
+  right: max(-18px, calc(50% - 360px));
+  top: 5vh;
+  width: clamp(110px, 30vw, 190px);
+  height: clamp(300px, 50vh, 520px);
+  border-radius: 999px 999px 6px 6px;
+  border: 9px solid #CDBEA6;
+  box-shadow:
+    0 0 0 1px rgba(90, 70, 50, 0.25),
+    inset 0 0 0 1px rgba(60, 40, 25, 0.45),
+    0 0 60px 18px rgba(255, 236, 200, 0.55);
+  background:
+    repeating-linear-gradient(0deg, rgba(58, 46, 40, 0.55) 0 2px, transparent 2px 26px),
+    repeating-linear-gradient(90deg, rgba(58, 46, 40, 0.55) 0 2px, transparent 2px 30%),
+    radial-gradient(60% 40% at 50% 38%, rgba(255, 250, 235, 0.7), transparent 70%),
+    linear-gradient(180deg, #F3D9A6 0 12%, #C9DCEA 12% 24%, #E9B9B2 24% 36%, #F1E1B8 36% 48%, #B9CFE0 48% 60%, #DDBFD6 60% 72%, #EED7A4 72% 84%, #C4D7C2 84% 100%),
+    linear-gradient(90deg, #D98B86, #F0C987 33%, #8FB0D1 34% 66%, #E7B07C 67%);
+  background-blend-mode: normal, normal, screen, multiply, normal;
+  opacity: 0.92;
+}
+[data-theme="sanctuary"] #wr-scene .sa-rose {
+  position: absolute; left: 50%; top: 14%;
+  width: 62%; aspect-ratio: 1;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 0 6px rgba(255, 244, 220, 0.7));
+}
+
+/* light falling from the window, down and to the right */
+[data-theme="sanctuary"] .sa-beams { inset: 0; }
+[data-theme="sanctuary"] .sa-beams i {
+  right: max(40px, calc(50% - 300px));
+  top: 20vh;
+  width: 150vmax;
+  height: 80px;
+  transform-origin: 100% 50%;
+  border-radius: 40px;
+  filter: blur(14px);
+}
+[data-theme="sanctuary"] .sa-b1 { transform: rotate(-31deg); background: linear-gradient(270deg, rgba(235, 140, 130, 0.62), rgba(235, 140, 130, 0.26) 50%, transparent 80%); }
+[data-theme="sanctuary"] .sa-b2 { transform: rotate(-38deg) translateY(30px); height: 90px !important; background: linear-gradient(270deg, rgba(248, 204, 120, 0.7), rgba(248, 204, 120, 0.3) 50%, transparent 82%); }
+[data-theme="sanctuary"] .sa-b3 { transform: rotate(-45deg) translateY(70px); background: linear-gradient(270deg, rgba(130, 170, 214, 0.6), rgba(130, 170, 214, 0.26) 50%, transparent 80%); }
+
+/* pews in perspective down the center aisle */
+[data-theme="sanctuary"] .sa-pews {
+  left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: 50vh;
+  background: linear-gradient(180deg, rgba(205, 189, 163, 0) 0%, #BFA98A 22%, #A68A68 100%);
+  filter: blur(0.6px) saturate(0.9);
+}
+
+/* colored light resting on the oak */
+[data-theme="sanctuary"] .sa-pools { inset: 0; mix-blend-mode: screen; }
+[data-theme="sanctuary"] .sa-pools i { border-radius: 50%; }
+[data-theme="sanctuary"] .sa-p1 { left: 4%; bottom: 20vh; width: 46vw; max-width: 340px; height: 9vh; background: radial-gradient(closest-side, rgba(225, 120, 120, 0.55), transparent); }
+[data-theme="sanctuary"] .sa-p2 { left: 20%; bottom: 11vh; width: 52vw; max-width: 380px; height: 10vh; background: radial-gradient(closest-side, rgba(240, 196, 110, 0.55), transparent); }
+[data-theme="sanctuary"] .sa-p3 { left: -6%; bottom: 4vh; width: 44vw; max-width: 320px; height: 9vh; background: radial-gradient(closest-side, rgba(120, 160, 210, 0.5), transparent); }
+
+/* dust in the light */
+[data-theme="sanctuary"] .sa-motes { inset: 0; }
+[data-theme="sanctuary"] .sa-motes i {
+  width: 3px; height: 3px; border-radius: 50%;
+  background: rgba(255, 248, 230, 0.95);
+  box-shadow: 0 0 6px 2px rgba(255, 240, 210, 0.6);
+  opacity: 0.7;
+}
+[data-theme="sanctuary"] .sa-motes i:nth-child(1) { left: 62%; top: 34%; }
+[data-theme="sanctuary"] .sa-motes i:nth-child(2) { left: 46%; top: 44%; }
+[data-theme="sanctuary"] .sa-motes i:nth-child(3) { left: 55%; top: 52%; }
+
+
+/* ---------- the app, printed on good stock ---------- */
+[data-theme="sanctuary"] body { background: #E6DCCB; }
+[data-theme="sanctuary"] .header {
+  background: radial-gradient(64% 58% at 50% 50%, rgba(246, 239, 227, 0.94) 55%, rgba(246, 239, 227, 0.6) 78%, transparent);
+  padding: 12px 0 16px;
+  border-radius: 40px;
+}
+[data-theme="sanctuary"] .header h1 { color: var(--ink); }
+[data-theme="sanctuary"] .badge { color: var(--accent-deep); }
+[data-theme="sanctuary"] .card {
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.05);
+  backdrop-filter: blur(14px) saturate(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: var(--shadow-1), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+[data-theme="sanctuary"] .card-title { color: var(--ink-3); }
+[data-theme="sanctuary"] .reader-display {
+  background: #FBF7EF;
+  border-color: rgba(120, 90, 60, 0.14);
+}
+[data-theme="sanctuary"] .reader-content { color: #241C15; }
+
+/* full-screen player: the desk steps aside, the room shows through */
+[data-theme="sanctuary"] .app-container:has(> #now-playing.open) > :not(#now-playing) { visibility: hidden; }
+[data-theme="sanctuary"] #now-playing {
+  background:
+    radial-gradient(85% 20% at 50% 44%, rgba(248, 242, 231, 0.88), rgba(248, 242, 231, 0.5) 65%, transparent),
+    linear-gradient(180deg, rgba(240, 232, 218, 0.30), rgba(236, 226, 210, 0.10) 40%, rgba(236, 226, 210, 0.15) 70%, rgba(230, 218, 200, 0.2));
+}
+[data-theme="sanctuary"] .np-bottom {
+  background: rgba(248, 242, 231, 0.74);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-radius: 22px;
+  padding: 14px 12px 12px;
+  box-shadow: var(--shadow-1);
+}
+[data-theme="sanctuary"] #np-sentence {
+  color: #221A13;
+}
+[data-theme="sanctuary"] #np-speaker { color: var(--accent-deep); }
+
+/* swatch */
+.theme-dot[data-theme="sanctuary"] {
+  background:
+    radial-gradient(circle at 30% 28%, #F4D38F 0 18%, transparent 19%),
+    linear-gradient(135deg, #E9A39B 0 30%, #A9C3DE 30% 55%, #E6DCCB 55% 72%, #7D522C 72%);
+}
+
+/* ---------- motion: slow, like the sun moving ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="sanctuary"] .sa-beams { animation: sa-breathe 14s ease-in-out infinite alternate; }
+  [data-theme="sanctuary"] .sa-pools { animation: sa-drift 40s ease-in-out infinite alternate; }
+  [data-theme="sanctuary"] .sa-motes { animation: sa-float 22s ease-in-out infinite alternate; }
+  @keyframes sa-breathe { from { opacity: 0.75; } to { opacity: 1; } }
+  @keyframes sa-drift { from { transform: translateX(-14px); } to { transform: translateX(16px); } }
+  @keyframes sa-float { from { transform: translate(0, 0); opacity: 0.5; } to { transform: translate(-18px, -26px); opacity: 1; } }
+}
+
+/* ===== Gulf Morning (beachc) ===== */
+/* Gulf Morning (beachc) - Caleb Turner. 7:10am on a Gulf Coast beach: an empty sling chair, coffee in the sand, the old pier, small waves coming in. */
+[data-theme="beachc"]:root, [data-theme="beachc"] {
+  --paper: #EADBC0;
+  --surface: #FBF6EC;
+  --surface-2: #F5EEDF;
+  --ink: #1F2B33;
+  --ink-2: #43525A;
+  --ink-3: #5B686D;
+  --hairline: rgba(31, 43, 51, 0.16);
+  --hairline-soft: rgba(31, 43, 51, 0.09);
+  --accent: #1D6A73;
+  --accent-deep: #154F57;
+  --accent-wash: rgba(29, 106, 115, 0.13);
+  --accent-wash-strong: rgba(29, 106, 115, 0.24);
+  --ok: #3F7A4A;
+  --err: #A63D2A;
+  --shadow-1: 0 1px 2px rgba(60, 44, 20, 0.08), 0 12px 30px rgba(70, 56, 30, 0.16);
+  --shadow-play: 0 8px 22px rgba(29, 106, 115, 0.36);
+  color-scheme: light;
+}
+
+/* ---- the beach ---- */
+[data-theme="beachc"] #wr-scene {
+  background: linear-gradient(180deg, #A9C3D2 0%, #C9D6DA 14%, #EED9C2 24%, #F5DDC2 27%, #E9D8BA 52%, #E2CDA9 100%);
+}
+[data-theme="beachc"] #wr-scene > * { position: absolute; display: block; }
+[data-theme="beachc"] .bc-sun {
+  left: -40vw; top: 4vh; width: 80vw; height: 28vh; border-radius: 50%; opacity: 0.8;
+  background: radial-gradient(closest-side, rgba(255, 246, 226, 0.95) 0 6%, rgba(255, 228, 196, 0.55) 22%, rgba(255, 222, 190, 0) 100%);
+}
+[data-theme="beachc"] .bc-cloud {
+  left: -20vw; top: 3vh; width: 150vw; height: 16vh; opacity: 0.85;
+  background:
+    radial-gradient(40% 18% at 30% 40%, rgba(255, 252, 246, 0.8), rgba(255, 252, 246, 0) 70%),
+    radial-gradient(34% 14% at 70% 66%, rgba(255, 244, 232, 0.7), rgba(255, 244, 232, 0) 70%),
+    radial-gradient(26% 10% at 52% 20%, rgba(248, 244, 240, 0.55), rgba(248, 244, 240, 0) 70%);
+}
+[data-theme="beachc"] .bc-sea {
+  left: 0; right: 0; top: 27vh; height: 21vh;
+  background: linear-gradient(180deg, #6F94A2 0%, #5F929A 16%, #66A09F 50%, #86BDB3 82%, #B0D5C6 100%);
+  box-shadow: 0 -1px 0 rgba(255, 246, 230, 0.7), 0 -6px 14px rgba(255, 240, 222, 0.5);
+}
+[data-theme="beachc"] .bc-glint {
+  left: 2vw; top: 27vh; width: 50vw; height: 12vh;
+  background: repeating-linear-gradient(180deg, rgba(255, 246, 224, 0) 0 5px, rgba(255, 246, 224, 0.55) 5px 6px);
+  -webkit-mask-image: radial-gradient(50% 70% at 40% 0%, #000, transparent 75%);
+  mask-image: radial-gradient(50% 70% at 40% 0%, #000, transparent 75%);
+}
+[data-theme="beachc"] .bc-surf { left: 0; top: 31vh; width: 100vw; height: 15vh; }
+[data-theme="beachc"] .bc-pier {
+  right: 0; top: 18.75vh; width: 78vw; height: 33vh; opacity: 0.4;
+  /* shortened: the far end dissolves into morning haze, only the near end stands at the right edge */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0 62%, rgba(0, 0, 0, 0.5) 82%, #000 96%);
+  mask-image: linear-gradient(90deg, transparent 0 62%, rgba(0, 0, 0, 0.5) 82%, #000 96%);
+}
+[data-theme="beachc"]:has(#now-playing.open) .bc-pier { opacity: 0.9; }
+[data-theme="beachc"]:has(#now-playing.open) .bc-sun { left: -30vw; top: 1vh; width: 100vw; height: 40vh; opacity: 1; }
+[data-theme="beachc"] .bc-wet {
+  left: 0; right: 0; top: 46.5vh; height: 12vh;
+  background: linear-gradient(180deg, #BFAE8E 0%, #CBB897 45%, rgba(233, 216, 186, 0) 100%);
+}
+[data-theme="beachc"] .bc-wash { left: -4vw; top: 46vh; width: 108vw; height: 5vh; }
+[data-theme="beachc"] .bc-sand {
+  left: 0; top: 50vh; width: 100vw; height: 50vh; opacity: 0.55;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 25%);
+  mask-image: linear-gradient(180deg, transparent, #000 25%);
+}
+[data-theme="beachc"] .bc-ripples { left: 0; top: 57vh; width: 100vw; height: 40vh; opacity: 0.5; }
+[data-theme="beachc"] .bc-chair { left: 3vw; top: 48vh; width: 50vw; height: auto; max-width: 300px; }
+[data-theme="beachc"] .bc-haze {
+  inset: 0;
+  background: linear-gradient(180deg, rgba(250, 244, 232, 0) 40%, rgba(250, 242, 226, 0.18) 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="beachc"] .bc-wash { animation: bc-wash 9s ease-in-out infinite alternate; }
+  [data-theme="beachc"] .bc-cloud { animation: bc-cloud 140s ease-in-out infinite alternate; }
+  [data-theme="beachc"] .bc-glint { animation: bc-glint 6s ease-in-out infinite alternate; }
+}
+@keyframes bc-wash { 0% { transform: translate3d(0, -1.2vh, 0); opacity: 0.75; } 100% { transform: translate3d(1vw, 2.4vh, 0); opacity: 1; } }
+@keyframes bc-cloud { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-14vw, 0, 0); } }
+@keyframes bc-glint { from { opacity: 0.55; } to { opacity: 1; } }
+
+/* ---- app on the sand ---- */
+[data-theme="beachc"] .header h1 { text-shadow: 0 1px 16px rgba(255, 248, 236, 0.9); }
+[data-theme="beachc"] .header p { color: #33424A; text-shadow: 0 0 10px rgba(255, 248, 236, 0.9); }
+[data-theme="beachc"] .scene-picker-label { color: #3F4D54; text-shadow: 0 0 8px rgba(255, 246, 232, 0.95); }
+[data-theme="beachc"] .card {
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.05);
+  backdrop-filter: blur(14px) saturate(1.05);
+  border-color: rgba(255, 252, 244, 0.7);
+}
+[data-theme="beachc"] .reader-display { background: color-mix(in srgb, var(--surface-2) 94%, transparent); }
+[data-theme="beachc"] select,
+[data-theme="beachc"] textarea,
+[data-theme="beachc"] input[type="text"] { background: color-mix(in srgb, var(--surface-2) 92%, transparent); }
+
+/* full-screen player: sit in the chair and look at the water */
+[data-theme="beachc"] .app-container:has(#now-playing.open) > :not(#now-playing) { visibility: hidden; }
+[data-theme="beachc"] #now-playing {
+  background: radial-gradient(90% 26% at 50% 42%, rgba(252, 247, 236, 0.86) 0%, rgba(252, 247, 236, 0.55) 62%, rgba(252, 247, 236, 0) 100%);
+}
+[data-theme="beachc"] .np-bottom {
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 252, 244, 0.75);
+  border-radius: 26px;
+  padding: 16px 16px 18px;
+  box-shadow: var(--shadow-1);
+}
+
+.theme-dot[data-theme="beachc"] {
+  background: linear-gradient(180deg, #B9CCD6 0 30%, #F3DCC2 30% 38%, #6FA3A6 38% 58%, #FFFBF2 58% 62%, #E6D3B1 62%);
+}
+
+/* ===== Night Sea (oceanc) ===== */
+/* Night Sea (oceanc) - Caleb Turner. On deck of a small boat at night: lifelines, a brass lantern, and the moon laying a road across open water. */
+[data-theme="oceanc"]:root, [data-theme="oceanc"] {
+  --paper: #0B1422;
+  --surface: #111C2C;
+  --surface-2: #0E1826;
+  --ink: #EAF0F6;
+  --ink-2: #BCC9D6;
+  --ink-3: #93A3B4;
+  --hairline: rgba(234, 240, 246, 0.15);
+  --hairline-soft: rgba(234, 240, 246, 0.08);
+  --accent: #E2C482;
+  --accent-deep: #F0D9A6;
+  --accent-wash: rgba(226, 196, 130, 0.16);
+  --accent-wash-strong: rgba(226, 196, 130, 0.28);
+  --ok: #8FCFAE;
+  --err: #F09A86;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 34px rgba(2, 6, 14, 0.5);
+  --shadow-play: 0 6px 26px rgba(226, 196, 130, 0.34);
+  color-scheme: dark;
+}
+
+/* ---- the open water ---- */
+[data-theme="oceanc"] #wr-scene {
+  background: linear-gradient(180deg, #070D19 0%, #0E1A2E 18%, #1F3250 33.6%, #1A2C46 34%, #12213A 50%, #0B1628 72%, #060C17 100%);
+}
+[data-theme="oceanc"] #wr-scene > * { position: absolute; display: block; }
+[data-theme="oceanc"] .oc-stars {
+  left: 0; top: 0; width: 100%; height: 34vh;
+  background-image:
+    radial-gradient(circle, rgba(236, 242, 255, 0.9) 0 0.7px, transparent 1.3px),
+    radial-gradient(circle, rgba(236, 242, 255, 0.45) 0 0.6px, transparent 1.2px),
+    radial-gradient(circle, rgba(255, 246, 226, 0.85) 0 1px, transparent 1.8px);
+  background-size: 137px 113px, 89px 157px, 211px 191px;
+  background-position: 13px 9px, 52px 71px, 120px 40px;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.6) 55%, transparent 95%);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.6) 55%, transparent 95%);
+}
+[data-theme="oceanc"] .oc-halo {
+  left: 50vw; top: -10vh; width: 70vw; height: 44vh; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(220, 226, 240, 0.32), rgba(150, 170, 210, 0.12) 50%, rgba(120, 140, 190, 0) 100%);
+}
+[data-theme="oceanc"] .oc-moon {
+  left: calc(84.5vw - 70px); top: 6px; width: 140px; height: 140px; border-radius: 50%;
+  background: radial-gradient(closest-side, #FFFCF2 0 22%, #F6EED8 28%, rgba(246, 238, 216, 0.42) 31%, rgba(226, 230, 242, 0.16) 48%, rgba(200, 212, 236, 0.05) 72%, rgba(200, 212, 236, 0) 100%);
+}
+[data-theme="oceanc"] .oc-wisp {
+  left: 52vw; top: 10.6vh; width: 70vw; height: 2.6vh; border-radius: 50%; opacity: 0.75;
+  background: radial-gradient(closest-side, rgba(70, 86, 116, 0.9), rgba(70, 86, 116, 0));
+}
+[data-theme="oceanc"] .oc-sea {
+  left: 0; right: 0; top: 34vh; height: 2px;
+  background: linear-gradient(90deg, rgba(200, 214, 236, 0.1), rgba(230, 236, 246, 0.6) 82%, rgba(200, 214, 236, 0.15));
+}
+[data-theme="oceanc"] .oc-swell { left: -5vw; top: 34vh; width: 110vw; height: 66vh; opacity: 0.16; }
+[data-theme="oceanc"] .oc-sheen {
+  left: 36vw; top: 34vh; width: 92vw; height: 66vh;
+  background:
+    radial-gradient(9% 100% at 50% 0%, rgba(250, 238, 206, 0.16), rgba(250, 238, 206, 0) 100%),
+    radial-gradient(42% 60% at 50% 0%, rgba(214, 214, 214, 0.2), rgba(190, 206, 232, 0.05) 60%, rgba(190, 206, 232, 0) 100%);
+}
+[data-theme="oceanc"] .oc-glit { left: 0; top: 34.2vh; width: 100vw; height: 66vh; }
+[data-theme="oceanc"] .oc-ga { opacity: 1; }
+[data-theme="oceanc"] .oc-gb { opacity: 0.45; }
+[data-theme="oceanc"] .oc-lampglow {
+  left: -24vw; top: 38vh; width: 90vw; height: 40vh; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 196, 110, 0.32), rgba(255, 170, 80, 0.08) 55%, rgba(255, 170, 80, 0) 100%);
+}
+[data-theme="oceanc"] .oc-rail { left: 0; bottom: 0; width: 100vw; height: 52vh; opacity: 0.35; }
+[data-theme="oceanc"] .oc-lr { display: none; }
+/* main page + reader: the lantern hangs at the left edge of frame, in the clear gutter beside the title */
+[data-theme="oceanc"] .oc-lamp { left: -1px; top: 0; width: 36px; height: 27vh; }
+[data-theme="oceanc"] .oc-lampglow { left: -38vw; top: 4vh; width: 80vw; height: 36vh; }
+[data-theme="oceanc"]:has(#now-playing.open) .oc-rail { opacity: 1; }
+[data-theme="oceanc"]:has(#now-playing.open) .oc-lr { display: inline; }
+[data-theme="oceanc"]:has(#now-playing.open) .oc-lamp { display: none; }
+[data-theme="oceanc"]:has(#now-playing.open) .oc-lampglow { left: -24vw; top: 38vh; width: 90vw; height: 40vh; }
+[data-theme="oceanc"] .oc-vignette {
+  inset: 0;
+  background: radial-gradient(130% 90% at 55% 40%, rgba(4, 8, 16, 0) 55%, rgba(4, 8, 16, 0.55) 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme="oceanc"] .oc-ga { animation: oc-glit 5.5s ease-in-out infinite alternate; }
+  [data-theme="oceanc"] .oc-gb { animation: oc-glit 7s ease-in-out -3s infinite alternate-reverse; }
+  [data-theme="oceanc"] .oc-swell { animation: oc-swell 16s ease-in-out infinite alternate; }
+}
+@keyframes oc-glit { from { opacity: 0.3; } to { opacity: 0.95; } }
+@keyframes oc-swell { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-3vw, 1.2vh, 0); } }
+
+/* ---- app over the water ---- */
+[data-theme="oceanc"] .header h1 { text-shadow: 0 2px 18px rgba(4, 8, 16, 0.8); }
+[data-theme="oceanc"] .header p,
+[data-theme="oceanc"] .scene-picker-label { text-shadow: 0 1px 10px rgba(4, 8, 16, 0.9); }
+[data-theme="oceanc"] .card {
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  backdrop-filter: blur(14px) saturate(1.1);
+  border-color: rgba(200, 216, 236, 0.14);
+}
+[data-theme="oceanc"] .reader-display { background: color-mix(in srgb, var(--surface-2) 94%, transparent); }
+[data-theme="oceanc"] select,
+[data-theme="oceanc"] textarea,
+[data-theme="oceanc"] input[type="text"] { background: color-mix(in srgb, var(--surface-2) 92%, transparent); }
+/* pale moon-gold buttons carry dark glyphs */
+[data-theme="oceanc"] .control-btn.primary,
+[data-theme="oceanc"] #player-card .rd-transport .control-btn.primary,
+[data-theme="oceanc"] #use-text-btn,
+[data-theme="oceanc"] .cast-room-btn { color: #0B1422; }
+
+/* full-screen player: the sentence floats over the moon road */
+[data-theme="oceanc"] .app-container:has(#now-playing.open) > :not(#now-playing) { visibility: hidden; }
+[data-theme="oceanc"] #now-playing {
+  background: radial-gradient(95% 24% at 50% 42%, rgba(7, 13, 25, 0.82) 0%, rgba(7, 13, 25, 0.55) 60%, rgba(7, 13, 25, 0) 100%);
+}
+[data-theme="oceanc"] .np-bottom {
+  background: color-mix(in srgb, var(--surface) 74%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(200, 216, 236, 0.14);
+  border-radius: 26px;
+  padding: 16px 16px 18px;
+  box-shadow: var(--shadow-1);
+}
+
+.theme-dot[data-theme="oceanc"] {
+  background:
+    radial-gradient(circle at 64% 26%, #FFF6DE 0 12%, rgba(255, 246, 222, 0) 14%),
+    linear-gradient(90deg, transparent 56%, rgba(243, 230, 196, 0.8) 60% 68%, transparent 72%) 0 52% / 100% 48% no-repeat,
+    linear-gradient(180deg, #0E1A2E 0 50%, #1E3150 50% 53%, #0B1628 53%);
+}
